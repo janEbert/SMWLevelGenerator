@@ -1,0 +1,124 @@
+levels/AKMW/Level012.ent2
+levels/AltheronX/Level12A.ent2
+levels/Big Boo's Revenge/Level050.ent2
+levels/Bowser Stadium Gamma/Level00F.ent2
+levels/CK_v4/Level109.ent2
+levels/CK_v4/Level1BC.ent2
+levels/CK_v4/Level1EA.ent2
+levels/CK_v4/Level1F3.ent2
+levels/ClimbTheTower/Level008.ent2
+levels/ColonThree/Level10B.ent2
+levels/EVERY LEVEL MORTON/Level025.ent2
+levels/FF-SMW/Level04D.ent2
+levels/Fishing Season 2/Level001.ent2
+levels/IUDICIUM TRIBUNALIS_2.25/Level150.ent2
+levels/Jetskifullv1.0/Level108.ent2
+levels/Justice for Mario Demo #1/Level001.ent2
+levels/KaroshiMario/Level023.ent2
+levels/Lemmy's Wrath v1_1/Level001.ent2
+levels/Lightning Crashes 1.2/Level005.ent2
+levels/Mario and Luigi MEGA Adventure 1 Demo 2.0/Level04A.ent2
+levels/Mario's 2 Ways 2 Victory/Level006.ent2
+levels/Mario's 2 Ways 2 Victory/Level058.ent2
+levels/Mario's 2 Ways 2 Victory/Level09D.ent2
+levels/Mario's 2 Ways 2 Victory/Level0A0.ent2
+levels/Mario's 2 Ways 2 Victory/Level0A5.ent2
+levels/Mario's 2 Ways 2 Victory/Level0A6.ent2
+levels/Mario's 2 Ways 2 Victory/Level0A8.ent2
+levels/Mario's 2 Ways 2 Victory/Level119.ent2
+levels/Mario's 2 Ways 2 Victory/Level12C.ent2
+levels/MarioMustDie(SMWC version)/Level110.ent2
+levels/MarioMustDie(SMWC version)/Level123.ent2
+levels/My little Puzzles - The Road to Wisdom v1.1/Level01E.ent2
+levels/My little Puzzles 2 - The Continents of Knowledge/Level01B.ent2
+levels/My little Puzzles 3 - The Key to Eternity/Level08B.ent2
+levels/NOSE/Level002.ent2
+levels/New Super Mario World - The  Lost Levels/Level1ED.ent2
+levels/OLDC2017/Level022.ent2
+levels/OLDC2017/Level07A.ent2
+levels/OLDC2017/Level07D.ent2
+levels/OLDC2017/Level111.ent2
+levels/OLDC2017/Level114.ent2
+levels/PMPv2c3Dem0/Level015.ent2
+levels/PunishingPothole2/Level10B.ent2
+levels/PunishingPothole2/Level10C.ent2
+levels/QW2/Level013.ent2
+levels/QW2/Level015.ent2
+levels/QuickieWorld1.12/Level102.ent2
+levels/RttC-1.3/Level0FD.ent2
+levels/RttC-1.3/Level105.ent2
+levels/RttC-1.3/Level10B.ent2
+levels/SME patch/Level078.ent2
+levels/SME patch/Level0C4.ent2
+levels/SME patch/Level0DE.ent2
+levels/SMW Koopa revenge/Level108.ent2
+levels/SMWHcollab_1_2/Level107.ent2
+assertion for levels/SMW^2 DEMO/Level025.ent2
+levels/SPLU patch/Level117.ent2
+levels/SPLU patch/Level1E4.ent2
+levels/Serbow1-3/Level00D.ent2
+levels/Super Cool World v1.0/Level01C.ent2
+levels/Super Gracie World v1.3/Level10D.ent2
+levels/Super Gracie World v1.3/Level12A.ent2
+levels/Super Hark Bros 1.21/Level109.ent2
+levels/Super Hark Bros 1.21/Level10A.ent2
+levels/Super Mario A Familiar Land/Level027.ent2
+levels/Super Mario Eternity 0.7.1/Level032.ent2
+levels/Super Mario Eternity 0.7.1/Level0D2.ent2
+levels/Super Mario Eternity 0.7.1/Level0E7.ent2
+levels/Super Mario Eternity 0.7.1/Level109.ent2
+levels/Super Mario Eternity 0.7.1/Level10A.ent2
+levels/Super Mario Eternity 0.7.1/Level112.ent2
+levels/Super Mario Eternity 0.7.1/Level118.ent2
+levels/Super Mario Eternity 0.7.1/Level134.ent2
+levels/Super Mario Eternity 0.7.1/Level139.ent2
+levels/Super Mario Eternity 0.7.1/Level1CE.ent2
+levels/Super Mario Islands Demo 2 FINAL UPDATE/Level134.ent2
+levels/Super Mario World - Tsunami Island/Level060.ent2
+levels/Super Responsible World/Level108.ent2
+levels/Super Riff World/Level020.ent2
+levels/SuperRunWorld_v1.2/Level111.ent2
+levels/Super_Mario_Worldwide_2/Level005.ent2
+levels/Super_Mario_Worldwide_2/Level056.ent2
+levels/Super_Mario_Worldwide_2/Level05A.ent2
+levels/TDPV03/Level105.ent2
+levels/THD Remastered v1.2 - SPEEDRUN EDITION/Level04A.ent2
+levels/The Lost Land/Level00A.ent2
+levels/The Lost Land 2 - The 4 Switches/Level01D.ent2
+levels/The New Mario World V1.1/Level116.ent2
+levels/The Search for Salmon 1.2/Level006.ent2
+levels/The Search for Salmon 1.2/Level013.ent2
+levels/The Treasure Hunt/Level06A.ent2
+levels/The Treasure Hunt/Level0A3.ent2
+levels/The Unworld/Level12C.ent2
+levels/The Way of the M (Epsilon)/Level015.ent2
+levels/Thunderstruck demo 2012 v1A/Level085.ent2
+levels/Thunderstruck demo 2012 v1A/Level12B.ent2
+levels/VLDC_2014/Level03D.ent2
+levels/VLDC_2014/Level063.ent2
+levels/VLDC_2014/Level0C1.ent2
+levels/VLDC_2014/Level103.ent2
+levels/VLDC_2014/Level112.ent2
+levels/VLDC_2014/Level172.ent2
+levels/VLDC_2014/Level17D.ent2
+levels/VLDC_2014/Level18A.ent2
+levels/VLDC_2014/Level198.ent2
+levels/WorldofIllusion/Level006.ent2
+levels/WorldofIllusion/Level11F.ent2
+levels/WorldofIllusion/Level123.ent2
+levels/WorldofIllusion/Level126.ent2
+levels/YUMP/Level007.ent2
+levels/YUMP/Level011.ent2
+levels/YUMP/Level015.ent2
+levels/YUMP/Level101.ent2
+levels/YUMP/Level10C.ent2
+levels/YUMP/Level11C.ent2
+levels/YUMP/Level1B2.ent2
+levels/miscland2/Level105.ent2
+levels/sm96/Level049.ent2
+levels/smwa/Level00A.ent2
+levels/smwa/Level015.ent2
+levels/tTiI-demo2/Level019.ent2
+levels/the mushroom factor/Level00F.ent2
+levels/the mushroom factor/Level01A.ent2
+

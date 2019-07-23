@@ -1,0 +1,23 @@
+name = "SMWLevelGenerator"
+uuid = "a185f4e4-ad89-11e9-1d5b-4b81502b00d2"
+authors = ["janEbert <janpublicebert@posteo.net>"]
+version = "0.1.0"
+
+[deps]
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+EchoStateNetworks = "70c7bd9f-a953-56a3-8d23-4cd9b6517657"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+JuliaDB = "a93385a2-3734-596a-9a66-3cfbb77141e6"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Requires = "ae029012-a4dd-5104-9daa-d747884805df"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+TensorBoardLogger = "899adc3e-224a-11e9-021f-63837185c80f"
+Transformers = "21ca0261-441d-5938-ace7-c90938fde4d4"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"

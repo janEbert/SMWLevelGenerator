@@ -1,0 +1,33 @@
+# Binary or data directories
+compressed_hacks/
+hacks/
+levels/
+roms/
+stats/
+tools/
+
+# Archives
+*.7z
+*.tar
+*.tar.gz
+*.zip
+
+# Data files
+*.smc
+*.bps
+
+# Level data
+*.bg
+*.exits
+*.ent
+*.ent2
+*.map
+*.sp
+
+# Other stuff
+*.bak
+*.dll
+*.exe
+*.jld
+*.log
+
