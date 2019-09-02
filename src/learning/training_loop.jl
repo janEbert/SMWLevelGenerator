@@ -230,8 +230,9 @@ macro tbllog(logger, level, exs...)
 end
 
 """
-    run(modelfunction::Function, dbpath, epochs; modelargs,
-        modelparams::AbstractDict, trainingparams::AbstractDict,
+    run(modelfunction::Function, dbpath, epochs; modelargs::Union{Tuple, AbstractArray}=(),
+        modelparams::AbstractDict=Dict{Symbol,Any}(),
+        trainingparams::AbstractDict=Dict{Symbol,Any}(),
         logdir=joinpath("exps", "exp_$(now())"), logfile="params.json")
 
 Return a model created using `model = modelfunction(modelargs...; modelparams...)` and
@@ -239,7 +240,8 @@ trained on `trainingloop!(model, db, epochs; logdir=logdir, trainingparams...)`.
 The parameters are all saved in JSON format in the given `logfile` in `logdir`.
 """
 function run(modelfunction, dbpath, epochs; modelargs::Union{Tuple, AbstractArray},
-             modelparams::AbstractDict, trainingparams::AbstractDict,
+             modelparams::AbstractDict=Dict{Symbol,Any}(),
+             trainingparams::AbstractDict=Dict{Symbol,Any}(),
              logdir=joinpath("exps", "exp_$(now())"), logfile="params.json")
     type = keytype(modelparams)
     @assert type === keytype(trainingparams) "different key types in `Dict`s."
