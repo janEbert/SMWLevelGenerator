@@ -50,21 +50,21 @@ function decompressdata(compressed::AbstractVector{
     return data
 end
 
-function emptyat!(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}, index::Integer)
+function emptyat!(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}, index::Integer) where T
     data[index] = sparse(defaultindextype[], defaultindextype[], T[])
 end
 
-function emptyat!(data::AbstractArray{T, 3}, index::Integer)
+function emptyat!(data::AbstractArray{T, 3}, index::Integer) where T
     data[:, :, index] .= 0
 end
 
 function fillat!(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}, index::Integer,
-                 x::SparseMatrixCSC{T, compressedindextype})
+                 x::SparseMatrixCSC{T, compressedindextype}) where T
     data[index] = x
 end
 
 function fillat!(data::AbstractArray{T, 3}, index::Integer,
-                 x::SparseMatrixCSC{T, compressedindextype})
+                 x::SparseMatrixCSC{T, compressedindextype}) where T
     data[:, :, index] = x
 end
 
