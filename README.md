@@ -1,4 +1,4 @@
-SMW LevelGen - A Super Mario World Level Generator
+SMWLevelGenerator - A Super Mario World Level Generator
 Copyright (C) 2019  Jan Ebert
 
 This program is free software; you can redistribute it and/or
@@ -15,6 +15,9 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-Contact: domain.de local-part
-         posteo    janpublicebert
+Contact:
+```
+domain.de local-part
+posteo    janpublicebert
+```
 
