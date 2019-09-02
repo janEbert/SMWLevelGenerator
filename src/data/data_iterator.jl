@@ -1,6 +1,7 @@
 module DataIterator
 
 using Random
+using SparseArrays
 
 using JuliaDB
 
