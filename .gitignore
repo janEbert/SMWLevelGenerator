@@ -29,5 +29,6 @@ tools/
 *.dll
 *.exe
 *.jld
+*.jdb
 *.log
 
