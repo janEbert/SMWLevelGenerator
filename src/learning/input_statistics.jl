@@ -1,5 +1,7 @@
 module InputStatistics
 
+using Flux: gpu
+
 import ..LevelStatistics
 
 export screenrows, usegpu, togpu
@@ -19,10 +21,10 @@ This number is hardcoded. Change to `size(LevelFormatter.to3d(0x105), 3)` if thi
 const inputsize3d = screenrows * LevelStatistics.uniquevanillatiles + constantinputsize
 
 "Set to `false` to actively ignore the GPU even if it is available."
-usegpu = false
+usegpu = true
 
 if usegpu
-    togpu = Flux.gpu
+    togpu = gpu
 else
     togpu = identity
 end

@@ -251,6 +251,7 @@ function run(modelfunction, dbpath, epochs; modelargs::Union{Tuple, AbstractArra
     trainingparams[type(:epochs)] = epochs
     trainingparams[type(:logdir)] = logdir
 
+    mkpath(logdir)
     open(joinpath(logdir, logfile), "w") do io
         JSON.print(io, Dict(
             type(:model) => modelparams, type(:training) => trainingparams
@@ -258,11 +259,11 @@ function run(modelfunction, dbpath, epochs; modelargs::Union{Tuple, AbstractArra
     end
     # Remove values we cannot pass.
     delete!(modelparams,    type(:args))
-    delete!(trainingparams, type(:db))
+    delete!(trainingparams, type(:dbpath))
     delete!(trainingparams, type(:epochs))
 
     model = modelfunction(modelargs...; modelparams...)
-    trainingloop!(model, db, epochs; trainingparams...)
+    trainingloop!(model, dbpath, epochs; trainingparams...)
 end
 
 function test_trainingloop(dbpath::AbstractString="levels_1d_flags_t.jdb")

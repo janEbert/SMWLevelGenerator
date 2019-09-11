@@ -95,8 +95,9 @@ function prepend_isend(cols::AbstractMatrix, i::Integer, seqlength::Integer)
     end
 end
 
-function slicedata(data::AbstractVector{
-                       Pair{UInt16, SparseMatrixCSC{T, compressedindextype}}})
+function slicedata(
+                data::AbstractVector{Pair{UInt16, SparseMatrixCSC{T, compressedindextype}}}
+            ) where T
     slicedata(decompressdata(data, false))
 end
 
