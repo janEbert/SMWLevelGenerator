@@ -25,6 +25,20 @@ tools/
 *.map
 *.sp
 
+# LaTeX
+_region_.tex
+*.aux
+*.out
+*.toc
+*.dvi
+*.pdf
+*.synctex.gz
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+thesis/auto/
+
 # Other stuff
 *.bak
 *.dll

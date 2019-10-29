@@ -1,0 +1,152 @@
+\subsection{Super Mario World}
+
+We are going to focus on a single game for level generation: \emph{Super
+Mario World} (SMW). Super Mario World was released in~1990 by Nintendo
+for the Super Nintendo Entertainment
+System~\cite{SuperMarioWorld2019}. It is a 2-dimensional platforming
+game with the goal of reaching each level's exit. Games in the
+platforming genre confront the player with dangers like pits and
+enemies which have to be avoided by carefully jumping and maneuvering
+accross them in a host of levels. The original game features % TODO
+~levels. \\
+The player has access to a moveset including but not limited to
+running, jumping, picking up and throwing objects, and even shooting
+fireballs and flying. To access some abilities, Mario has to pick up
+power-ups usually contained in ``question mark blocks'' (? blocks).
+Blocks are commonly activated by hitting them from below. During a
+level, the player may collect various items like the power-ups
+mentioned above as well as coins and one-up mushrooms which increase
+the amount of lifes (tries) available to the player.
+\\
+Usually, when Mario lands on top of an enemy, the enemy is defeated.
+There are some enemies which Mario cannot safely land on or cannot
+defeat by jumping on top of them. Those enemier require a different
+trick like throwing something at them or hitting a block they are
+standing on from below. \\
+Sometimes, the player may even have to use an enemy to complete a
+level. For example, the turtle-like ``Koopas'' get knocked out of
+their shell before being defeated. The shell has a variety of uses
+like activating an unreachable block, defeating enemies and even
+giving access to mid-air jumps by throwing and subsequently landing on
+the shell.
+% TODO figure for koopa
+
+The next two sections will give an in-depth look into why Super Mario
+World was chosen as a machine learning problem and just how complex
+the levels are. We will then give a more low-level overview into how
+the levels work and what one has to look out for when creating a
+database suitable for feeding into a machine learning model.
+
+\subsubsection{Hacking Scene}
+
+At the time of writing, Super Mario World is almost 30 years old. Due
+to both its age and success, it has been able to gain a large
+following of people not only interested in playing the game but also
+extending it. As with many other~-- especially retro~-- games, there
+is a read-only memory (ROM) hacking scene around Super Mario World. In
+this thesis, ``ROM'' will refer to the digital form of the Super Mario
+World ROM cartridge that would usually be inserted into the Super
+Nintendo Entertainment System; like the data that is burned onto a CD.
+A lot of tools have been created to manipulate Super Mario World; even
+in ways that the original creators hadn't programmed. People are able
+to create their own levels and share them with the masses by uploading
+a patch file that has to be applied to the original game ROM, thereby
+avoiding copyright infringement as sharing the ROM, Nintendo's
+protected property, is illegal.
+
+Due to the refined tooling available, users do not need to program in
+65C816 assembly~\footnote{The Super Nintendo Entertainment System's 16
+  bit microprocessor is based on the 65C816 microprocessor.} to modify
+the game. Instead, even non-technical users are able to use one of the
+oldest tools to modify Super Mario World: \emph{Lunar
+  Magic}~\cite{FuSoYaNicheLunar}. It features a GUI and has optional
+features that extend Super Mario World with new functionality such as
+larger levels, custom coded tiles, and more. The creator of Lunar
+Magic, \emph{FuSoYa}, modified the existing software to support both
+dumping and reconstructing levels, making this work possible due to
+the reduced workload of parsing the data from the binary ROM. The
+features are currently only available in a private build (based on
+Lunar Magic version 3.04) that will be used throughout the thesis to
+(1) parse level data from existing ROMs and to (2) write newly
+generated levels back into the original Super Mario World ROM.
+
+With Lunar Magic as a user friendly tool granting creators all the
+freedom they could ever desire to design their own Mario levels,
+communities around ROM hacking emerged. One of those communities is
+\emph{SMW Central}~\cite{SMWCentralYour}, hosting most of the
+available Super Mario World ROM hacks. Due to both SMW Central's
+filtering capabilities and its quality of content, it was the source
+for all levels used in this thesis (excluding the ones in the original
+ROM). All the hacks used were obtained from SMW Central where their
+respective authors (who are not necessarily related to SMW Central)
+uploaded them.
+
+Being able to filter hacks was important for two reasons. One being
+that programmed custom behaviour was out of the scope of this work,
+requiring both parsing the binary 65C816 assembly code and then
+understanding its every behaviour. Also, to assert some form of
+quality in the dataset, only hacks with a rating of 3.0 or more
+(ranging from 1.0 to 5.0 and \emph{not available}) were downloaded.
+All in all, over 17000 unique levels over TODO hacks were obtained
+thanks to the amazing community keeping a masterpiece alive for all
+not only all the years since the game's release but also for all the
+years to come; Super Mario World hacks have even helped raise money
+for charity TODO.
+
+\subsubsection{Levels}
+
+We already assessed that Super Mario World is a complex game with many
+possibilities both in play and creative freedom in level design due to
+the vast number of interactions in the virtual world. We will now fill
+in some missing gaps of what makes up a level.
+
+%TODO figures for goal and others
+To give the player an easier or less frustrating time, most levels
+contain a \emph{midway point}. When activated (achieved by touching
+the midway point), Mario will spawn at that point instead of the usual
+level entry point in case he is defeated. Most levels end when Mario
+reaches the goal post. Some levels end when Mario touches an orb while
+others end when a key is transported to and inserted into a keyhole.
+
+Each level may be connected to a number of other levels. The game
+achieves this through two systems which will be explained in
+section~\ref{par:layers}. The high-level connection between two levels
+is given by tiles with special behaviour that can be entered by Mario.
+These tiles are called ``exit-enabled'' tiles. The most common are
+doors and pipes (only some pipes are exit-enabled; those cannot be
+visually distinguished from those which aren't).
+
+Levels can have underwater regions through which Mario will have to
+swim, removing his ability to jump on enemies to defeat them. Some
+levels are vertical, growing in height rather than width. Other levels
+are covered in darkness, where light is only emitted in a small radius
+around Mario. Finally, a level may contain ``blue P switches'' that
+temporarily turn coins into blocks and certain blocks into coins,
+granting new paths to the player that are possibly required to reach
+the goal. A very similar tile is the ``grey P switch'' which spawns
+coins and special doors.
+
+All these different tiles can be combined in any way imaginable. Most
+of those combinations in the high-dimensional level space are
+non-playable nonsense. However, as seen in section~\ref{sec:hacks},
+due to the large amount of possible~-- and, more importantly,
+enjoyable~-- interactions between all the different pieces contained
+in the original game, a seemingly infinite number of unique, fun
+levels can be created.
+
+%blo bla may be combined
+
+\paragraph{Layers}
+\label{par:layers}
+
+
+\paragraph{Metadata}
+
+\paragraph{Levels in Other Games}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../../SMWLevelGenerator"
+%%% End:
+

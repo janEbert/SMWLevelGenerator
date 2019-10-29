@@ -1,109 +1,213 @@
 module TrainingLoop
 
-using Base.CoreLogging: @_sourceinfo, logmsg_code,
-                        _min_enabled_level, current_logger_for_env, shouldlog,
-                        handle_message, logging_error
 using Dates: now
-using Logging
-using Statistics: mean
+using Distributed: RemoteChannel
+using Logging: SimpleLogger, Info
+using Printf: @sprintf
+using Statistics: mean, var
 using Random: seed!
 
 using BSON  # we currently use a fork (pr #47) due to issue #3
 import Flux
-using Flux.Tracker: gradient
 import JSON
 using TensorBoardLogger
-#using Zygote
 
 using ..DataIterator
 using ..InputStatistics
-using ..Transformer
+using ..ModelUtils
+using ..TrainingUtils
 using ..LSTM
-using ..ESN
-using ..RandomModel
+using ..Transformer
+# using ..ESN
+using ..RandomPredictor
 
+export trainingloop!, run, TrainingParameters, TPs
 
-function trainingloop!(model, dbpath::AbstractString, epochs::Integer; lr=0.001,
-                       warmupepochs=1, warmuplr=0.0001,
-                       logevery=500, saveevery=2000, testratio=0.1,
-                       logdir=joinpath("exps", "exp_$(now())"), logfile="training.log",
-                       earlystoppingwaitepochs=3, earlystoppingthreshold=0.05,
-                       seed=0)
-    seed!(seed)
+Base.@kwdef struct TrainingParameters
+    dbpath::AbstractString
+    epochs::Integer = 10
+
+    lr::Float64                                      = 0.0002
+    warmupepochs::Integer                            = 1   # TODO unused
+    warmuplr::Integer                                = 0.0001  # TODO unused
+    logevery::Integer                                = 300
+    saveevery::Integer                               = 1500
+    testratio::AbstractFloat                         = 0.1
+    dataiter_threads::Integer                        = 0
+    per_tile::Bool                                   = false
+    reverse_rows::Bool                               = false
+    logdir::AbstractString                           = joinpath("exps", newexpdir())
+    params_logfile::AbstractString                   = "params.json"
+    logfile::AbstractString                          = "training.log"
+    earlystoppingwaitepochs::Integer                 = 10
+    earlystoppingthreshold::AbstractFloat            = Inf32
+    criterion::Function                              = Flux.mse
+    overfit_on_batch::Bool                           = false
+    modeltype::Union{Type{<:LearningModel}, Nothing} = nothing
+    seed::Integer                                    = 0
+end
+
+"Shorthand for TrainingParameters for interactive use."
+const TPs = TrainingParameters
+
+
+# TODO save losses in own file to save space but support branching from them
+#      possibly by storing the losses file in the model cp and creating a new one if loading
+#      a model
+#= TODO
+Create struct for experimental parameters including model to:
+   1: simplify saving
+   2: dispatch training step and loss functions (maybe?)
+   3: simplify data iterator interface: Instead of passing stuff like `per_tile` and
+      friends, instead have them in the struct
+   4: using the struct, automatically load the correct db, data iterator and pass the
+      correct arguments to the SequenceGenerator module.
+=#
+function trainingloop!(model::Union{LearningModel, AbstractString},
+                       params::TrainingParameters)
+    seed!(params.seed)
     set_zero_subnormals(true)
 
-    db = loaddb(dbpath)
-    trainindices, testindices = traintestsplit(db, testratio)
-    testiter = dataiterator(db, testindices)
+    paramdict = Dict(field => params.field for field in propertynames(params))
 
-    function loss(x, y)
-        # TODO try L1 norm
-        l = Flux.mse(model(x), y)
-        Flux.truncate!(model)
-        return l
+    db = loaddb(params.dbpath)
+    trainindices, testindices = traintestsplit(db, params.testratio)
+    if params.overfit_on_batch
+        if params.overfit_on_batch isa Bool
+            trainindices = view(trainindices, firstindex(trainindices):16)
+        else
+            trainindices = view(trainindices,
+                                firstindex(trainindices):params.overfit_on_batch)
+        end
+        testindices = trainindices
     end
 
-    parameters = Flux.params(model)
-    optimizer = Flux.ADAM(lr)
+    if model isa AbstractString
+        paramdict[:modelpath] = model
+        (model, optimizer, trainlosses, meanlosses, varlosses, past_steps) = loadcp(
+            model, params.modeltype)
+    else
+        optimizer = Flux.ADAM(params.lr)
 
-    trainlosses = Float32[]
-    meanlosses = eltype(trainlosses)[]
+        trainlosses = Float32[]
+        "Means of test losses."
+        meanlosses = eltype(trainlosses)[]
+        "Variances of test losses."
+        varlosses = eltype(trainlosses)[]
+
+        past_steps = UInt64(0)
+    end
+    model::LearningModel
+
+    epochs    = params.epochs
+    logdir    = params.logdir
+    logevery  = params.logevery
+    saveevery = params.saveevery
+
     maxmeanloss = typemin(eltype(trainlosses))
+    maxvarloss = typemin(eltype(trainlosses))
+    maxvarlossdigits = 0  # Predefined in case `varloss` is NaN.
     local maxmeanlossdigits
+    local testlosses
     steps = UInt64(0)
 
+    dataiterparams = dataiteratorparams(model)
+    dataiter_threads = params.dataiter_threads
+    per_tile         = params.per_tile
+    reverse_rows     = params.reverse_rows
+    trainiter = dataiteratorchannel(db, 4, Val(dataiterparams.join_pad),
+                                    Val(dataiterparams.pad_each))
+    testiter  = dataiteratorchannel(db, 4, Val(dataiterparams.join_pad),
+                                    Val(dataiterparams.pad_each))
+    # TODO store max loss and log (as in logging) normalized loss (maybe).
+    #      only applicable when sequences are padded to have the same length
+    # TODO make function for that so it can be calculated online; then maybe normalize loss
+    #      for training
+
+    loss = makeloss(model, params.criterion)
+    parameters = Flux.params(model)
+
+    earlystoppingthreshold = params.earlystoppingthreshold
     earlystoppingthreshold < 1 && (earlystoppingthreshold += 1)
+    earlystoppingwaitepochs = params.earlystoppingwaitepochs
 
     mkpath(logdir)
-    log_io = open(joinpath(logdir, logfile), "w")
-    try
-        logger = SimpleLogger(log_io)
-        tblogger = TBLogger(joinpath(logdir, "tensorboard"), min_level=Logging.Info)
+    # Save parameters
+    open(joinpath(logdir, params.params_logfile), "w") do io
+        JSON.print(io, paramdict, 4)
+    end
+    # Free `paramdict`
+    paramdict = nothing
+    log_io = open(joinpath(logdir, params.logfile), "a")
 
+    @fastmath try
+        logger = SimpleLogger(log_io)
+        tblogger = TBLogger(joinpath(logdir, "tensorboard"), min_level=Info)
+
+        # To get local time instead of UTC for printing and filenames:
+        starttimestr = replace(string(now()), ':' => '-')
         starttime = time()
-        starttimestr = now()  # to get local time instead of UTC
         logprint(logger, "Starting training at $starttimestr for $epochs epochs. "
                  * "Seed: $seed.")
+
+        # Initial test
+        testlosses = testmodel(model, testiter, db, testindices, dataiter_threads,
+                               per_tile, reverse_rows, dataiterparams, loss)
+        meanloss = mean(testlosses)
+        varloss  = var(testlosses, mean=meanloss)
+        if past_steps == 0
+            @tblog(tblogger, meantestloss=meanloss, vartestloss=varloss,
+                   log_step_increment=0)
+            push!(meanlosses, meanloss)
+            push!(varlosses,  varloss)
+        else
+            @tblog(tblogger, log_step_increment=convert(Int, past_steps))
+        end
+
+        timediff = time() - starttime
+        logprint(logger, "Initial mean test loss: $(@sprintf("%.4f", meanloss)) "
+                 * "(variance: $(@sprintf("%.3f", varloss))); "
+                 * "total time: $(@sprintf("%.2f", timediff / 60)) min.")
+
         for epoch in 1:epochs
-            trainiter = dataiterator(db, trainindices)
-            for (i, seqgen) in enumerate(trainiter)
-                firstcol = true
-                # Reset hidden state
-                Flux.reset!(model)
-
-                local prevcol
-                for (j, col) in enumerate(map(togpu, seqgen))
-                    if !firstcol
-                        # Predict next column (target: `col`)
-
-                        # Calculate loss
-                        l = loss(prevcol, col).data
-                        push!(trainlosses, l)
-
-                        # Take gradients
-                        grads = gradient(() -> loss(prevcol, col), parameters)
-
-                        # Update weights
-                        Flux.Optimise.update!(optimizer, parameters, grads)
-                        steps += 1
-                    else
-                        firstcol = false
-                    end
-
-                    prevcol = col
+            dataiterator!(trainiter, db, trainindices, dataiter_threads,
+                          per_tile, reverse_rows; dataiterparams...)
+            # Cannot iterate directly over a RemoteChannel.
+            for i in 1:length(trainindices)
+                # Continue exactly where training stopped.
+                if steps < past_steps
+                    take!(trainiter)
+                    steps += 1
+                    continue
                 end
 
-                if i % logevery == 0
-                    testlosses = testmodel(model, db, testindices, loss, optimizer)
+                training_step!(model, parameters, optimizer, trainiter, dataiterparams,
+                               loss, trainlosses, tblogger)
+                steps += 1
+
+                if logevery != 0 && steps % logevery == 0
+                    testlosses = testmodel(model, testiter, db, testindices,
+                                           dataiter_threads, per_tile, reverse_rows,
+                                           dataiterparams, loss)
                     meanloss = mean(testlosses)
+                    varloss  = var(testlosses, mean=meanloss)
+                    @tblog(tblogger, meantestloss=meanloss, vartestloss=varloss,
+                           log_step_increment=0)
                     if meanloss > maxmeanloss
                         maxmeanloss = meanloss
-                        maxmeanlossdigits = ndigits(trunc(Int, maxmeanloss)) + 4
+                        maxmeanlossdigits = ndigits(trunc(Int, maxmeanloss)) + 5
+                    end
+                    if varloss > maxvarloss
+                        maxvarloss = varloss
+                        maxvarlossdigits = ndigits(trunc(Int, maxvarloss)) + 4
                     end
                     push!(meanlosses, meanloss)
+                    push!(varlosses, varloss)
                     if length(meanlosses) > 1
                         lossdiff  = meanloss - meanlosses[end - 1]
                         lossratio = meanloss / meanlosses[end - 1]
+                    else
+                        lossdiff = 0
                     end
 
                     timediff = time() - starttime
@@ -111,129 +215,155 @@ function trainingloop!(model, dbpath::AbstractString, epochs::Integer; lr=0.001,
                              * "$epochs; sequence "
                              * "$(lpad(i, ndigits(length(trainindices)))) / "
                              * "$(length(trainindices)); mean test loss: "
-                             * "$(lpad(round(meanloss, digits=3), maxmeanlossdigits)); "
+                             * "$(lpad(@sprintf("%.4f", meanloss), maxmeanlossdigits)) "
+                             * "(variance: "
+                             * "$(lpad(@sprintf("%.3f", varloss), maxvarlossdigits))); "
                              * "mean time per step: "
-                             * "$(round(timediff / steps * 1000, digits=3)) ms; "
-                             * "total time: $(round(timediff / 60, digits=2)) min.")
+                             * "$(@sprintf("%.3f", timediff / (steps - past_steps))) s; "
+                             * "total time: $(@sprintf("%.2f", timediff / 60)) min.")
 
                     # Early stopping
                     if (epoch > earlystoppingwaitepochs && lossdiff > 0
                             && lossratio >= earlystoppingthreshold)
-                        bson(joinpath(logdir, "model-cp_$steps-steps_loss-$(meanloss)_"
-                                      * "$starttimestr.bson"),
-                             model=model, optimizer=optimizer, trainlosses=trainlosses,
-                             testlosses=testlosses, meanlosses=meanlosses, steps=steps)
-                        logprint(logger,"Early stopping activated after $steps training "
+                        savecp(model, optimizer, trainlosses, testlosses, meanlosses,
+                               varlosses, steps, logdir, starttimestr)
+                        logprint(logger, "Early stopping activated after $steps training "
                                  * "steps ($epoch epochs, $i sequences in current epoch). "
                                  * "Loss increase: $meanloss - $(meanlosses[end - 1]) = "
                                  * "$(round(lossdiff, digits=3)) "
                                  * "($(round((lossratio - 1) * 100, digits=2)) %). "
                                  * "Total time: $(round(timediff / 60, digits=2)) min.")
-                        close(log_io)
-                        return (model, trainlosses, testlosses, meanlosses)
+                        cleanup(trainiter, testiter, log_io)
+                        return (model, trainlosses, testlosses, meanlosses, varlosses,
+                                db, trainindices, testindices)
                     end
                 end
-                if i % saveevery == 0
-                    if i % logevery != 0
-                        testlosses = testmodel(model, db, testindices, loss, optimizer)
-                        push!(meanlosses, mean(testlosses))
+                if saveevery != 0 && steps % saveevery == 0
+                    if logevery != 0 && steps % logevery != 0
+                        testlosses = testmodel(model, testiter, db, testindices,
+                                               dataiter_threads, per_tile, reverse_rows,
+                                               dataiterparams, loss)
+                        meanloss = mean(testlosses)
+                        varloss = var(testlosses, mean=meanloss)
+                        @tblog(tblogger, meantestloss=meanloss, vartestloss=varloss,
+                               log_step_increment=0)
+                        push!(meanlosses, meanloss)
+                        push!(varlosses,  varloss)
                     end
-                    logprint(logger, "Saving checkpoint after $steps training steps.")
-                    bson(joinpath(logdir, "model-cp_$steps-steps_loss-$(meanlosses[end])_"
-                                  * "$starttimestr.bson"),
-                         model=model, optimizer=optimizer, trainlosses=trainlosses,
-                         testlosses=testlosses, meanlosses=meanlosses, steps=steps)
+                    savecp(model, optimizer, trainlosses, testlosses, meanlosses,
+                           varlosses, steps, logdir, starttimestr)
+                    logprint(logger, "Saved checkpoint after $steps training steps.")
                 end
             end
         end
+        savecp(model, optimizer, trainlosses, testlosses, meanlosses,
+               varlosses, steps, logdir, starttimestr)
         logprint(logger, "Training finished after $steps training steps and "
                  * "$(round((time() - starttime) / 60, digits=2)) minutes.")
     finally
-        close(log_io)
+        cleanup(trainiter, testiter, log_io)
     end
-    return (model, trainlosses, testlosses, meanlosses)
+    return (model, trainlosses, testlosses, meanlosses, varlosses,
+            db, trainindices, testindices)
+end
+
+
+"""
+Update the given model with a single training step on the next data point in the
+given `trainiter`. Return the loss.
+"""
+function training_step!(model, parameters, optimizer, trainiter, dataiterparams,
+                        loss, trainlosses, tblogger)
+    seq = togpu.(take!(trainiter))
+    # Construct target
+    target = maketarget(seq, Val(dataiterparams.join_pad), Val(dataiterparams.pad_each))
+
+    l = step!(model, parameters, optimizer, loss, seq, target).data
+    push!(trainlosses, l)
+    @tblog tblogger trainloss=l
+    return l
 end
 
-# function processsequence!(model, losses, seqgen, # TODO)
-
-function testmodel(model, db, testindices, loss, optimizer)
-    testiter = dataiterator(db, testindices)
+"""
+Return a `Vector{Float32}` of losses obtained by apply the given model to all data in the
+to be reset `testiter`.
+"""
+function testmodel(model, testiter, db, testindices, dataiter_threads,
+                   per_tile, reverse_rows, dataiterparams, loss)
+    dataiterator!(testiter, db, testindices, dataiter_threads,
+                  per_tile, reverse_rows; dataiterparams...)
+    Flux.testmode!(model)
     testlosses = Float32[]
 
-    for (i, seqgen) in enumerate(testiter)
-        firstcol = true
-        # Reset hidden state
-        Flux.reset!(model)
+    for i in 1:length(testindices)
+        seq = togpu.(take!(testiter))
+        # Construct target
+        target = maketarget(seq, Val(dataiterparams.join_pad), Val(dataiterparams.pad_each))
 
-        local prevcol
-        for (j, col) in enumerate(map(Flux.cpu, seqgen))
-            if !firstcol
-                # Calculate loss
-                l = loss(prevcol, col).data
-                push!(testlosses, l)
-            else
-                firstcol = false
-            end
-
-            prevcol = col
-        end
+        l = calculate_loss(model, loss, seq, target).data
+        push!(testlosses, l)
     end
+    Flux.testmode!(model, false)
     return testlosses
 end
 
-#=function earlystopping(losses::AbstractArray, prevmeanloss::Number,
-    if meanloss > prevmeanloss
-        logprint(logger,"Early stopping activated after $steps train steps "
-                 * "($epoch epochs, $i steps in current epoch). "
-                 * "Loss increase: $(meanloss - prevmeanloss)")
-        return meanloss, true
-    end
-    return meanloss, false
-end=#
-
-function logprint(logger::AbstractLogger, msg::AbstractString,
-                  loglevel::LogLevel=Logging.Info)
-    with_logger(logger) do
-        @logmsg loglevel msg
-    end
-    @logmsg loglevel msg
+function getmaxloss(seq, dataiterparams, loss)
+    target = maketarget(seq, Val(dataiterparams.join_pad, Val(dataiterparams.pad_each)))
+    loss(ones(eltype(target), size(target)) .- target, target)
 end
 
-"""
-    @tblog(logger, exs...)
+# Numbered Vararg so we can make sure we didn't miss one without having to list them all.
+function cleanup(args::Vararg{Any, 3})
+    map(cleanup, args)
+    return
+end
 
-Log the given expressions `exs` using the given logger with an empty message.
+cleanup(dataiter::RemoteChannel) = finalize(dataiter)
+cleanup(dataiter::AbstractChannel) = close(dataiter)
+cleanup(task::Task) = close(dataiter)
+cleanup(file_io::IOStream) = close(file_io)
 
-# Examples
-```jldoctest
-julia> using Logging
-julia> l = SimpleLogger()
-julia> with_logger(l) do
-           @info "" a = 0
-       end
-┌ Info:
-│   a = 0
-└ @ [...]
 
-julia> @tblog l a = 0
-┌ Info:
-│   a = 0
-└ @ [...]
-"""
-macro tbllog(logger, level, exs...)
-    f = logmsg_code((@_sourceinfo)..., :(Logging.Info), "", exs...)
-    quote
-        with_logger($(esc(logger))) do
-            $f
-        end
-    end
+function loadcp(cppath::AbstractString, modeltype::Nothing)
+    cp = BSON.load(cppath)
+    model = togpu(cp[:model]::LearningModel)
+
+    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+    return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
+end
+
+function loadcp(cppath::AbstractString, modeltype::Type{<:LearningModel})
+    cp = BSON.load(cppath)
+    model = togpu(cp[:model]::modeltype)
+
+    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+    return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
+end
+
+function loadother(cp)
+    optimizer::Flux.ADAM = cp[:optimizer]
+
+    trainlosses::Vector{Float32} = cp[:trainlosses]
+    meanlosses::Vector{eltype(trainlosses)} = cp[:meanlosses]
+    varlosses::Vector{eltype(trainlosses)} = cp[:varlosses]
+
+    past_steps::UInt64 = cp[:steps]
+    return optimizer, trainlosses, meanlosses, varlosses, past_steps
+end
+
+function savecp(model, optimizer, trainlosses, testlosses, meanlosses,
+                varlosses, steps, logdir, starttimestr)
+    bson(joinpath(logdir,
+                  "model-cp_$steps-steps_loss-$(meanlosses[end])_$starttimestr.bson"),
+         model=Flux.cpu(model), optimizer=optimizer, steps=steps, trainlosses=trainlosses,
+         testlosses=testlosses, meanlosses=meanlosses, varlosses=varlosses)
 end
 
 """
     run(modelfunction::Function, dbpath, epochs; modelargs::Union{Tuple, AbstractArray}=(),
         modelparams::AbstractDict=Dict{Symbol,Any}(),
         trainingparams::AbstractDict=Dict{Symbol,Any}(),
-        logdir=joinpath("exps", "exp_$(now())"), logfile="params.json")
+        logdir=joinpath("exps", newexpdir()), logfile="params.json")
 
 Return a model created using `model = modelfunction(modelargs...; modelparams...)` and
 trained on `trainingloop!(model, db, epochs; logdir=logdir, trainingparams...)`.
@@ -242,25 +372,25 @@ The parameters are all saved in JSON format in the given `logfile` in `logdir`.
 function run(modelfunction, dbpath, epochs; modelargs::Union{Tuple, AbstractArray},
              modelparams::AbstractDict=Dict{Symbol,Any}(),
              trainingparams::AbstractDict=Dict{Symbol,Any}(),
-             logdir=joinpath("exps", "exp_$(now())"), logfile="params.json")
-    type = keytype(modelparams)
-    @assert type === keytype(trainingparams) "different key types in `Dict`s."
-    modelparams[type(:args)] = modelargs
+             logdir=joinpath("exps", newexpdir()), logfile="params.json")
+    savetype = keytype(modelparams)
+    @assert savetype === keytype(trainingparams) "different key types in `Dict`s."
+    modelparams[savetype(:args)] = modelargs
 
-    trainingparams[type(:dbpath)] = dbpath
-    trainingparams[type(:epochs)] = epochs
-    trainingparams[type(:logdir)] = logdir
+    trainingparams[savetype(:dbpath)] = dbpath
+    trainingparams[savetype(:epochs)] = epochs
+    trainingparams[savetype(:logdir)] = logdir
 
     mkpath(logdir)
     open(joinpath(logdir, logfile), "w") do io
         JSON.print(io, Dict(
-            type(:model) => modelparams, type(:training) => trainingparams
+            savetype(:model) => modelparams, savetype(:training) => trainingparams
         ), 4)
     end
     # Remove values we cannot pass.
-    delete!(modelparams,    type(:args))
-    delete!(trainingparams, type(:dbpath))
-    delete!(trainingparams, type(:epochs))
+    delete!(modelparams,    savetype(:args))
+    delete!(trainingparams, savetype(:dbpath))
+    delete!(trainingparams, savetype(:epochs))
 
     model = modelfunction(modelargs...; modelparams...)
     trainingloop!(model, dbpath, epochs; trainingparams...)

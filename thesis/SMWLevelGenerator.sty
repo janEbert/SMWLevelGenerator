@@ -1,0 +1,36 @@
+\ProvidesPackage{SMWLevelGenerator}
+
+\usepackage{amsmath, amssymb}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[UKenglish]{babel}
+
+\usepackage{biblatex}
+
+\usepackage{graphicx}
+\usepackage[justification=centering]{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nottoc,numbib]{tocbibind}
+\usepackage[shrink=10,stretch=10]{microtype}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{array}
+
+\hyphenation{Du-rak Ap-prox-i-ma-tors Non-lin-ear Tu-ple Tu-ples Pa-ram-e-ter-ized Stochas-tic Op-ti-miza-tion Sub-game Pseu-do-code}
+
+\widowpenalty=300
+\clubpenalty=300
+
+\DeclareMathOperator{\Expectation}{\mathbb{E}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newcommand{\Exp}[3]{\Expectation_{#1} \left[ #2 \ \middle| \ #3 \right]}
+\newcommand{\Ex}[2]{\Expectation_{#1} \left[ #2 \right]}
+
+\newcommand{\expn}[2]{{#1}\mathrm{e}{#2}}
+
+\endinput
+

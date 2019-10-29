@@ -1,11 +1,27 @@
 module DataCompressor
 
 using SparseArrays
+import SparseArrays: sparse
 
-export compressdata, decompressdata
+export compressdata, decompressdata, unsparse
 
 const defaultindextype = Int
 const compressedindextype = UInt16
+
+"""
+    sparse(array::AbstractArray{T, 3}) where T
+
+Return the given `AbstractArray{T, 3}` as a `Vector{SparseMatrixCSC{T}}` where each
+element in the `Vector` is a slice along the second dimension of the given array.
+"""
+function sparse(array::AbstractArray{T, 3}) where T
+    map(sparse, eachslice(array, dims=2))
+end
+
+"Return the given `AbstractVector{SparseMatrixCSC{T}}` as an `Array{T, 3}`."
+function unsparse(sparsearray::AbstractVector{SparseMatrixCSC{T}}) where T
+    reduce((a, b) -> cat(a, b, dims=2), map(Array, sparsearray))
+end
 
 """
 Return the given `AbstractVector` of sparse data as a `Vector` of `Pair`s containing the
@@ -14,7 +30,7 @@ The last entry is always saved so the length of the original array is saved as w
 """
 function compressdata(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}) where T
     compressed = Vector{Pair{UInt16, SparseMatrixCSC{T, compressedindextype}}}()
-    for (i, x) in enumerate(data[firstindex(data):end - 1])
+    for (i, x) in enumerate(@view data[firstindex(data):end - 1])
         count(!iszero, x) > 0 || continue
         push!(compressed, i => x)
     end
@@ -24,7 +40,6 @@ function compressdata(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}
     return compressed
 end
 
-# TODO decompress (actually, whole back-to-level pipeline)
 """
 Return the given `AbstractVector` of `Pair`s converted to its representation prior
 to compression.
@@ -55,7 +70,7 @@ function emptyat!(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}, in
 end
 
 function emptyat!(data::AbstractArray{T, 3}, index::Integer) where T
-    data[:, :, index] .= 0
+    data[:, index, :] .= 0
 end
 
 function fillat!(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}, index::Integer,
@@ -65,7 +80,7 @@ end
 
 function fillat!(data::AbstractArray{T, 3}, index::Integer,
                  x::SparseMatrixCSC{T, compressedindextype}) where T
-    data[:, :, index] = x
+    data[:, index, :] = x
 end
 
 end # module

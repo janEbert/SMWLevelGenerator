@@ -40,6 +40,9 @@ const maxscreens = 0x20
 "Number of columns of tiles in each screen (or subscreen for vertical levels)."
 const screencols = 0x10
 
+"Maximum amount of columns in a horizontal level."
+const maxcolshori = widen(maxscreens) * screencols
+
 "Number of rows of tiles in each top subscreen in horizontal levels."
 const screenrowshoritop = 0x10
 "Number of rows of tiles in each bottom subscreen in horizontal levels."
@@ -69,6 +72,9 @@ const tilespersubscreenvert = widen(screenrowsvert) * screencols
 const tilesperscreenhori = widen(screenrowshori) * screencols
 "How many tiles per screen (_not_ subscreen) in vertical levels."
 const tilesperscreenvert = tilespersubscreenvert * subscreensvert
+
+"Maximum amount of tiles in a horizontal level."
+const maxtileshori = maxcolshori * screenrowshori
 
 
 # Level modes
@@ -237,6 +243,7 @@ end
 function midwayentrance(stats::LevelStats)
     entrance = stats.midwayentrance
     if entrance.separateentrance
+        # We do not want to consider the screen; these are absolute.
         return (entrance.y + 0x1, entrance.x + 0x1)
     else
         mainentrance = stats.mainentrance
@@ -363,7 +370,7 @@ function getlevelinfo(level::IO)
     skip(level, 2)
     midwayentrance = read(level, 4)
     skip(level, 1)
-    push!(secondaryheader, read(level, 2)...)
+    append!(secondaryheader, read(level, 2))
     # Mostly values of 0x00 (most) and 0x80 (some).
     # 0x00 and 0x80 behave the same; maybe the higher bits are a bug in Lunar Magic
     # as it only supports values between 0x0 and 0x1f.

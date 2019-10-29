@@ -1,0 +1,36 @@
+\subsection{Methods}
+
+In this section, we will introduce the primary ideas we apply to obtain
+a level generation pipeline. The methods will not be listed in
+pipeline-sequential ordering (the order in which they will be applied to
+obtain a generated level) but instead we will focus on the amount of
+data the different methods generate. The sequence prediction task is the
+most important part of the pipeline, generating a complete level from a
+minimal amount of input. To obtain the first input of the to be
+predicted sequence, we use a generative model. Finally, to generate the
+metadata described in section~\ref{sec:metadata}, we use an image
+processor that predicts the metadata of a level by analysing its first
+screen~-- the output of the generative model and input to the sequence
+predictor.
+% TODO picture of pipeline here or maybe at end of section
+
+\subsubsection{Sequence Prediction}
+
+Tasked with completing an unfinished sequence, the easiest way
+
+
+\subsubsection{Generative Methods}
+
+% TODO
+
+
+\subsubsection{Image Processing}
+
+% TODO
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../../SMWLevelGenerator"
+%%% End:
+

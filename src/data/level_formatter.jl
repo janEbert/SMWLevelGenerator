@@ -19,13 +19,18 @@ import SparseArrays: sparse
 using ..LevelStatistics
 using ..LevelBuilder
 
-export to1d, to2d, to3d, to1d_defaultflags, to2d_defaultflags, to3d_defaultflags
+export to1d, to2d, to3d, dimensionality_defaultflags
 
 
-const to1d_defaultflags = "t"
-const to2d_defaultflags = "t"
-const to3d_defaultflags = "tesx"
+const dimensionality_defaultflags = Dict{Symbol, String}(
+    Symbol("1d") => "t",
+    Symbol("2d") => "t",
+    Symbol("3dtiles") => "t",
+    Symbol("3d") => "tesx",
+)
 
+# TODO automatically find correct `keep` tiles for the level
+#      (based on maximum of list of certain tiles in first screen?)
 
 """
     to1d(level::Level; keep::UInt16=0x100, empty::UInt16=0x025, binaryout=true,
@@ -110,7 +115,9 @@ function to1d(level::AbstractMatrix{UInt16}; keep::UInt16=0x100, empty::UInt16=0
     return result
 end
 
-function to1d(file, flags::Union{AbstractString, AbstractChar}=to1d_defaultflags; kwargs...)
+function to1d(file, flags::Union{AbstractString,
+                                 AbstractChar}=dimensionality_defaultflags[Symbol("1d")];
+              kwargs...)
     level = buildlevel(file, flags)
     to1d(level; kwargs...)
 end
@@ -158,7 +165,9 @@ function to2d(level::AbstractMatrix{UInt16}; keep::UInt16=0x100, empty::UInt16=0
     return result
 end
 
-function to2d(file, flags::Union{AbstractString, AbstractChar}=to2d_defaultflags; kwargs...)
+function to2d(file, flags::Union{AbstractString,
+                                 AbstractChar}=dimensionality_defaultflags[Symbol("2d")];
+              kwargs...)
     level = buildlevel(file, flags)
     to2d(level; kwargs...)
 end
@@ -217,8 +226,8 @@ julia> level = to3d(0x105);
 julia> size(level)[1:2]
 (27, 320)
 
-julia> size(level, 3) > 0  # This size can vary.
-true
+julia> ndims(level)  # Size of dimension 3 can vary.
+3
 ```
 """
 function to3d(level::Level, args...; kwargs...)
@@ -253,9 +262,8 @@ function to3d(level::AbstractArray{UInt16, 3}, #=tiles=#::Val{false}; empty::UIn
     end
 
     result = similar(level, rettype)
-    # Indexing method should be the same for `level` and `result` due to `similar`.
-    for i in axes(level, 3)
-        result[:, :, i] = to2d_keepempty(view(level, :, :, i), empty=empty,
+    for (i, j) in zip(axes(level, 3), axes(result, 3))
+        result[:, :, j] = to2d_keepempty(view(level, :, :, i), empty=empty,
                                          binaryout=binaryout, rettype=rettype)
     end
     return result
@@ -271,24 +279,19 @@ function to3d(level::AbstractMatrix{UInt16}; empty::UInt16=0x025, binaryout::Boo
         result[:, :, tileindex] = to2d(level, keep=tileindex, empty=empty,
                                        binaryout=binaryout, rettype=rettype)
     end
+    # Assign the empty layer.
+    result[:, :, empty] = to2d(level, keep=empty, empty=0x000, binaryout=binaryout,
+                               rettype=rettype)
     return result
 end
 
-function to3d(file, flags::Union{AbstractString, AbstractChar}=to3d_defaultflags; kwargs...)
+function to3d(file, flags::Union{AbstractString,
+                                 AbstractChar}=dimensionality_defaultflags[Symbol("3d")];
+              kwargs...)
     level = buildlevel(file, flags)
     to3d(level, 't' in flags; kwargs...)
 end
 
-
-"Return the given `AbstractArray{T, 3}` as a `Vector{SparseMatrixCSC{T}}`."
-function sparse(array::AbstractArray{T, 3}) where T
-    map(sparse, eachslice(array, dims=3))
-end
-
-"Return the given `AbstractVector{SparseMatrixCSC{T}}` as an `Array{T, 3}`."
-function unsparse(sparsearray::AbstractVector{SparseMatrixCSC{T}}) where T
-    reduce((a, b) -> cat(a, b, dims=3), map(Array, sparsearray))
-end
 
 """
     tostring(level::AbstractVector)

@@ -35,6 +35,8 @@ function Level(data::Array{UInt16, 3}, offsets::Dict{Symbol, UInt16}, stats::Lev
 end
 
 # TODO generate all `methodswith(LevelStats)` to be callable on a `Level`
+# TODO large performance increase: change levels to be `(layers, height, width)` instead
+# of `(height, width, layers)`. Will need some refactoring and regenerated DBs.
 
 """
     buildlevel(level; tiles=true, entrances=true, sprites=true, goalsprites=true,
@@ -170,6 +172,8 @@ function buildlevel(file::AbstractString; tiles=true, entrances=true, sprites=tr
     result = reduce((a, b) -> cat(a, b, dims=3), layers)
     # If the following happens, the offsets are also wrong.
     @assert size(result, 3) == layercount "layer count does not match actual size."
+    # `layercount` is 1, catting produced a 2D result. Reshape to get a 3D array.
+    ndims(result) < 3 && (result = reshape(result, size(result)..., 1))
     verbose && println("Done.")
     if sprites || goalsprites
         return Level(result, offsets, stats, spriteheader)

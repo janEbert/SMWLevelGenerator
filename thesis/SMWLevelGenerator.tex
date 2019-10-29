@@ -1,0 +1,38 @@
+\documentclass[12pt,a4paper,titlepage]{article} % or report?
+
+\usepackage{SMWLevelGenerator}
+\usepackage{classicthesis}
+
+\title{SMWLevelGenerator \\
+  \Large{Generating Super Mario World Levels Using Deep Neural Networks} \\
+  \bigskip
+  \large{Master's Thesis on Combining Time Series Prediction,
+    Generative Methods, and Image Processing}}
+\author{Jan Ebert \smallskip \\ \\
+  \small{Intelligent Systems} \\
+  \small{Faculty of Technology}}
+\date{\today}
+
+% Leave here for RefTeX (cannot follow usepackage)
+\addbibresource{SMWLevelGenerator.bib}
+
+\begin{document}
+
+% Title, declaration of authorship, abstract and ToC.
+\include{tex/header}
+
+\include{tex/introduction}
+\include{tex/fundamentals}
+\include{tex/design}
+% \include{tex/experiments}
+% \include{tex/discussion}
+
+\printbibliography
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
+

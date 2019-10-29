@@ -24,10 +24,10 @@ Used to be able to filter out the most important sprites. Blue and silver P swit
 included as they are most often required to _reach_ the goal.
 """
 const goalsprites = Set{UInt8}((
-    0x4a, # orb
-    0x80, # key
-    0x0e, # keyhole
-    0x3e # P switches (both use the same sprite)
+    0x4a,  # orb
+    0x80,  # key
+    0x0e,  # keyhole
+    0x3e   # P switches (both use the same sprite)
 ))
 
 """
@@ -167,9 +167,9 @@ function parsespritebits(spritebits::AbstractString, quiet::Bool=false)
     x = parse(UInt8, xbits, base=2)
     screenbits = spritebits[7] * spritebits[13:16]
     screen = parse(UInt8, screenbits, base=2)
-    spritebits = spritebits[17:24]
-    sprite = parse(UInt8, spritebits, base=2)
-    return (y=y, x=x, screen=screen, sprite=sprite)
+    idbits = spritebits[17:24]
+    id = parse(UInt8, idbits, base=2)
+    return (y=y, x=x, screen=screen, id=id)
 end
 
 function countsprites(dir::AbstractString, quiet::Bool=false)

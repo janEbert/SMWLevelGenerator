@@ -14,6 +14,10 @@ using ..DataCompressor
 export generatedb, generatecsv
 
 
+# TODO Save _all_ level metadata (cheap but useful). Need to also change all parsers and
+#      structs.
+# TODO logging to file as well by default
+
 """
     generatedb(dest::AbstractString, rootdir::AbstractString=leveldir;
                formatfunction::Function=to3d, flags::Union{AbstractString, Nothing}=nothing,
@@ -40,6 +44,7 @@ function generatedb(dest::AbstractString, args...; kwargs...)
     println("Done.")
 end
 
+# TODO accept flags or Symbol for dimensionality; then get default flags for symbol
 """
     generatedb_inline(dest::AbstractString, rootdir::AbstractString=leveldir;
                       formatfunction::Function=to3d,
@@ -81,19 +86,15 @@ As the method of [`to3d`](@ref) that takes in `Level`s does not have a `flags` a
 flags have to be supplied independently.
 """
 function generatedata(rootdir::AbstractString=leveldir; formatfunction::Function=to3d,
-                      flags::Union{AbstractString, Nothing}=nothing, makesparse::Bool=true,
-                      verbose::Bool=true)
+                      flags::Union{AbstractString, Symbol, Nothing}=nothing,
+                      makesparse::Bool=true, verbose::Bool=true)
     i = one(UInt)
     totalsize = zero(UInt)
     funcsymbol = nameof(formatfunction)
     if isnothing(flags)
-        if funcsymbol === :to1d
-            flags = to1d_defaultflags
-        elseif funcsymbol === :to2d
-            flags = to2d_defaultflags
-        elseif funcsymbol === :to3d
-            flags = to3d_defaultflags
-        end
+        flags = dimensionality_defaultflags[String(funcsymbol)[end - 1:end]]
+    elseif flags isa Symbol
+        flags = dimensionality_defaultflags[flags]
     end
     if funcsymbol === :to1d && makesparse
         @warn ("if using the 1-dimensional `formatfunction`, it makes sense to set "
@@ -225,14 +226,8 @@ function generatecsv(dest::AbstractString, rootdir::AbstractString=leveldir;
     i = one(UInt)
     totalsize = zero(UInt)
     if isnothing(flags)
-        funcsymbol = Symbol(formatfunction)
-        if funcsymbol === :to1d
-            flags = to1d_defaultflags
-        elseif funcsymbol === :to2d
-            flags = to2d_defaultflags
-        elseif funcsymbol === :to3d
-            flags = to3d_defaultflags
-        end
+        funcsymbol = nameof(formatfunction)
+        flags = dimensionality_defaultflags[String(funcsymbol)[end - 1:end]]
     end
 
     # Level data added later due to (yet) unknown type
@@ -273,6 +268,7 @@ function generatecsv(dest::AbstractString, rootdir::AbstractString=leveldir;
                 level = buildlevel(file, flags, verbose=false)
             end
             if makesparse
+                # TODO only apply compressdata if 3d
                 data = compressdata(sparse(formatfunction(level)))
             else
                 data = formatfunction(level)

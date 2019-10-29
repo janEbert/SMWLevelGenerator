@@ -46,7 +46,7 @@ const exitenabledtiles = Set{UInt16}((
         0x137, # Vertical pipe top or bottom, left part.
         0x138, # Vertical pipe top or bottom, right part.
         0x13F, # Horizontal pipe left or right, bottom part. top part is never exit-enabled.
-        ))
+))
 
 "The default value used for extended Map16 tiles."
 const defaultmap16tile = 0x130  # stone block tile
@@ -125,13 +125,14 @@ function createexitlayers(exits::AbstractVector{NamedTuple},
         # else
         #     out[:, xstart:xend, exitmapping[destination]] .= destination
         # end
-        xstart = (columnsperscreen - 0x1) * exit.screen + 0x1
+        xstart = columnsperscreen * (exit.screen - 0x1) + 0x1
         destination = exit.destination
         if xstart > size(out, 2)
             @warn ("createexitlayers: in $(stats.filename): x=$xstart out of bounds. "
                    * "Skipping...")
         else
-            out[1, xstart, exitmapping[destination]] = destination
+            # Add one so the destination is never zero.
+            out[1, xstart, exitmapping[destination]] = destination + 1
         end
     end
     return out
@@ -167,6 +168,8 @@ function getexits(io::IO, filename::AbstractString="<Unknown>")
     exitbytes = read(io, 128)
     @assert length(exitbytes) == 128 "unexpected amount of exit bytes in $filename."
     convert(Vector{NamedTuple},
+            # Somehow we cannot deconstruct this tuple.
+            # x[1] = screen, x[2] = bytes
             filter(!isnothing, map(x -> parseexit(x[2], convert(UInt8, x[1])),
                                    enumerate(Iterators.partition(exitbytes, 4)))))
 end
@@ -260,7 +263,8 @@ function makeentrancelayers(entrances::AbstractVector{T},
                 @warn ("makeentrancelayers: in $(stats.filename): y=$y out of "
                        * "bounds. Skipping...")
             else
-                out[y, x, entrancemappingdict[number]] = number
+                # Add one so the number is never zero.
+                out[y, x, entrancemappingdict[number]] = number + 1
             end
         end
     end
