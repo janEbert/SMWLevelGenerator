@@ -24,7 +24,6 @@ using ..RandomPredictor
 export trainingloop!, run, TrainingParameters, TPs
 
 Base.@kwdef struct TrainingParameters
-    dbpath::AbstractString
     epochs::Integer = 10
 
     lr::Float64                                      = 0.0002
@@ -63,14 +62,15 @@ Create struct for experimental parameters including model to:
    4: using the struct, automatically load the correct db, data iterator and pass the
       correct arguments to the SequenceGenerator module.
 =#
-function trainingloop!(model::Union{LearningModel, AbstractString},
-                       params::TrainingParameters)
+function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::AbstractString,
+                       params::TrainingParameters=TrainingParameters())
     seed!(params.seed)
     set_zero_subnormals(true)
 
-    paramdict = Dict(field => params.field for field in propertynames(params))
+    paramdict = Dict{Symbol, Any}(field => params.field for field in propertynames(params))
+    paramdict[:dbpath] = dbpath
 
-    db = loaddb(params.dbpath)
+    db = loaddb(dbpath)
     trainindices, testindices = traintestsplit(db, params.testratio)
     if params.overfit_on_batch
         if params.overfit_on_batch isa Bool
@@ -98,6 +98,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString},
         past_steps = UInt64(0)
     end
     model::LearningModel
+    paramdict[:modelparams] = model.hyperparams
 
     epochs    = params.epochs
     logdir    = params.logdir

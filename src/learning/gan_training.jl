@@ -22,7 +22,6 @@ using ..TrainingUtils
 export gan_trainingloop!, GANTrainingParameters, GTPs
 
 Base.@kwdef struct GANTrainingParameters
-    dbpath::AbstractString
     epochs::Integer = 10
 
     lr::Float64                               = 0.0002
@@ -57,14 +56,16 @@ bce(y_hat, y) = Flux.binarycrossentropy(y_hat, y; ϵ=1f-12)
 
 function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString},
                            g_model::Union{AbstractGenerator, AbstractString},
-                           params::GANTrainingParameters,
-                           meta_model::Union{LearningModel, Nothing}=nothing)
+                           dbpath::AbstractString,
+                           params::GANTrainingParameters=GANTrainingParameters(),
+                           meta_model::Union{LearningModel, AbstractString, Nothing}=nothing)
     seed!(params.seed)
     set_zero_subnormals(true)
 
-    paramdict = Dict(field => params.field for field in propertynames(params))
+    paramdict = Dict{Symbol, Any}(field => params.field for field in propertynames(params))
+    paramdict[:dbpath] = dbpath
 
-    db = loaddb(params.dbpath)
+    db = loaddb(dbpath)
     if params.overfit_on_batch
         if params.overfit_on_batch isa Bool
             trainindices = collect(one(UInt):convert(UInt, 16))
@@ -98,6 +99,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
         d_steps = UInt64(0)
     end
+    paramdict[:d_modelparams] = d_model.hyperparams
 
     local testfakes
     if g_model isa AbstractString
@@ -118,6 +120,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
         past_steps = d_steps
     end
+    paramdict[:g_modelparams] = g_model.hyperparams
 
     meta_steps = UInt64(0)
     if !isnothing(meta_model)
@@ -137,6 +140,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
         maxmeanloss = typemin(eltype(meta_trainlosses))
         maxvarloss = typemin(eltype(meta_trainlosses))
+
+        paramdict[:meta_modelparams] = meta_model.hyperparams
     end
 
     epochs    = params.epochs
