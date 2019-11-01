@@ -24,7 +24,7 @@ Return a 2-argument loss function applying the metadata predictor to the batch o
 images `x` and return the loss of the predictions in relation to the actual data.
 """
 function makeloss(model::MetadataModel, criterion)
-    function loss(x, y, pr=false)
+    function loss(x, y)
         y_hat = model(x)
         @inbounds l = sum(@views criterion(vec(y_hat[:, i]), vec(y[:, i]))
                           for i in axes(y_hat, 2))

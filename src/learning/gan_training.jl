@@ -1,7 +1,6 @@
 module GANTraining
 
 using Dates: now
-using Distributed: RemoteChannel
 using Logging: SimpleLogger, Info
 using Printf: @sprintf
 using Statistics: mean, var
@@ -47,12 +46,7 @@ end
 "Shorthand for GANTrainingParameters for interactive use."
 const GTPs = GANTrainingParameters
 
-# TODO make it possible to separate meta model training
-#      (isnothing guards around other models? extra flag?)
-# TODO to approximate pytorch bceloss, use ϵ=1f-12. is that necessary?
-"Approximate PyTorch binary cross entropy loss."
-bce(y_hat, y) = Flux.binarycrossentropy(y_hat, y; ϵ=1f-12)
-
+# TODO probably remove optional meta_model training
 
 function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString},
                            g_model::Union{AbstractGenerator, AbstractString},
@@ -62,15 +56,18 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     seed!(params.seed)
     set_zero_subnormals(true)
 
-    paramdict = Dict{Symbol, Any}(field => params.field for field in propertynames(params))
+    paramdict = Dict{Symbol, Any}(field => getproperty(params, field) |>
+                                  x -> x isa Function ? Symbol(x) : x
+                                  for field in propertynames(params))
     paramdict[:dbpath] = dbpath
 
     db = loaddb(dbpath)
-    if params.overfit_on_batch
-        if params.overfit_on_batch isa Bool
+    overfit_on_batch = params.overfit_on_batch
+    if overfit_on_batch
+        if overfit_on_batch isa Bool
             trainindices = collect(one(UInt):convert(UInt, 16))
         else
-            trainindices = collect(one(UInt):convert(UInt, params.overfit_on_batch))
+            trainindices = collect(one(UInt):convert(UInt, overfit_on_batch))
         end
         testindices = @view trainindices[firstindex(trainindices):end]
     else
@@ -87,7 +84,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     length(betas[1]) > 1 || (betas = (betas, betas))
 
     if d_model isa AbstractString
-        params[:d_modelpath] = d_model
+        paramdict[:d_modelpath] = d_model
         (d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
                 d_steps) = load_d_cp(d_model)
     else
@@ -99,11 +96,12 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
         d_steps = UInt64(0)
     end
-    paramdict[:d_modelparams] = d_model.hyperparams
+    paramdict[:d_modelparams] = Dict{Symbol, Any}(k => v isa Function ? Symbol(v) : v
+                                                  for (k, v) in d_model.hyperparams)
 
     local testfakes
     if g_model isa AbstractString
-        params[:g_modelpath] = g_model
+        paramdict[:g_modelpath] = g_model
         (g_model, g_optim, g_trainlosses, testfakes, const_noise, past_steps) = load_g_cp(
                 g_model)
         generator_inputsize = g_model.hyperparams[:inputsize]
@@ -120,12 +118,13 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
         past_steps = d_steps
     end
-    paramdict[:g_modelparams] = g_model.hyperparams
+    paramdict[:g_modelparams] = Dict{Symbol, Any}(k => v isa Function ? Symbol(v) : v
+                                                  for (k, v) in g_model.hyperparams)
 
     meta_steps = UInt64(0)
     if !isnothing(meta_model)
         if meta_model isa AbstractString
-            params[:meta_modelpath] = meta_model
+            paramdict[:meta_modelpath] = meta_model
             (meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
                     meta_varlosses, meta_steps) = load_meta_cp(meta_model)
         else
@@ -141,13 +140,16 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
         maxmeanloss = typemin(eltype(meta_trainlosses))
         maxvarloss = typemin(eltype(meta_trainlosses))
 
-        paramdict[:meta_modelparams] = meta_model.hyperparams
+        paramdict[:meta_modelparams] = Dict{Symbol, Any}(
+            k => v isa Function ? Symbol(v) : v for (k, v) in meta_model.hyperparams)
     end
 
-    epochs    = params.epochs
-    logdir    = params.logdir
-    logevery  = params.logevery
-    saveevery = params.saveevery
+    epochs     = params.epochs
+    batch_size = params.batch_size
+    logdir     = params.logdir
+    logevery   = params.logevery
+    saveevery  = params.saveevery
+    d_warmup_steps  = params.d_warmup_steps
 
     max_d_loss = typemin(eltype(d_trainlosses_real))
     max_d_testloss = typemin(eltype(d_testlosses))
@@ -161,6 +163,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     const_fake_target = togpu(zeros(size(const_noise)[end]))
     steps = UInt64(0)
 
+    dataiter_threads = params.dataiter_threads
     trainiter = gan_dataiteratorchannel(db, 3)
     testiter  = gan_dataiteratorchannel(db, 3)
     curr_batch_size = 0
@@ -174,8 +177,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     g_params = Flux.params(g_model)
 
     earlystoppingthreshold  = params.earlystoppingthreshold
-    earlystoppingwaitepochs = params.earlystoppingwaitepochs
     earlystoppingthreshold < 1 && (earlystoppingthreshold += 1)
+    earlystoppingwaitepochs = params.earlystoppingwaitepochs
 
     mkpath(logdir)
     # Save parameters
@@ -196,7 +199,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
         starttimestr = replace(string(now()), ':' => '-')
         starttime = time()
         logprint(logger, "Starting GAN training at $starttimestr for $epochs epochs. "
-                 * "Seed: $seed.")
+                 * "Seed: $(params.seed).")
 
         if past_steps == 0
             testfakes = [g_model(const_noise).data]
@@ -247,9 +250,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                     steps += 1
                     continue
                 end
-
-                # Discriminator
-                # Train on real batch
+
                 real_batch, meta_batch = map(togpu, take!(trainiter))
                 curr_batch_size_changed && (curr_batch_size_changed = false)
                 curr_batch_size == size(meta_batch, 2) || (curr_batch_size_changed = true)
@@ -260,7 +261,10 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                     real_target = togpu(ones(curr_batch_size))
                     fake_target = togpu(zeros(curr_batch_size))
                 end
+
 
+                # Discriminator
+                # Train on real batch
                 d_l_real = d_loss(real_batch, real_target)
                 d_l = d_l_real.data
                 push!(d_trainlosses_real, d_l)
@@ -301,7 +305,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
                 # Metadata predictor
                 if !isnothing(meta_model) && (overfit_on_batch || i > length(testindices))
-                    l = meta_loss(real_batch, meta_batch,true)
+                    l = meta_loss(real_batch, meta_batch)
                     push!(meta_trainlosses, l.data)
                     @tblog tblogger meta_predictor_loss=l.data log_step_increment=0
                     grads = gradient(() -> l, meta_params)
@@ -393,12 +397,12 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                                  * "($(round((lossratio - 1) * 100, digits=2)) %). "
                                  * "Total time: $(round(timediff / 60, digits=2)) min.")
                         cleanup(trainiter, testiter, log_io)
-                        return (d_model, g_model, d_optim, g_optim, d_trainlosses_real,
+                        return (d_model, g_model, d_trainlosses_real,
                                 d_trainlosses_fake, d_testlosses, g_trainlosses, testfakes,
                                 db, trainindices, const_noise)
                     end
                 end
-                if saveevery != 0 && i % saveevery == 0
+                if saveevery != 0 && steps % saveevery == 0
                     if logevery != 0 && steps % logevery != 0
                         push!(testfakes, g_model(const_noise).data)
                         testloss = testmodel(d_model, d_loss, testfakes[end],
@@ -443,7 +447,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     finally
         cleanup(trainiter, testiter, log_io)
     end
-    return (d_model, g_model, d_optim, g_optim, d_trainlosses_real, d_trainlosses_fake,
+    return (d_model, g_model, d_trainlosses_real, d_trainlosses_fake,
             d_testlosses, g_trainlosses, testfakes, db, trainindices, const_noise)
 end
 
@@ -475,11 +479,6 @@ function cleanup(args::Vararg{Any, 3})
     map(cleanup, args)
     return
 end
-
-cleanup(channel::RemoteChannel) = finalize(channel)
-cleanup(channel::AbstractChannel) = close(channel)
-cleanup(task::Task) = close(task)
-cleanup(file_io::IOStream) = close(file_io)
 
 function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
                    steps, logdir, starttimestr)
@@ -536,6 +535,11 @@ function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
              meta_varlosses=meta_varlosses, steps=steps)
     catch e
         e isa ErrorException || rethrow()
+        bson(joinpath(logdir, "meta-cp_$steps-steps_loss-$(meta_trainlosses[end])_"
+                      * "$starttimestr.bson"),
+             meta_model=Flux.cpu(meta_model), meta_optim=nothing,
+             meta_trainlosses=meta_trainlosses, meta_meanlosses=meta_meanlosses,
+             meta_varlosses=meta_varlosses, steps=steps)
     end
 end
 

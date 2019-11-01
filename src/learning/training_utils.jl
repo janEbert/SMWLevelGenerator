@@ -4,14 +4,13 @@ using Base.CoreLogging: @_sourceinfo, logmsg_code,
                         _min_enabled_level, current_logger_for_env, shouldlog,
                         handle_message, logging_error
 using Dates: now
+using Distributed: RemoteChannel
 using Logging
 
 using ..InputStatistics: constantinputsize
 using ..ModelUtils: togpu
 
-export mae, @tblog, logprint, newexpdir, maketarget
-
-mae(y_hat, y) = sum(abs.(y_hat .- y)) * 1 // length(y)
+export @tblog, logprint, newexpdir, maketarget, cleanup
 
 """
     @tblog(logger, exs...)
@@ -105,6 +104,11 @@ function maketarget(seq, #=is_joined_padded=#::Val{true},
     @inbounds push!(target, @views zero(target[end])[firstindex(target[end]):end])
     togpu.(target)
 end
+
+cleanup(dataiter::RemoteChannel) = finalize(dataiter)
+cleanup(dataiter::AbstractChannel) = close(dataiter)
+cleanup(task::Task) = close(task)
+cleanup(file_io::IOStream) = close(file_io)
 
 end # module
 

@@ -6,7 +6,7 @@ import Transformers
 using ..LevelStatistics: maxcolshori
 using ..InputStatistics
 using ..ModelUtils
-import ..ModelUtils: makeloss, dataiteratorparams
+import ..ModelUtils: makeloss, dataiteratorparams, soft_criterion
 
 export TransformerModel, transformer1d, transformer2d, transformer3dtiles, transformer3d
 
@@ -27,7 +27,31 @@ function makeloss(model::TransformerModel, criterion)
     end
 end
 
-dataiteratorparams(::TransformerModel) = (join_pad=false, pad_each=true)
+dataiteratorparams(::TransformerModel) = (join_pad=false, as_matrix=true)
+
+
+# A possible criterion to reduce over-generalizing. Loss function must be changed for this
+# as this criterion shouldn't be broadcasted.
+"""
+Return a reduced loss from predicting a sequence element differently when the two previous
+sequence elements were the same.
+"""
+function soft_criterion(::TransformerModel, y_hat, y, criterion)
+    total = 0.0f0
+    last_elem = nothing
+    second_to_last = nothing
+    for i in axes(y, 2)
+        @inbounds @views e_hat, e = y_hat[:, i], y[:, i]
+        if last_elem != second_to_last
+            total += criterion(e_hat, e)
+        else
+            total += 0.1f0 * criterion(e_hat, e)
+        end
+        second_to_last = last_elem
+        last_elem = e
+    end
+    return total
+end
 
 
 struct GPT2Block{A<:Transformers.Basic.MultiheadAttention, L<:Flux.LayerNorm,

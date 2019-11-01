@@ -9,7 +9,8 @@ using Flux.Tracker: gradient
 #using Zygote
 
 export LearningModel, makeloss, dataiteratorparams, calculate_loss, step!
-export should_use_gpu, togpu
+export makesoftloss, soft_criterion
+export toggle_gpu, should_use_gpu, togpu
 
 """
     LearningModel
@@ -28,12 +29,14 @@ The following keys are required in the `hyperparams` dictionary.
 
 An implementation `YourModel <: LearningModel` should also implement the
 following functions:
-   - (model::YourModel)(input): Apply the underlying model to the input.
-   - makeloss(model::YourModel, criterion): See [`makeloss`](@ref).
-   - dataiteratorparams(model::YourModel): See [`dataiteratorparams`](@ref).
-   - calculate_loss(model::YourModel, loss, input, target): See [`calculate_loss`](@ref).
-   - step!(model::YourModel, parameters, optimizer,
-           loss, input, target): See [`step!`](@ref).
+   - `(model::YourModel)(input)`: Apply the underlying model to the input.
+   - `makeloss(model::YourModel, criterion)`: See [`makeloss`](@ref).
+   - `dataiteratorparams(model::YourModel)`: See [`dataiteratorparams`](@ref).
+   - `calculate_loss(model::YourModel, loss, input, target)`: See [`calculate_loss`](@ref).
+   - `step!(model::YourModel, parameters, optimizer, loss, input, target)`:
+     See [`step!`](@ref).
+   - Optionally: `soft_criterion(model::YourModel, y_hat, y, criterion)`:
+                 See [`soft_criterion`](@ref).
 It may be possible to use the standard definitions of some of the above functions. See their
 respective implementation to be sure. They are chosen to be sensible defaults but may not
 be correct for `YourModel`.
@@ -69,7 +72,7 @@ end
 Return a `NamedTuple` of keyword arguments to pass to the `DataIterator.dataiterator`
 function so the model gets fed correctly formatted data.
 """
-dataiteratorparams(::Any) = (join_pad=false, pad_each=false)
+dataiteratorparams(::Any) = (join_pad=false, as_matrix=false)
 
 """
     calculate_loss(model, loss, input, target)
@@ -87,8 +90,8 @@ end
 """
     step!(model, parameters, optimizer, loss, input, target)
 
-Update the given model with a single training step on the next data point in the
-given `trainiter`. Return the loss.
+Update the given model with a single training step on the given input with the given target.
+Return the loss.
 """
 function step!(model, parameters, optimizer, loss, input, target)
     l = calculate_loss(model, loss, input, target)
@@ -100,7 +103,47 @@ function step!(model, parameters, optimizer, loss, input, target)
     Flux.Optimise.update!(optimizer, parameters, grads)
     return l
 end
+
+
+"""
+    makesoftloss(model, criterion)
+
+Return a 2-argument loss function applying the model to the input sequence `x` and return
+the loss of the prediction in relation to the target sequence `y`.
+"""
+function makesoftloss(model, criterion)
+    function loss(x, y)
+        y_hat = model.(x)
+        l = soft_criterion(model, y_hat, y, criterion)
+        return l
+    end
+end
+
+# A possible criterion to reduce over-generalizing. Loss function must be changed for this
+# as this criterion shouldn't be broadcasted.
+"""
+Return a reduced loss from predicting a sequence element differently when the two previous
+sequence elements were the same.
+"""
+function soft_criterion(#=model=#::Any, y_hat, y, criterion)
+    total = 0.0f0
+    last_elem = nothing
+    second_to_last = nothing
+    for (e_hat, e) in zip(y_hat, y)
+        if last_elem != second_to_last
+            total += criterion(e_hat, e)
+        else
+            total += 0.1f0 * criterion(e_hat, e)
+        end
+        second_to_last = last_elem
+        last_elem = e
+    end
+    return total
+end
 
+
+"Toggle GPU usage."
+toggle_gpu() = (ENV["SMWLG_IGNORE_GPU"] = !should_use_gpu())
 
 """
     should_use_gpu()
@@ -125,6 +168,14 @@ togpu(x) = should_use_gpu() ? Flux.gpu(x) : identity(x)
 # togpu(x::AbstractSparseMatrix) = should_use_gpu() ? CuSparseMatrixCSR(x) : identity(x)
 
 # togpu(x::AbstractSparseVector) = should_use_gpu() ? CuSparseVector(x) : identity(x)
+
+
+"Mean absolute error."
+mae(y_hat, y) = sum(abs.(y_hat .- y)) * 1 // length(y)
+
+"Approximate PyTorch binary cross entropy loss."
+bce(y_hat, y) = Flux.binarycrossentropy(y_hat, y; ϵ=1f-12)
+
 
 """
 Convert all checkpoints in the given directory according to the given 1-argument

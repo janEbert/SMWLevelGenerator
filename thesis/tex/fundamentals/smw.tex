@@ -1,23 +1,25 @@
 \subsection{Super Mario World}
 
-We are going to focus on a single game for level generation: \emph{Super
-Mario World} (SMW). Super Mario World was released in~1990 by Nintendo
-for the Super Nintendo Entertainment
+We are going to focus on a single game for level generation:
+\emph{Super Mario World} (SMW). Super Mario World was released in~1990
+by Nintendo for the Super Nintendo Entertainment
 System~\cite{SuperMarioWorld2019}. It is a 2-dimensional platforming
-game with the goal of reaching each level's exit. Games in the
-platforming genre confront the player with dangers like pits and
-enemies which have to be avoided by carefully jumping and maneuvering
-accross them in a host of levels. The original game features % TODO
+game with the goal of reaching each level's exit in a limited amount
+of time. Games in the platforming genre confront the player with
+dangers like pits and enemies which have to be avoided by carefully
+jumping and maneuvering accross them in a host of levels. The original
+game features % TODO
 ~levels. \\
 The player has access to a moveset including but not limited to
 running, jumping, picking up and throwing objects, and even shooting
-fireballs and flying. To access some abilities, Mario has to pick up
-power-ups usually contained in ``question mark blocks'' (? blocks).
+fireballs, flying and riding a dinosaur extending the amount of
+abilities even further. To access some abilities, Mario has to pick up
+power-ups usually contained in ``question mark blocks'' (``? blocks'').
 Blocks are commonly activated by hitting them from below. During a
 level, the player may collect various items like the power-ups
-mentioned above as well as coins and one-up mushrooms which increase
-the amount of lifes (tries) available to the player.
-\\
+mentioned above (which also let Mario take one extra hit before he is
+defeated) as well as coins and one-up mushrooms which increase the
+amount of lifes (tries) available to the player. \\
 Usually, when Mario lands on top of an enemy, the enemy is defeated.
 There are some enemies which Mario cannot safely land on or cannot
 defeat by jumping on top of them. Those enemier require a different
@@ -50,12 +52,13 @@ Nintendo Entertainment System; like the data that is burned onto a CD.
 A lot of tools have been created to manipulate Super Mario World; even
 in ways that the original creators hadn't programmed. People are able
 to create their own levels and share them with the masses by uploading
-a patch file that has to be applied to the original game ROM, thereby
+a patch file that has to be applied to the original game ROM\footnote{Usually
+the American version; CRC32 checksum \texttt{a31bead4}.}, thereby
 avoiding copyright infringement as sharing the ROM, Nintendo's
 protected property, is illegal.
 
 Due to the refined tooling available, users do not need to program in
-65C816 assembly~\footnote{The Super Nintendo Entertainment System's 16
+65C816 assembly\footnote{The Super Nintendo Entertainment System's 16
   bit microprocessor is based on the 65C816 microprocessor.} to modify
 the game. Instead, even non-technical users are able to use one of the
 oldest tools to modify Super Mario World: \emph{Lunar
@@ -84,14 +87,19 @@ uploaded them.
 Being able to filter hacks was important for two reasons. One being
 that programmed custom behaviour was out of the scope of this work,
 requiring both parsing the binary 65C816 assembly code and then
-understanding its every behaviour. Also, to assert some form of
-quality in the dataset, only hacks with a rating of 3.0 or more
-(ranging from 1.0 to 5.0 and \emph{not available}) were downloaded.
-All in all, over 17000 unique levels over TODO hacks were obtained
-thanks to the amazing community keeping a masterpiece alive for all
-not only all the years since the game's release but also for all the
-years to come; Super Mario World hacks have even helped raise money
-for charity TODO.
+understanding its every behaviour. So we used the ``vanilla'' tag to
+exclude hacks using behaviour not in the original (``vanilla'') game.
+Also, to assert some form of quality in the dataset, only hacks with a
+rating greater than or equal to 3.0 were downloaded (our rating is the
+mean of all individual ratings, ranging from 1.0 to 5.0 and including
+\emph{None} for no individual ratings). All in all, over 17000 unique
+levels in over 300 hacks were obtained thanks to the community keeping
+a masterpiece alive and fresh for not only all the years since the
+game's release but also for many years to come. While this amount of
+data is not a lot relative to what deep learning models usually train
+on in 2019 (with data points in the millions, even approaching
+billions), it may be enough for our models to get a grasp on what
+makes a level enjoyable.
 
 \subsubsection{Levels}
 
@@ -107,40 +115,139 @@ the midway point), Mario will spawn at that point instead of the usual
 level entry point in case he is defeated. Most levels end when Mario
 reaches the goal post. Some levels end when Mario touches an orb while
 others end when a key is transported to and inserted into a keyhole.
+Finally, there are boss levels that are completed by defeating a boss.
+We will, however, not consider these.
 
 Each level may be connected to a number of other levels. The game
-achieves this through two systems which will be explained in
-section~\ref{par:layers}. The high-level connection between two levels
-is given by tiles with special behaviour that can be entered by Mario.
-These tiles are called ``exit-enabled'' tiles. The most common are
-doors and pipes (only some pipes are exit-enabled; those cannot be
-visually distinguished from those which aren't).
+achieves this through two systems which will be explained in the
+paragraph on layers on page~\pageref{par:layers}. The high-level
+connection between two levels is given by tiles with special behaviour
+that can be entered by Mario. These tiles are called ``exit-enabled''
+tiles. The most common are doors and pipes (only some pipes are
+exit-enabled; those cannot be visually distinguished from those which
+aren't).
 
 Levels can have underwater regions through which Mario will have to
 swim, removing his ability to jump on enemies to defeat them. Some
 levels are vertical, growing in height rather than width. Other levels
 are covered in darkness, where light is only emitted in a small radius
-around Mario. Finally, a level may contain ``blue P switches'' that
-temporarily turn coins into blocks and certain blocks into coins,
-granting new paths to the player that are possibly required to reach
-the goal. A very similar tile is the ``grey P switch'' which spawns
-coins and special doors.
+around Mario while others automatically scroll the level forward,
+forcing the player to react more quickly and not get stuck on a wall
+(when the level scrolls beyond Mario, he is defeated). Finally, a
+level may contain ``blue P switches'' that temporarily turn coins into
+blocks and certain blocks into coins, granting new paths to the player
+that are possibly required to reach the goal. A very similar tile is
+the ``grey P switch'' which spawns coins and special doors.
 
 All these different tiles can be combined in any way imaginable. Most
 of those combinations in the high-dimensional level space are
-non-playable nonsense. However, as seen in section~\ref{sec:hacks},
-due to the large amount of possible~-- and, more importantly,
-enjoyable~-- interactions between all the different pieces contained
-in the original game, a seemingly infinite number of unique, fun
-levels can be created.
+non-playable nonsense. However, as described in
+section~\ref{sec:hacks}, due to the large amount of possible~-- and,
+more importantly, enjoyable~-- interactions between all the different
+pieces contained in the original game, a seemingly infinite number of
+unique, fun levels can be created.
+\medskip
 
-%blo bla may be combined
+We are now going to leave the high-level view of levels and take a
+look at how everything works together on a lower level: \\
+Levels are made up of \emph{screens}; matrices of the same size. Each
+screen is made up of two subscreens; in horizontal levels, subscreens
+are stacked vertically and the whole, combined screens are
+concatenated horizontally while in vertical levels, subscreen are
+stacked horizontally and screens concatenated vertically. While
+subscreens are important in data preparation, we will not focus on
+them in this work and instead always refer only to whole screens. A
+screen is a 2-dimensional slice of the level consisting of a number of
+columns and rows. Screens in horizontal and vertical levels have
+different sizes (even if horizontal screens are transposed), but
+otherwise, screen sizes are constant over different levels. While
+Lunar Magic supports non-vanilla behaviour in that screens can have
+other sizes (although still a constant size per level). Like with all
+non-vanilla modifications that have a direct impact on data, we are
+going to ignore that feature.
+
+Calling a screen a matrix is not the whole truth. While screens itself
+are basically only areas in a level, those areas can contain many
+different layers of other types of objects.
 
 \paragraph{Layers}
+\phantomsection
 \label{par:layers}
 
+While we will explain ``layers'' in this section, in the hacking
+community, the term ``layer'' refers to both interactive and graphical
+tilemaps (of which there are three of). When we refer to the second
+meaning, we will explicitly list a number behind the layer (for
+example ``layer 2''). \\
+Disregarding the previously explained screens, levels consist mainly
+of five different types of data which each correspond to a file dumped
+by Lunar Magic. The types and a short description are listed here:
+\begin{enumerate}
+\item \emph{Tiles} are most of the static blocks in a level. They
+  usually make up the ground, platforms, walls and ceiling of a level
+  (if present). Also, most collectibles that are immediately visible
+  in the level are a tile; examples are coins or moons\footnote{Moons
+    give the player three lifes upon collection.}. Some special tiles
+  like doors and some pipe tiles are exit-enabled, meaning they lead
+  out of a level (exits are described below). Even non-interactive
+  background objects like arrow signs or bushes that only exist for
+  aesthetical reasons are tiles. In the hacking community, this layer
+  of tiles is also called ``layer 1''. \\
+  As mentioned at the beginnig of this paragraph, tiles may exist on
+  two layers in the level. Layer 2 may contain interactive objects or
+  just non-interactive graphical background data. A special property
+  of layer 2 tiles is that they can move if desired (how that is
+  achieved will be described in a bit). When layer 2 is used for
+  interactive tiles, it cannot act as a background tilemap. Therefore,
+  a third (strictly non-interactive) layer exists for the sole purpose
+  of a background tilemap which is usually in layer 2. This layer 3 is
+  not related to tiles in any way. For simplicity, we ignore all data
+  in layers 2 and 3.
+\item \emph{Metadata} is any data that changes the behaviour of a
+  level without belonging to a certain position in the level. For
+  example, which tileset (that is, the graphics) or which background
+  music is used in a level is decided by the metadata. A level's
+  metadata also contains its entry points. We will describe metadata
+  in detail in its paragraph on page~\pageref{par:metadata}.
+\item \emph{Sprites} are usually moving or movable objects that
+  interact with Mario and each other in a certain way. For example,
+  enemies and even goal objects like the orb, key and keyhole
+  (described in section~\ref{sec:levels}) are sprites (while the goal
+  post is a tile, the moving tape Mario can cross through is also a
+  sprite). \\
+  Sprites may also have other effects on the level; for example,
+  sprites control auto-scroll behaviour in a level or the movement of
+  layer 2 tiles. Sprites may also affect a level's lighting or
+  background objects. When Mario reaches a screen with one of those
+  special sprites, the behaviour will activate.
+\item \emph{Exits} connect one level to another. An exit is
+  screen-based, meaning it will be used by all exit-enabled tiles in
+  the screen the exit is contained in. There are two types of exits:
+  \emph{Screen exits} send Mario to the entry point of another level
+  while \emph{secondary exits} can send Mario to a designated point in
+  the exit-level, described below.
+\item \emph{Secondary entrances} are the destinations of secondary
+  exits. These destinations cannot lie anywhere; they have certain
+  pre-determined positions based on a table of positional values and
+  based on whether they are in the first or second subscreen of the
+  screen the secondary entrance lies in. Any number of secondary exits
+  may point to the same secondary entrance.
+\end{enumerate}
+
+The data dumped by Lunar Magic is split into five different files with
+the following extensions and representation:
+% TODO this is crap
+\begin{description}
+\item[map] Tiles; matrix-like.
+\item[ent] Metadata; struct-like.
+\item[sp] Sprites; list-like format.
+\item[sp] Sprite data
+\end{description}
+Super Mario World levels 
 
 \paragraph{Metadata}
+\phantomsection
+\label{par:metadata}
 
 \paragraph{Levels in Other Games}
 

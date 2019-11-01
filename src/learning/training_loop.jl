@@ -1,7 +1,6 @@
 module TrainingLoop
 
 using Dates: now
-using Distributed: RemoteChannel
 using Logging: SimpleLogger, Info
 using Printf: @sprintf
 using Statistics: mean, var
@@ -21,14 +20,14 @@ using ..Transformer
 # using ..ESN
 using ..RandomPredictor
 
-export trainingloop!, run, TrainingParameters, TPs
+export trainingloop!, TrainingParameters, TPs
 
 Base.@kwdef struct TrainingParameters
     epochs::Integer = 10
 
     lr::Float64                                      = 0.0002
-    warmupepochs::Integer                            = 1   # TODO unused
-    warmuplr::Integer                                = 0.0001  # TODO unused
+    warmupepochs::Integer                            = 1  # TODO unused
+    warmuplr::Float64                                = 0.0001  # TODO unused
     logevery::Integer                                = 300
     saveevery::Integer                               = 1500
     testratio::AbstractFloat                         = 0.1
@@ -41,6 +40,7 @@ Base.@kwdef struct TrainingParameters
     earlystoppingwaitepochs::Integer                 = 10
     earlystoppingthreshold::AbstractFloat            = Inf32
     criterion::Function                              = Flux.mse
+    use_soft_criterion::Bool                         = false
     overfit_on_batch::Bool                           = false
     modeltype::Union{Type{<:LearningModel}, Nothing} = nothing
     seed::Integer                                    = 0
@@ -67,7 +67,9 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
     seed!(params.seed)
     set_zero_subnormals(true)
 
-    paramdict = Dict{Symbol, Any}(field => params.field for field in propertynames(params))
+    paramdict = Dict{Symbol, Any}(field => getproperty(params, field) |>
+                                  x -> x isa Function ? Symbol(x) : x
+                                  for field in propertynames(params))
     paramdict[:dbpath] = dbpath
 
     db = loaddb(dbpath)
@@ -98,7 +100,8 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
         past_steps = UInt64(0)
     end
     model::LearningModel
-    paramdict[:modelparams] = model.hyperparams
+    paramdict[:modelparams] = Dict{Symbol, Any}(k => v isa Function ? Symbol(v) : v
+                                                for (k, v) in model.hyperparams)
 
     epochs    = params.epochs
     logdir    = params.logdir
@@ -117,15 +120,19 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
     per_tile         = params.per_tile
     reverse_rows     = params.reverse_rows
     trainiter = dataiteratorchannel(db, 4, Val(dataiterparams.join_pad),
-                                    Val(dataiterparams.pad_each))
+                                    Val(dataiterparams.as_matrix))
     testiter  = dataiteratorchannel(db, 4, Val(dataiterparams.join_pad),
-                                    Val(dataiterparams.pad_each))
+                                    Val(dataiterparams.as_matrix))
     # TODO store max loss and log (as in logging) normalized loss (maybe).
     #      only applicable when sequences are padded to have the same length
     # TODO make function for that so it can be calculated online; then maybe normalize loss
     #      for training
 
-    loss = makeloss(model, params.criterion)
+    if params.use_soft_criterion
+        loss = makesoftloss(model, params.criterion)
+    else
+        loss = makeloss(model, params.criterion)
+    end
     parameters = Flux.params(model)
 
     earlystoppingthreshold = params.earlystoppingthreshold
@@ -144,12 +151,13 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
     @fastmath try
         logger = SimpleLogger(log_io)
         tblogger = TBLogger(joinpath(logdir, "tensorboard"), min_level=Info)
+        past_steps > 0 && logprint(logger, "Loaded model with $past_steps steps.")
 
         # To get local time instead of UTC for printing and filenames:
         starttimestr = replace(string(now()), ':' => '-')
         starttime = time()
         logprint(logger, "Starting training at $starttimestr for $epochs epochs. "
-                 * "Seed: $seed.")
+                 * "Seed: $(params.seed).")
 
         # Initial test
         testlosses = testmodel(model, testiter, db, testindices, dataiter_threads,
@@ -234,7 +242,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                                  * "$(round(lossdiff, digits=3)) "
                                  * "($(round((lossratio - 1) * 100, digits=2)) %). "
                                  * "Total time: $(round(timediff / 60, digits=2)) min.")
-                        cleanup(trainiter, testiter, log_io)
+                        cleanupall(trainiter, testiter, log_io)
                         return (model, trainlosses, testlosses, meanlosses, varlosses,
                                 db, trainindices, testindices)
                     end
@@ -262,7 +270,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
         logprint(logger, "Training finished after $steps training steps and "
                  * "$(round((time() - starttime) / 60, digits=2)) minutes.")
     finally
-        cleanup(trainiter, testiter, log_io)
+        cleanupall(trainiter, testiter, log_io)
     end
     return (model, trainlosses, testlosses, meanlosses, varlosses,
             db, trainindices, testindices)
@@ -277,7 +285,7 @@ function training_step!(model, parameters, optimizer, trainiter, dataiterparams,
                         loss, trainlosses, tblogger)
     seq = togpu.(take!(trainiter))
     # Construct target
-    target = maketarget(seq, Val(dataiterparams.join_pad), Val(dataiterparams.pad_each))
+    target = maketarget(seq, Val(dataiterparams.join_pad), Val(dataiterparams.as_matrix))
 
     l = step!(model, parameters, optimizer, loss, seq, target).data
     push!(trainlosses, l)
@@ -299,7 +307,8 @@ function testmodel(model, testiter, db, testindices, dataiter_threads,
     for i in 1:length(testindices)
         seq = togpu.(take!(testiter))
         # Construct target
-        target = maketarget(seq, Val(dataiterparams.join_pad), Val(dataiterparams.pad_each))
+        target = maketarget(seq, Val(dataiterparams.join_pad),
+                            Val(dataiterparams.as_matrix))
 
         l = calculate_loss(model, loss, seq, target).data
         push!(testlosses, l)
@@ -309,21 +318,15 @@ function testmodel(model, testiter, db, testindices, dataiter_threads,
 end
 
 function getmaxloss(seq, dataiterparams, loss)
-    target = maketarget(seq, Val(dataiterparams.join_pad, Val(dataiterparams.pad_each)))
+    target = maketarget(seq, Val(dataiterparams.join_pad, Val(dataiterparams.as_matrix)))
     loss(ones(eltype(target), size(target)) .- target, target)
 end
 
 # Numbered Vararg so we can make sure we didn't miss one without having to list them all.
-function cleanup(args::Vararg{Any, 3})
+function cleanupall(args::Vararg{Any, 3})
     map(cleanup, args)
     return
 end
-
-cleanup(dataiter::RemoteChannel) = finalize(dataiter)
-cleanup(dataiter::AbstractChannel) = close(dataiter)
-cleanup(task::Task) = close(dataiter)
-cleanup(file_io::IOStream) = close(file_io)
-
 
 function loadcp(cppath::AbstractString, modeltype::Nothing)
     cp = BSON.load(cppath)
@@ -358,43 +361,6 @@ function savecp(model, optimizer, trainlosses, testlosses, meanlosses,
                   "model-cp_$steps-steps_loss-$(meanlosses[end])_$starttimestr.bson"),
          model=Flux.cpu(model), optimizer=optimizer, steps=steps, trainlosses=trainlosses,
          testlosses=testlosses, meanlosses=meanlosses, varlosses=varlosses)
-end
-
-"""
-    run(modelfunction::Function, dbpath, epochs; modelargs::Union{Tuple, AbstractArray}=(),
-        modelparams::AbstractDict=Dict{Symbol,Any}(),
-        trainingparams::AbstractDict=Dict{Symbol,Any}(),
-        logdir=joinpath("exps", newexpdir()), logfile="params.json")
-
-Return a model created using `model = modelfunction(modelargs...; modelparams...)` and
-trained on `trainingloop!(model, db, epochs; logdir=logdir, trainingparams...)`.
-The parameters are all saved in JSON format in the given `logfile` in `logdir`.
-"""
-function run(modelfunction, dbpath, epochs; modelargs::Union{Tuple, AbstractArray},
-             modelparams::AbstractDict=Dict{Symbol,Any}(),
-             trainingparams::AbstractDict=Dict{Symbol,Any}(),
-             logdir=joinpath("exps", newexpdir()), logfile="params.json")
-    savetype = keytype(modelparams)
-    @assert savetype === keytype(trainingparams) "different key types in `Dict`s."
-    modelparams[savetype(:args)] = modelargs
-
-    trainingparams[savetype(:dbpath)] = dbpath
-    trainingparams[savetype(:epochs)] = epochs
-    trainingparams[savetype(:logdir)] = logdir
-
-    mkpath(logdir)
-    open(joinpath(logdir, logfile), "w") do io
-        JSON.print(io, Dict(
-            savetype(:model) => modelparams, savetype(:training) => trainingparams
-        ), 4)
-    end
-    # Remove values we cannot pass.
-    delete!(modelparams,    savetype(:args))
-    delete!(trainingparams, savetype(:dbpath))
-    delete!(trainingparams, savetype(:epochs))
-
-    model = modelfunction(modelargs...; modelparams...)
-    trainingloop!(model, dbpath, epochs; trainingparams...)
 end
 
 function test_trainingloop(dbpath::AbstractString="levels_1d_flags_t.jdb")

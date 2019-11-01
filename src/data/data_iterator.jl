@@ -80,45 +80,45 @@ function traintestsplit(db::IndexedTable, testratio::Real=0.1, seed=0)
     return trainindices, testindices
 end
 
-function dataiteratorchannel(db::IndexedTable, buffersize, join_pad::Val, pad_each::Val)
-    channeltype = dataiterator_channeltype(db[1].data, join_pad, pad_each)
+function dataiteratorchannel(db::IndexedTable, buffersize, join_pad::Val, as_matrix::Val)
+    channeltype = dataiterator_channeltype(db[1].data, join_pad, as_matrix)
     return Channel{channeltype}(buffersize)
 end
 
-function dataiterator_channeltype(data, #=join_pad=#::Val{true}, #=pad_each=#::Val)
+function dataiterator_channeltype(data, #=join_pad=#::Val{true}, #=as_matrix=#::Val)
     dataiterator_channeltype(data, Val(false))
 end
 
-function dataiterator_channeltype(data, #=join_pad=#::Val{false}, pad_each::Val{true})
-    dataiterator_channeltype(data, pad_each)
+function dataiterator_channeltype(data, #=join_pad=#::Val{false}, as_matrix::Val{true})
+    dataiterator_channeltype(data, as_matrix)
 end
 
-function dataiterator_channeltype(data, #=join_pad=#::Val{false}, pad_each::Val{false})
-    Vector{dataiterator_channeltype(data, pad_each)}
+function dataiterator_channeltype(data, #=join_pad=#::Val{false}, as_matrix::Val{false})
+    Vector{dataiterator_channeltype(data, as_matrix)}
 end
 
 function dataiterator_channeltype(data::Union{AbstractVector{<:Pair},
                                               AbstractVector{<:SparseMatrixCSC}},
-                                  pad_each::Val{true})
+                                  as_matrix::Val{true})
     SparseMatrixCSC{Float32, defaultindextype}
 end
 
 function dataiterator_channeltype(data::Union{AbstractVector{<:Pair},
                                               AbstractVector{<:SparseMatrixCSC}},
-                                  pad_each::Val{false})
+                                  as_matrix::Val{false})
     SparseVector{Float32, defaultindextype}
 end
 
-dataiterator_channeltype(data, pad_each::Val{true})  = Matrix{Float32}
-dataiterator_channeltype(data, pad_each::Val{false}) = Vector{Float32}
+dataiterator_channeltype(data, as_matrix::Val{true})  = Matrix{Float32}
+dataiterator_channeltype(data, as_matrix::Val{false}) = Vector{Float32}
 
 function dataiteratortask(channel::AbstractChannel, db::IndexedTable,
-                          splitindices::AbstractVector, per_tile::Bool, reverse_rows::Bool,
-                          join_pad::Val, pad_each::Val)
+                          splitindices::AbstractVector, per_tile::Bool, reverse_rows::Val,
+                          join_pad::Val, as_matrix::Val)
     try
         for index in splitindices
             @inbounds row = db[index]
-            put!(channel, preprocess(row, per_tile, reverse_rows, join_pad, pad_each))
+            put!(channel, preprocess(row, per_tile, reverse_rows, join_pad, as_matrix))
         end
     catch e
         print("Error in data iterator task: ")
@@ -128,21 +128,21 @@ end
 
 function dataiterator!(channel::AbstractChannel, db::IndexedTable,
                        splitindices::AbstractVector, num_threads::Integer=0,
-                       per_tile=false, reverse_rows=false; join_pad=false, pad_each=false)
+                       per_tile=false, reverse_rows=false; join_pad=false, as_matrix=false)
     @static if VERSION >= v"1.3-"
         if num_threads > 0
             per_thread_split_length = cld(length(splitindices), num_threads)
             for indices in Iterators.partition(splitindices, per_thread_split_length)
                 task = Threads.@spawn dataiteratortask(channel, db, indices, per_tile,
-                        reverse_rows, Val(join_pad), Val(pad_each))
+                        Val(reverse_rows), Val(join_pad), Val(as_matrix))
             end
         else
             task = @async dataiteratortask(channel, db, splitindices, per_tile,
-                                           reverse_rows, Val(join_pad), Val(pad_each))
+                                           Val(reverse_rows), Val(join_pad), Val(as_matrix))
         end
     else
-        task = @async dataiteratortask(channel, db, splitindices,
-                                       per_tile, reverse_rows, Val(join_pad), Val(pad_each))
+        task = @async dataiteratortask(channel, db, splitindices, per_tile,
+                                       Val(reverse_rows), Val(join_pad), Val(as_matrix))
     end
     return channel
 end
@@ -150,22 +150,12 @@ end
 # TODO speed test for data iterator num_threads in trainingutils
 function dataiterator(db::IndexedTable, splitindices::AbstractVector,
                       num_threads::Integer=0, per_tile=false, reverse_rows=false;
-                      join_pad=false, pad_each=false)
-    channel = dataiteratorchannel(db, 4, Val(join_pad), Val(pad_each))
+                      join_pad=false, as_matrix=false)
+    channel = dataiteratorchannel(db, 4, Val(join_pad), Val(as_matrix))
     return dataiterator!(channel, db, splitindices, num_threads, per_tile, reverse_rows;
-                         join_pad=join_pad, pad_each=pad_each)
+                         join_pad=join_pad, as_matrix=as_matrix)
 end
 
-
-function prepend_hasnotended_bit(col::Union{Number, AbstractVector}, i::Integer,
-                                 seqlength::Integer)
-    i < seqlength ? vcat(1.0f0, col) : vcat(0.0f0, col)
-end
-
-function prepend_hasnotended_bit(col::AbstractSparseVector, i::Integer,
-                                 seqlength::Integer)
-    i < seqlength ? vcat(sparsevec([1.0f0]), col) : vcat(spzeros(Float32, 1), col)
-end
 
 function getconstantinput(row::NamedTuple)
     # Change `constantinputsize` in `src/learning/input_statistics.jl` if this is modified!
@@ -187,30 +177,22 @@ function decompress(
     decompressdata(data, true)
 end
 
-function slicedata(data::AbstractVector)
-    (prepend_hasnotended_bit(col, i, length(data)) for (i, col) in enumerate(data))
+slicedata(data::AbstractVector, ::Val) = (col for col in data)
+
+slicedata(data::AbstractMatrix, ::Val) = (col for col in eachcol(data))
+
+function slicedata(data::AbstractArray{T, 3}, ::Val) where T
+    (vec(allcols) for allcols in eachslice(data, dims=2))
 end
 
-function slicedata(data::AbstractMatrix)
-    (prepend_hasnotended_bit(col, i, size(data, 2))
-            for (i, col) in enumerate(eachcol(data)))
-end
-
-function slicedata(data::AbstractArray{T, 3}) where T
-    (prepend_hasnotended_bit(vec(allcols), i, size(data, 2))
-            for (i, allcols) in enumerate(eachslice(data, dims=2)))
-end
-
-function slicedata(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}},
+function slicedata(data::AbstractVector{<:AbstractSparseMatrix},
                    #=reverse_rows=#::Val{true}) where T
-    (prepend_hasnotended_bit(vec(reverse(allcols, dims=1)), i, length(data))
-            for (i, allcols) in enumerate(data))
+    (vec(reverse(allcols, dims=1)) for allcols in data)
 end
 
-function slicedata(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}},
+function slicedata(data::AbstractVector{<:AbstractSparseMatrix},
                    #=reverse_rows=#::Val{false}) where T
-    (prepend_hasnotended_bit(vec(allcols), i, length(data))
-            for (i, allcols) in enumerate(data))
+    (vec(allcols) for allcols in data)
 end
 
 """
@@ -218,18 +200,19 @@ Return a `Vector` where each element is the constant part of an input and a part
 input data.
 Whether the part of input data is a whole column or just one tile is controlled
 by `per_tile`.
-Data will be read from bottom to top instead of top to bottom with `reverse_rows=true`.
+Data will be read from bottom to top instead of top to bottom with
+`reverse_rows=Val(true)`.
 Whether the data will be padded and joined to a single `Vector` is controlled with
 `join_pad`.
 Whether each element in the sequence will be padded and returned as a `Matrix` is
-controlled with `pad_each`.
-`join_pad::Val{true}` has a higher priority than `pad_each::Val{true}`.
+controlled with `as_matrix`.
+`join_pad=Val(true)` has a higher priority than `as_matrix=Val(true)`.
 """
-function preprocess(row::NamedTuple, per_tile::Bool, reverse_rows::Bool,
-                    #=join_pad=#::Val{false}, pad_each::Val)
+function preprocess(row::NamedTuple, per_tile::Bool, reverse_rows::Val,
+                    #=join_pad=#::Val{false}, as_matrix::Val)
     constantinput = getconstantinput(row)
     decompressed_data = decompress(row.data)
-    if reverse_rows && ndims(decompressed_data) >= 2
+    if reverse_rows isa Val{true} && ndims(decompressed_data) >= 2
         rawdata = reverse(decompressed_data, dims=1)
     else
         rawdata = decompressed_data
@@ -244,45 +227,103 @@ function preprocess(row::NamedTuple, per_tile::Bool, reverse_rows::Bool,
         data = rawdata
     end
 
-    # TODO avoid double vcat; concat both hasnotended-bit and constantinput at once
-    if pad_each isa Val{true}
-        if per_tile || data isa AbstractVector{<:Number}
-            # 1D or scalar sequence
-            minlength = 1
-        else
-            # 2D or 3D
-            minlength = LevelStatistics.screenrowshori
-        end
-        if data isa AbstractVector{<:AbstractSparseMatrix}
-            return reduce(hcat, vcat(constantinput, rpad(col, minlength, 0))
-                          for col in slicedata(data, Val(reverse_rows)))
-        else
-            return reduce(hcat, vcat(constantinput, rpad(col, minlength, 0))
-                          for col in slicedata(data))
-        end
-    elseif data isa AbstractVector{<:AbstractSparseMatrix}
-        return SparseVector{Float32, defaultindextype}[
-                vcat(constantinput, col) for col in slicedata(data, Val(reverse_rows))]
-    else
-        return Vector{Float32}[vcat(constantinput, col) for col in slicedata(data)]
-    end
+    build_result(data, constantinput, reverse_rows, as_matrix)
 end
 
-function preprocess(row::NamedTuple, per_tile::Bool, reverse_rows::Bool,
-                    #=join_pad=#::Val{true}, #=pad_each=#::Val)
+function preprocess(row::NamedTuple, per_tile::Bool, reverse_rows::Val,
+                    #=join_pad=#::Val{true}, #=as_matrix=#::Val)
     constantinput = getconstantinput(row)
     decompressed_data = decompress(row.data)
-    if reverse_rows && ndims(decompressed_data) >= 2
+    if reverse_rows isa Val{true} && ndims(decompressed_data) >= 2
         rawdata = reverse(decompressed_data, dims=1)
     else
         rawdata = decompressed_data
     end
+    # TODO preallocate, then fill
     if ndims(rawdata) == 3
-        data = reduce(vcat, eachslice(rawdata, dims=3))
+        data = mapreduce(vec, vcat, eachslice(rawdata, dims=3))
+        minlength = LevelStatistics.maxtileshori * size(rawdata, 3)
     else
         data = vec(rawdata)
+        minlength = LevelStatistics.maxtileshori
     end
-    return vcat(constantinput, rpad(data, LevelStatistics.maxtileshori, 0))
+    return vcat(constantinput, rpad(data, minlength, 0))
+end
+
+
+function build_result(data, constantinput, reverse_rows::Val, as_matrix::Val{true})
+    constantinputsize = length(constantinput) + 1
+    result_matrix = construct_empty_result(data, constantinputsize, as_matrix)
+
+    # Writing it this way makes more allocations but is faster.
+    result_matrix[1:constantinputsize - 1, :]   .= constantinput
+    result_matrix[constantinputsize, 1:end - 1] .= 1
+    for (res_col, data_col) in zip(eachcol(result_matrix), slicedata(data, reverse_rows))
+        # res_col[1:constantinputsize - 1]   = constantinput
+        # res_col[constantinputsize]         = 1
+        res_col[constantinputsize + 1:end] = data_col
+    end
+    result_matrix isa AbstractSparseArray || (result_matrix[constantinputsize, end] = 0)
+    return result_matrix
+end
+
+function build_result(data, constantinput, reverse_rows::Val, as_matrix::Val{false})
+    constantinputsize = length(constantinput) + 1
+    result_vector = construct_empty_result(data, constantinputsize, as_matrix)
+    for (res_col, data_col) in zip(result_vector, slicedata(data, reverse_rows))
+        res_col[1:constantinputsize - 1]   = constantinput
+        res_col[constantinputsize]         = 1
+        res_col[constantinputsize + 1:end] = data_col
+    end
+    if result_vector[end] isa AbstractSparseArray
+        result_vector[end][constantinputsize] = 0
+    end
+    return result_vector
+end
+
+function construct_empty_result(data::AbstractVector,
+                                constantinputsize, #=as_matrix=#::Val{true})
+    Matrix(Float32, constantinputsize + 1, length(data))
+end
+
+function construct_empty_result(data::AbstractMatrix,
+                                constantinputsize, #=as_matrix=#::Val{true})
+    Matrix{Float32}(undef, constantinputsize + size(data, 1), size(data, 2))
+end
+
+function construct_empty_result(data::AbstractArray{T, 3},
+                                constantinputsize, #=as_matrix=#::Val{true}) where T
+    spzeros(Float32, constantinputsize + size(data, 1) * size(data, 3), size(data, 2))
+end
+
+function construct_empty_result(data::AbstractVector{<:AbstractSparseMatrix},
+                                constantinputsize, #=as_matrix=#::Val{true})
+    spzeros(Float32, constantinputsize + length(first(data)), length(data))
+end
+
+function construct_empty_result(data::AbstractVector,
+                                constantinputsize, #=as_matrix=#::Val{false})
+    Vector{Float32}[Vector{Float32}(undef, constantinputsize + 1) for _ in 1:length(data)]
+end
+
+function construct_empty_result(data::AbstractMatrix,
+                                constantinputsize, #=as_matrix=#::Val{false})
+    Vector{Float32}[Vector{Float32}(undef, constantinputsize + size(data, 1))
+                    for _ in 1:size(data, 2)]
+end
+
+function construct_empty_result(data::AbstractArray{T, 3},
+                                constantinputsize, #=as_matrix=#::Val{false}) where T
+    Vector{Float32}[Vector{Float32}(undef,
+                                    constantinputsize + size(data, 1) * size(data, 3))
+                    for _ in 1:size(data, 2)]
+end
+
+function construct_empty_result(data::AbstractVector{<:AbstractSparseMatrix},
+                                constantinputsize, #=as_matrix=#::Val{false})
+    SparseVector{Float32, defaultindextype}[
+        spzeros(Float32, constantinputsize + length(first(data))) for _ in 1:length(data)
+    ]
 end
 
 """
@@ -389,7 +430,7 @@ function firstscreen(data::AbstractArray{T, 3}) where T
 end
 
 function firstscreen(data::AbstractVector{<:AbstractSparseMatrix})
-    reduce((x, y) -> cat(x, y, dims=3), map(firstscreen, data))
+    mapreduce(firstscreen, (x, y) -> cat(x, y, dims=3), data)
 end
 
 function gan_preprocess(row::NamedTuple)
