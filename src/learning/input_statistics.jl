@@ -12,14 +12,14 @@ export imgsize1d, imgsize2d, imgsize3dtiles, imgsize3d
 const screenrows = LevelStatistics.screenrowshori
 const screencols = LevelStatistics.screencols
 
-const layers3d = begin
+const layers3d = (
     LevelStatistics.uniquevanillatiles  # tiles
     + 2                                 # main entrance and midway entrance
     + uniquesprites                     # sprites
     + maximumexits                      # screen exits
     + maximumsecondaryexits             # secondary exits
     + maximumentrances                  # secondary entrances
-end
+)
 
 const constantinputsize = 6
 

@@ -1,7 +1,7 @@
 \subsection{Super Mario World}
 
 We are going to focus on a single game for level generation:
-\emph{Super Mario World} (SMW). Super Mario World was released in~1990
+\emph{Super Mario World}~(SMW). Super Mario World was released in~1990
 by Nintendo for the Super Nintendo Entertainment
 System~\cite{SuperMarioWorld2019}. It is a 2-dimensional platforming
 game with the goal of reaching each level's exit in a limited amount
@@ -40,6 +40,7 @@ the levels work and what one has to look out for when creating a
 database suitable for feeding into a machine learning model.
 
 \subsubsection{Hacking Scene}
+\label{sec:hacks}
 
 At the time of writing, Super Mario World is almost 30 years old. Due
 to both its age and success, it has been able to gain a large
@@ -88,8 +89,9 @@ Being able to filter hacks was important for two reasons. One being
 that programmed custom behaviour was out of the scope of this work,
 requiring both parsing the binary 65C816 assembly code and then
 understanding its every behaviour. So we used the ``vanilla'' tag to
-exclude hacks using behaviour not in the original (``vanilla'') game.
-Also, to assert some form of quality in the dataset, only hacks with a
+exclude hacks using behaviour not in the original game (also called
+the ``vanilla'' game; we will use these terms interchangeably). Also,
+to assert some form of quality in the dataset, only hacks with a
 rating greater than or equal to 3.0 were downloaded (our rating is the
 mean of all individual ratings, ranging from 1.0 to 5.0 and including
 \emph{None} for no individual ratings). All in all, over 17000 unique
@@ -102,6 +104,7 @@ billions), it may be enough for our models to get a grasp on what
 makes a level enjoyable.
 
 \subsubsection{Levels}
+\label{sec:levels}
 
 We already assessed that Super Mario World is a complex game with many
 possibilities both in play and creative freedom in level design due to
@@ -164,7 +167,12 @@ otherwise, screen sizes are constant over different levels. While
 Lunar Magic supports non-vanilla behaviour in that screens can have
 other sizes (although still a constant size per level). Like with all
 non-vanilla modifications that have a direct impact on data, we are
-going to ignore that feature.
+going to ignore that feature. For simplicity, we are also only going
+to train on horizontal levels. While support for vertical levels in
+database generation exists, models that support both types of levels
+are more complicated. Also, vertical levels only make up a fraction of
+total levels, so not a lot of data is lost (circa 2000 of the over
+17000 levels are vertical).
 
 Calling a screen a matrix is not the whole truth. While screens itself
 are basically only areas in a level, those areas can contain many
@@ -193,6 +201,15 @@ by Lunar Magic. The types and a short description are listed here:
   background objects like arrow signs or bushes that only exist for
   aesthetical reasons are tiles. In the hacking community, this layer
   of tiles is also called ``layer 1''. \\
+  The original game supports 512 tiles, each with possibly different
+  behaviour. Lunar Magic extends the amount of tiles by allowing users
+  to define new, custom tiles that either (1) reference another tile's
+  behaviour (these references may recurse but not loop), so only
+  changing the texture of the tile or (2) point to a custom procedure,
+  so possibly changing both, the texture and the behaviour of the
+  tile. Due to only allowing vanilla hacks that promise not to
+  implement custom behaviour, we can ignore the second case and simply
+  follow references until finding one of the original tiles. \\
   As mentioned at the beginnig of this paragraph, tiles may exist on
   two layers in the level. Layer 2 may contain interactive objects or
   just non-interactive graphical background data. A special property
@@ -207,8 +224,9 @@ by Lunar Magic. The types and a short description are listed here:
   level without belonging to a certain position in the level. For
   example, which tileset (that is, the graphics) or which background
   music is used in a level is decided by the metadata. A level's
-  metadata also contains its entry points. We will describe metadata
-  in detail in its paragraph on page~\pageref{par:metadata}.
+  metadata also contains its entry points. Finally, metadata may even
+  change the behaviour of certain tiles. We will describe metadata in
+  detail in its paragraph on page~\pageref{par:metadata}.
 \item \emph{Sprites} are usually moving or movable objects that
   interact with Mario and each other in a certain way. For example,
   enemies and even goal objects like the orb, key and keyhole
@@ -234,23 +252,116 @@ by Lunar Magic. The types and a short description are listed here:
   may point to the same secondary entrance.
 \end{enumerate}
 
-The data dumped by Lunar Magic is split into five different files with
-the following extensions and representation:
-% TODO this is crap
-\begin{description}
-\item[map] Tiles; matrix-like.
-\item[ent] Metadata; struct-like.
-\item[sp] Sprites; list-like format.
-\item[sp] Sprite data
-\end{description}
-Super Mario World levels 
+Now that we have described the different kinds of data layers we will
+be dealing with, we will take a quick look at how they expand in the
+abstract space our model is going to work with. It should be noted
+that each individual ``type'' of something regards its own layer to
+get a binary encoding of the level. Prior to constructing our data, we
+need to know the amount of layers. We already know that there are 512
+unique tiles in the vanilla game. For the sprites, we need the amount
+of unique sprites used over all hacks. To represent all possible
+exits, we need the maximum amount of screen exits and connected
+secondary exits and entrances. In each hack, we count the amount of
+screen exits and connected secondary exits and entrances and take the
+maximum of each of these over all hacks. We also need 2 layers to
+represent the level's main and midway entrance points. If we sum up
+the total amount of all unique tiles and sprites, the maximum amount
+of screen exits and (connected) secondary exits and secondary
+entrances plus the two entrance points, we get a total of
+$512 + 241 + 511 + 449 + 449 + 2 = 2164$ layers. A horizontal level
+consists of 27 rows and at maximum $16 \cdot 32 = 512$ columns (16 columns
+per screen, 32 screens at maximum). We may therefore get a maximum
+amount of $27 \cdot 512 \cdot 2164 \approx 30 \cdot 10^{6}$ entries in the
+abstract, binary representation of a level. \\
+As the dimensionality of levels containing all layers is quite high
+(and mostly filled with emptiness), we provide filters to only process
+chosen level data making training both easier and faster. We even
+provide a filter so only sprites directly relevant to reaching the
+goal are kept. Due to Super Mario World's complexity, we cannot cover
+each case. Sometimes jumping on an enemy or throwing a Koopa's shell
+may be required to finish the level. These are just some examples of
+the vast majority of possibilities. The filter should include most~--
+if not all~-- sprites required for reaching the goal in the vanilla
+game, though.
+
+We will now take a look at the effects a level's metadata has on it.
 
 \paragraph{Metadata}
 \phantomsection
 \label{par:metadata}
 
-\paragraph{Levels in Other Games}
+As already explained, metadata contains information about a level that
+is not related to any position in the level like changing a level's
+graphics or music. However, even these effects may influence unrelated
+objects. For example changing a level's fore- and background graphics
+automatically changes the behaviour of some certain tiles. Some tiles
+may only exits for certain graphics settings. Due to these interactive
+influences metadata has on a level, we need to take it into account
+when training our model. Each level has three headers containing
+metadata. A primary and a secondary level header and a sprite header.
+While we could feed our model all the different metadata points, we
+are only interested in the ones that provide information on two
+issues: (1) changes to interactive parts of the level and (2) changes
+to a level's size or ``vanilla-ness''. We need (1) so our model may
+learn the correct representation of each tile for each level and we
+need (2) to be able to filter undesired levels. As an example for (1),
+we already mentioned the graphics setting and its influence on tiles.
+An example for (2) is how many screens the level contains or whether
+the level uses Lunar Magic's expanded format or whether it's a
+horizontal, vertical, or even boss level. \\
+Finally, the information about the main and midway entrance of each
+level is also stored in the metadata. We, however, do not treat these
+as metadata and instead store them in the level matrix like tiles.
 
+Let us now take a look at how Mario levels are different from levels
+in other games; at what makes them special and how it influences our
+decisions regarding model design.
+
+\paragraph{Comparison with Levels in Other Games}
+
+While Super Mario World levels mostly follow a linear style of getting
+from one side of the level (the beginnig) to the other (the goal),
+some levels include non-linearities. Levels may even loop and require
+the player to solve a puzzle in order to progress or backtrack after
+acquiring an object. Or after activating a P switch in one level, a
+door in another may suddenly appear. These influences on both a
+level's linearity and its interaction with other levels makes it hard
+to get a general generative solution for a level. We therefore
+restrict our problem to only generating one independent level each,
+not a level including the levels its exits point to. This means that
+we will get incomplete levels or unconnected exits. One way of
+adressing this would be to generate a more wholistic view, meaning
+concatenating a level to its connected levels and generating all at
+once. Even then, we would need to interpret the way the level plays
+out to concatenate the levels in the right order. Due to the immense
+increases in architectural (software) and model complexity, this is
+reserved for future work.
+
+In Super Mario World, each level is independent from another
+(excluding levels connected by screen or secondary exits)\footnote{A
+  counter example is Super Metroid~\cite{SuperMetroid2019}, also
+  released on the Super Nintendo Entertainment System, in which the
+  whole world is in concept one giant level, also divided into
+  screens.}. This means we will not have to pay attention to Mario's
+state in between different levels. For example, in other games, a
+permanent power-up may be required to progress in a future level. We
+do not have this issue, enabling us to start fresh with each level we
+generate. In the same vein, as levels are not connected with each
+other (again, excluding the connections by screen or secondary exits),
+our problem size shrings as we do not need to get a complete view of
+the whole game world. While the original game separates levels into
+% TODO figure of overworld
+different biomes (grassland, cave, forest, \dots) by changing the
+graphics of sequential levels to the corresponding theme, some hacks
+may tell a story by tuning the general feel and environment of one
+level to fit the following one. We can ignore this and still obtain a
+new, interesting Super Mario World game, even though the cosmetic,
+meta-view of the world whose story is told through the game, is lost.
+
+With that, we have described the most important concepts in Super
+Mario World and how they influence our decisions regarding model
+design and data selection. We will now explain the machine
+learning-related methods used throughout this work in detail.
 
 %%% Local Variables:
 %%% mode: latex

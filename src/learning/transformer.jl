@@ -6,7 +6,7 @@ import Transformers
 using ..LevelStatistics: maxcolshori
 using ..InputStatistics
 using ..ModelUtils
-import ..ModelUtils: makeloss, dataiteratorparams, soft_criterion
+import ..ModelUtils: makeloss, dataiteratorparams, makesoftloss, soft_criterion
 
 export TransformerModel, transformer1d, transformer2d, transformer3dtiles, transformer3d
 
@@ -29,6 +29,14 @@ end
 
 dataiteratorparams(::TransformerModel) = (join_pad=false, as_matrix=true)
 
+
+function makesoftloss(model::TransformerModel, criterion)
+    function loss(x, y)
+        y_hat = model(x)
+        l = soft_criterion(model, y_hat, y, criterion)
+        return l
+    end
+end
 
 # A possible criterion to reduce over-generalizing. Loss function must be changed for this
 # as this criterion shouldn't be broadcasted.
@@ -229,7 +237,7 @@ function maketransformer(num_heads::Integer, attnhiddensize::Integer,
 end
 
 function transformer1d(num_heads::Integer=8, attnhiddensize::Integer=4,
-                       ffhiddensize::Integer=16, num_layers::Integer=2,
+                       ffhiddensize::Integer=8, num_layers::Integer=2,
                        inputsize::Integer=inputsize1d,
                        outputsize::Integer=outputsizeof(inputsize);
                        p_dropout_ff=0.05f0, p_dropout_attn=0.05f0, kwargs...)
@@ -239,7 +247,7 @@ function transformer1d(num_heads::Integer=8, attnhiddensize::Integer=4,
 end
 
 function transformer2d(num_heads::Integer=8, attnhiddensize::Integer=8,
-                       ffhiddensize::Integer=32, num_layers::Integer=2,
+                       ffhiddensize::Integer=16, num_layers::Integer=2,
                        inputsize::Integer=inputsize2d,
                        outputsize::Integer=outputsizeof(inputsize);
                        p_dropout_ff=0.05f0, p_dropout_attn=0.05f0, kwargs...)
@@ -249,7 +257,7 @@ function transformer2d(num_heads::Integer=8, attnhiddensize::Integer=8,
 end
 
 function transformer3dtiles(num_heads::Integer=8, attnhiddensize::Integer=16,
-                            ffhiddensize::Integer=64, num_layers::Integer=3,
+                            ffhiddensize::Integer=32, num_layers::Integer=3,
                             inputsize::Integer=inputsize3dtiles,
                             outputsize::Integer=outputsizeof(inputsize); kwargs...)
     maketransformer(num_heads, attnhiddensize, ffhiddensize, num_layers,
@@ -257,7 +265,7 @@ function transformer3dtiles(num_heads::Integer=8, attnhiddensize::Integer=16,
 end
 
 function transformer3d(num_heads::Integer=8, attnhiddensize::Integer=32,
-                       ffhiddensize::Integer=128, num_layers::Integer=3,
+                       ffhiddensize::Integer=64, num_layers::Integer=3,
                        inputsize::Integer=inputsize3d,
                        outputsize::Integer=outputsizeof(inputsize); kwargs...)
     maketransformer(num_heads, attnhiddensize, ffhiddensize, num_layers,
