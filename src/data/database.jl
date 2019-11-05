@@ -92,7 +92,7 @@ function generatedata(rootdir::AbstractString=leveldir; formatfunction::Function
     totalsize = zero(UInt)
     funcsymbol = nameof(formatfunction)
     if isnothing(flags)
-        flags = dimensionality_defaultflags[String(funcsymbol)[end - 1:end]]
+        flags = dimensionality_defaultflags[Symbol(String(funcsymbol)[end - 1:end])]
     elseif flags isa Symbol
         flags = dimensionality_defaultflags[flags]
     end
@@ -227,7 +227,7 @@ function generatecsv(dest::AbstractString, rootdir::AbstractString=leveldir;
     totalsize = zero(UInt)
     if isnothing(flags)
         funcsymbol = nameof(formatfunction)
-        flags = dimensionality_defaultflags[String(funcsymbol)[end - 1:end]]
+        flags = dimensionality_defaultflags[Symbol(String(funcsymbol)[end - 1:end])]
     end
 
     # Level data added later due to (yet) unknown type

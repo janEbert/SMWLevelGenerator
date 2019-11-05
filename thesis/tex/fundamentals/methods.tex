@@ -1,41 +1,57 @@
 \subsection{Methods}
 
 In this section, we will introduce the primary ideas we apply to
-obtain a level generation pipeline. The methods will not be listed in
-pipeline-sequential ordering (the order in which they will be applied
-to obtain a generated level) but instead we will focus on the amount
-of data the different methods generate. The sequence prediction task
-is the most important part of the pipeline, generating a complete
-level from a minimal amount of input. To obtain the first input of the
-to be predicted sequence, we use a generative model. Finally, to
-generate the metadata described on page~\pageref{par:metadata}, we use
-an image processor that predicts the metadata of a level by analysing
-its first screen~-- the output of the generative model and input to
-the sequence predictor.
+obtain a level generation pipeline. Before we list the methods, we
+take a look at how to actually achieve our task. By analyzing inputs
+of large dimensionality (the level's layers and metadata), we want to
+generate similar, new levels of large dimensionality (also level
+layers and metadata). This is a very complex problem, requiring
+careful planning and a lot of computational power to train a model
+large or refined enough to capture all the essences we need for a new,
+enjoyable level. A generative adversarial network~(GAN) would~-- with
+the present knowledge in machine learning~-- be exceptionally hard to
+train on a task this large. A lack of proper computational resources
+makes this even harder as training a GAN requires training two full
+models in parallel. While a GAN would be perfect in theory, allowing
+us to learn the dataset without a modified loss function, due to the
+issues with training, we try another approach: Generating only the
+first screen by the GAN and generating the rest of the level using
+time series prediction methods makes training much easier, allowing us
+to get a simpler solution to our problem. Although the results will
+not be as good as with a GAN due to a non-adversarial loss function,
+with some tuning, good results should be achievable. Also, training of
+both, the GAN and the time series prediction model, should be much
+easier than a single, large GAN. To generate the metadata, we use a
+simple image processing model that predicts a level's metadata based
+on its first screen.
+
+The methods will not be listed in pipeline-sequential ordering (the
+order in which they will be applied to obtain a generated level) but
+instead we will focus on the amount of data the different methods
+generate. The sequence prediction task is the most important part of
+the pipeline, generating a complete level from a minimal amount of
+input. To obtain the first input of the to be predicted sequence, we
+use a generative model. Finally, to generate the metadata described on
+page~\pageref{par:metadata}, we use an image processor that predicts
+the metadata of a level by analysing its first screen~-- the output of
+the generative model and input to the sequence predictor.
 % TODO picture of pipeline here or maybe at end of section
-
-Before we list the models, we take a look at how to actually achieve
-our task. By analyzing inputs of large dimensionality (the level's
-layers and metadata), we want to generate similar, new levels of large
-dimensionality (also level layers and metadata). This is a very
-complex problem, requiring careful planning and a lot of computational
-power to train a model large or refined enough to capture all the
-essences we need for a new, enjoyable level. A generative adversarial
-network~(GAN) would~-- with the present knowledge in machine
-learning~-- be exceptionally hard to train on a task this large. A
-lack of proper computational resources makes this even harder as
-training a GAN requires training two full models in parallel. While a
-GAN would be perfect in theory, allowing us to learn the dataset in a
-much more abstract way and allowing the generation of levels that
-capture much of what makes our dataset's levels what they are.
-% TODO viel besser beschreiben
-
 
 \subsubsection{Sequence Prediction}
 
-Due to the complexity of our task,
 Tasked with completing an unfinished sequence, we turn our head to
-time series prediction models.
+time series prediction models. The models we are using are also called
+sequence-to-sequence models. We will closely orient ourselves on
+natural language processing techniques, specifically natural language
+generation. The models we evaluate are long short term memory (LSTM)
+stacks and transformer-based models. More specifically, the LSTM
+stacks are based on \emph{char-rnns}~\cite{andrejKarpathyCharrnn2019}
+and the transformer-based models are
+\emph{GPT-2}~\cite{radfordLanguageModelsAre,OpenaiGpt22019} models. As
+a baseline, we implement a non-learning random model that simply
+outputs sequences of either 1 or 0 based on a user-supplied chance
+$p \in [0, 1]$.
+
 
 
 \subsubsection{Generative Methods}
