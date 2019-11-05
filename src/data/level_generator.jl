@@ -16,16 +16,8 @@ using ..LevelWriter
 
 export predict_level, generatelevel
 
-function findlm(path=joinpath(@__DIR__, "..", "..", "tools",
-                              "lm304ebert21892usix", "Lunar Magic.exe"))
-    @assert isfile(path) ("cannot find Lunar Magic in the given path. Please download it "
-                          * "(see setup scripts) and/or change the given path.")
-    return path
-end
-
-
-const lmpath = findlm(joinpath(@__DIR__, "..", "..", "tools",
-                               "lm304ebert21892usix", "Lunar Magic.exe"))
+const lmpath = joinpath(@__DIR__, "..", "..", "tools",
+                                  "lm304ebert21892usix", "Lunar Magic.exe")
 
 const level105dbid_1d_singleline_t = 0x2b7d
 const level105dbid_2d_t = 0x2b7d
@@ -204,6 +196,8 @@ function lmwrite(::Nothing, ::Any) end
 
 function lmwrite(write_rom, number)
     levelnumber = string(number, base=16)
+    @assert isfile(lmpath) ("cannot find Lunar Magic in the given path. Please download it "
+                            * "(see setup scripts) and/or change the given path.")
     run(`wine $lmpath -ReconstructLevel $write_rom $levelnumber`)
 end
 
