@@ -49,13 +49,13 @@ LSTM, Dropout, LSTM, LSTM, Dropout, LSTM, LSTM, Dropout, LSTM, ...
 ```
 """
 function makehiddenlayers(hiddensize::Integer, num_hiddenlayers::Integer,
-                          ::Val{false}, p_dropout)
+                          #=skipconnections=#::Val{false}, p_dropout)
     return ((i - 2) % 3 == 0 ? Flux.LSTM(hiddensize, hiddensize) : Flux.Dropout(p_dropout)
             for i in 1:num_hiddenlayers + cld(num_hiddenlayers, 2))
 end
 
 function makehiddenlayers(hiddensize::Integer, num_hiddenlayers::Integer,
-                          ::Val{true}, p_dropout)
+                          #=skipconnections=#::Val{true}, p_dropout)
     if num_hiddenlayers > 1
         if num_hiddenlayers % 2 == 0
             skipped_layer = (Flux.LSTM(hiddensize, hiddensize),)

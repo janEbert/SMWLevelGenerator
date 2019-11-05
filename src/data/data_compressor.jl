@@ -23,6 +23,7 @@ function unsparse(sparsearray::AbstractVector{SparseMatrixCSC{T}}) where T
     reduce((a, b) -> cat(a, b, dims=2), map(Array, sparsearray))
 end
 
+# TODO more compression
 """
 Return the given `AbstractVector` of sparse data as a `Vector` of `Pair`s containing the
 index and data of each non-empty (`count(!iszero, x) > 0`) entry.

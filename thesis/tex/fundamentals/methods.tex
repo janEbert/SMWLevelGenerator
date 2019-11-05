@@ -43,7 +43,7 @@ Tasked with completing an unfinished sequence, we turn our head to
 time series prediction models. The models we are using are also called
 sequence-to-sequence models. We will closely orient ourselves on
 natural language processing techniques, specifically natural language
-generation. The models we evaluate are long short term memory (LSTM)
+generation. The models we evaluate are long short term memory (LSTM)~\cite{}
 stacks and transformer-based models. More specifically, the LSTM
 stacks are based on \emph{char-rnns}~\cite{andrejKarpathyCharrnn2019}
 and the transformer-based models are
@@ -51,6 +51,13 @@ and the transformer-based models are
 a baseline, we implement a non-learning random model that simply
 outputs sequences of either 1 or 0 based on a user-supplied chance
 $p \in [0, 1]$.
+
+A long short term memory cell's specialty is a memory that
+``remembers'' values of a sequence, depending on connection weights.
+Due to this behaviour, it is well suited for both non-linear and
+long-term dependencies in Mario levels as both can be captured from
+any prior, relevant sequence element (for example, a keyhole at the
+beginning of the level implies a key later).
 
 
 
