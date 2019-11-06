@@ -396,7 +396,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                                  * "$(round(lossdiff, digits=3)) "
                                  * "($(round((lossratio - 1) * 100, digits=2)) %). "
                                  * "Total time: $(round(timediff / 60, digits=2)) min.")
-                        cleanup(trainiter, testiter, log_io)
+                        cleanupall(trainiter, testiter, log_io)
                         return (d_model, g_model, d_trainlosses_real,
                                 d_trainlosses_fake, d_testlosses, g_trainlosses, testfakes,
                                 db, trainindices, const_noise)
@@ -445,7 +445,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
         logprint(logger, "Training finished after $steps training steps and "
                  * "$(round((time() - starttime) / 60, digits=2)) minutes.")
     finally
-        cleanup(trainiter, testiter, log_io)
+        cleanupall(trainiter, testiter, log_io)
     end
     return (d_model, g_model, d_trainlosses_real, d_trainlosses_fake,
             d_testlosses, g_trainlosses, testfakes, db, trainindices, const_noise)
@@ -475,10 +475,7 @@ function testmodel(meta_model, testiter, db, testindices, batch_size, dataiter_t
 end
 
 # Numbered Vararg so we can make sure we didn't miss one without having to list them all.
-function cleanup(args::Vararg{Any, 3})
-    map(cleanup, args)
-    return
-end
+cleanupall(args::Vararg{Any, 3}) = foreach(cleanup, args)
 
 function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
                    steps, logdir, starttimestr)

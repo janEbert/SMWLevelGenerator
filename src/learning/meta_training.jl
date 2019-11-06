@@ -212,7 +212,7 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                                  * "$(round(lossdiff, digits=3)) "
                                  * "($(round((lossratio - 1) * 100, digits=2)) %). "
                                  * "Total time: $(round(timediff / 60, digits=2)) min.")
-                        cleanup(trainiter, testiter, log_io)
+                        cleanupall(trainiter, testiter, log_io)
                         return (model, trainlosses, testlosses, meanlosses, varlosses,
                                 db, trainindices, testindices)
                     end
@@ -239,7 +239,7 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
         logprint(logger, "Training finished after $steps training steps and "
                  * "$(round((time() - starttime) / 60, digits=2)) minutes.")
     finally
-        cleanup(trainiter, testiter, log_io)
+        cleanupall(trainiter, testiter, log_io)
     end
     return (model, trainlosses, testlosses, meanlosses, varlosses,
             db, trainindices, testindices)
@@ -262,10 +262,7 @@ function testmodel(model, testiter, db, testindices, batch_size, dataiter_thread
 end
 
 # Numbered Vararg so we can make sure we didn't miss one without having to list them all.
-function cleanup(args::Vararg{Any, 3})
-    map(cleanup, args)
-    return
-end
+cleanupall(args::Vararg{Any, 3}) = foreach(cleanup, args)
 
 function save_cp(model, optim, trainlosses, meanlosses,
                       varlosses, steps, logdir, starttimestr)

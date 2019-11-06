@@ -323,10 +323,7 @@ function getmaxloss(seq, dataiterparams, loss)
 end
 
 # Numbered Vararg so we can make sure we didn't miss one without having to list them all.
-function cleanupall(args::Vararg{Any, 3})
-    map(cleanup, args)
-    return
-end
+cleanupall(args::Vararg{Any, 3}) = foreach(cleanup, args)
 
 function loadcp(cppath::AbstractString, modeltype::Nothing)
     cp = BSON.load(cppath)
