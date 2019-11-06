@@ -3,6 +3,7 @@ module ModelUtils
 using SparseArrays
 
 using BSON
+using CuArrays
 using CuArrays.CUSPARSE
 import Flux
 using Flux.Tracker: gradient
@@ -11,6 +12,7 @@ using Flux.Tracker: gradient
 export LearningModel, makeloss, dataiteratorparams, calculate_loss, step!
 export makesoftloss, soft_criterion
 export toggle_gpu, should_use_gpu, togpu
+export mae, bce
 
 """
     LearningModel
@@ -172,6 +174,10 @@ togpu(x) = should_use_gpu() ? Flux.gpu(x) : identity(x)
 
 "Mean absolute error."
 mae(y_hat, y) = sum(abs.(y_hat .- y)) * 1 // length(y)
+
+CuArrays.@cufunc function Flux.binarycrossentropy(ŷ, y; ϵ=eps(ŷ))
+    return -y*log(ŷ + ϵ) - (1 - y)*log(1 - ŷ + ϵ)
+end
 
 "Approximate PyTorch binary cross entropy loss."
 bce(y_hat, y) = Flux.binarycrossentropy(y_hat, y; ϵ=1f-12)
