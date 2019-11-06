@@ -208,23 +208,14 @@ function ConvTransposeNoBias(k::NTuple{N, Integer}, ch::Pair{<:Integer, <:Intege
                        activation, stride=stride, pad=pad, dilation=dilation)
 end
 
-function Base.clamp!(a::CuVecOrMat, low, high)
+function Base.clamp!(a::CuArray, low, high)
     function kernel(a, low, high)
-        col = (blockIdx().x - 1) * blockDim().x + threadIdx().x
-        row = (blockIdx().y - 1) * blockDim().y + threadIdx().y
-        if col <= size(a, 1) && row <= size(a, 2)
-            a[col, row] = clamp(a[col, row], low, high)
-        end
+        I = CuArrays.@cuindex a
+        a[I...] = clamp(a[I...], low, high)
         return
     end
-
-    max_threads = 256
-    threads_x = min(max_threads, size(a, 1))
-    threads_y = min(div(max_threads, threads_x), size(a, 2))
-    threads = (threads_x, threads_y)
-    blocks = ceil.(Int, (size(a, 1), size(a, 2)) ./ threads)
-
-    @cuda threads=threads blocks=blocks kernel(a, low, high)
+    blocks, threads = CuArrays.cudims(a)
+    @cuda blocks=blocks threads=threads kernel(a, low, high)
     return a
 end
 
