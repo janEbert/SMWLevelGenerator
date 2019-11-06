@@ -28,8 +28,8 @@ const inputsize1d = 1 + constantinputsize
 const inputsize2d = screenrows + constantinputsize
 const inputsize3dtiles = screenrows * LevelStatistics.uniquevanillatiles + constantinputsize
 """
-This number is hardcoded. Change first summand to `size(LevelFormatter.to3d(0x105), 3)` if
-this is wrong.
+If this number is wrong, update your constant statistics files
+(run src/data/sprites.jl and src/data/secondary_level_stats.jl outside the REPL).
 """
 const inputsize3d = screenrows * layers3d + constantinputsize
 
@@ -40,8 +40,8 @@ imgsize1d = (screencols, 1)
 imgsize2d = (screencols, screenrows, 1)
 imgsize3dtiles = (screencols, screenrows, LevelStatistics.uniquevanillatiles)
 """
-This number is hardcoded. Change third element to `size(LevelFormatter.to3d(0x105), 3)` if
-this is wrong.
+If this number is wrong, update your constant statistics files
+(run src/data/sprites.jl and src/data/secondary_level_stats.jl outside the REPL).
 """
 imgsize3d = (screencols, screenrows, layers3d)
 

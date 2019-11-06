@@ -370,10 +370,11 @@ function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                 screen_buffer[i] = reshape(screenview, size(screenview)..., 1, 1)
                 constantinput_buffer[i] = getconstantinput(row)
             end
+            # TODO pre-allocate and fill array instead of reduction
             if length(indices) == batch_size
                 screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
-                                      screen_buffer)
-                constantinput_batch = reduce(hcat, constantinput_buffer)
+                                      @view screen_buffer[1:end])
+                constantinput_batch = reduce(hcat, @view constantinput_buffer[1:end])
             else
                 screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
                                       view(screen_buffer, 1:length(indices)))

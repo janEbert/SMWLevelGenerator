@@ -68,6 +68,7 @@ function generatedb_inline(args...; kwargs...)
 end
 
 
+# TODO only compress if desired
 """
     generatedata(rootdir::AbstractString=leveldir; formatfunction::Function=to3d,
                  flags::Union{AbstractString, Nothing}=nothing, makesparse=true)

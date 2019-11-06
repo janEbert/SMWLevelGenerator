@@ -23,7 +23,8 @@ function unsparse(sparsearray::AbstractVector{SparseMatrixCSC{T}}) where T
     reduce((a, b) -> cat(a, b, dims=2), map(Array, sparsearray))
 end
 
-# TODO more compression
+# TODO remove compression for dim2; it's useless. instead use dim3 compression in database generation if desired, obtaining space for speed.
+# TODO also possibly use BitArrays instead of dim2 compression; they are much smaller but will probably need conversion afterwards for speed (maybe; test this)
 """
 Return the given `AbstractVector` of sparse data as a `Vector` of `Pair`s containing the
 index and data of each non-empty (`count(!iszero, x) > 0`) entry.
