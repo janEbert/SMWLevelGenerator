@@ -270,6 +270,14 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
 
                 # Discriminator
+
+                # Clamp weights
+                if use_wasserstein_loss
+                    for p in d_params
+                        clamp!(p.data, -0.1f0, 0.1f0)
+                    end
+                end
+
                 # Train on real batch
                 d_l_real = d_loss(real_batch, real_target)
                 d_l = d_l_real.data
