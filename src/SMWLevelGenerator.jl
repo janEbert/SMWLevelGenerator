@@ -77,6 +77,7 @@ using .LSTM
 using .Transformer
 using .RandomPredictor
 using .GAN
+using .WassersteinGAN
 using .MetadataPredictor
 using .TrainingLoop
 using .GANTraining
