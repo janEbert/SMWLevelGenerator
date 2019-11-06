@@ -4,6 +4,7 @@ import Base.clamp!
 using SparseArrays
 
 using BSON
+using CUDAnative
 using CuArrays
 using CuArrays.CUSPARSE
 import Flux
