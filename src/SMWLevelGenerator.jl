@@ -55,6 +55,7 @@ include("learning/training_utils.jl")
 include("learning/training_loop.jl")
 
 include("learning/gan.jl")
+include("learning/wasserstein_gan.jl")
 include("learning/metadata_predictor.jl")
 include("learning/gan_training.jl")
 include("learning/meta_training.jl")
