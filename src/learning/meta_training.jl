@@ -22,20 +22,20 @@ export meta_trainingloop!, MetaTrainingParameters, MTPs
 Base.@kwdef struct MetaTrainingParameters
     epochs::Integer = 10
 
-    lr::Float64                               = 0.0002
-    batch_size::Integer                       = 32
-    logevery::Integer                         = 300
-    saveevery::Integer                        = 1500
-    testratio::AbstractFloat                  = 0.1
-    dataiter_threads::Integer                 = 0
-    logdir::AbstractString                    = joinpath("exps", newexpdir("meta"))
-    params_logfile::AbstractString            = "params.json"
-    logfile::AbstractString                   = "training.log"
-    earlystoppingwaitepochs::Integer          = 10
-    earlystoppingthreshold::AbstractFloat     = Inf32
-    criterion::Function                       = Flux.mse
-    overfit_on_batch::Bool                    = false
-    seed::Integer                             = 0
+    lr::Float64                           = 0.0002
+    batch_size::Integer                   = 32
+    logevery::Integer                     = 300
+    saveevery::Integer                    = 1500
+    testratio::AbstractFloat              = 0.1
+    dataiter_threads::Integer             = 0
+    logdir::AbstractString                = joinpath("exps", newexpdir("meta"))
+    params_logfile::AbstractString        = "params.json"
+    logfile::AbstractString               = "training.log"
+    earlystoppingwaitepochs::Integer      = 10
+    earlystoppingthreshold::AbstractFloat = Inf32
+    criterion::Function                   = Flux.mse
+    overfit_on_batch::Bool                = false
+    seed::Integer                         = 0
 end
 
 "Shorthand for MetaTrainingParameters for interactive use."
@@ -148,7 +148,8 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
 
         for epoch in 1:epochs
             gan_dataiterator!(trainiter, db, trainindices, batch_size, dataiter_threads)
-            for i in 1:cld(length(trainindices), batch_size)
+            for (i, j) in zip(1:cld(length(trainindices), batch_size),
+                              Iterators.countfrom(1, batch_size))
                 if steps < past_steps
                     take!(trainiter)
                     steps += 1
@@ -192,7 +193,7 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                     timediff = time() - starttime
                     logprint(logger, "Epoch $(lpad(epoch, ndigits(epochs))) / "
                              * "$epochs; sequence "
-                             * "$(lpad(i, ndigits(length(trainindices)))) / "
+                             * "$(lpad(j, ndigits(length(trainindices)))) / "
                              * "$(length(trainindices)); mean test loss: "
                              * "$(lpad(@sprintf("%.4f", meanloss), maxmeanlossdigits)) "
                              * "(variance: "
@@ -207,7 +208,7 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                         save_cp(model, optim, trainlosses, meanlosses, varlosses,
                                 steps, logdir, starttimestr)
                         logprint(logger, "Early stopping activated after $steps training "
-                                 * "steps ($epoch epochs, $i sequences in current epoch). "
+                                 * "steps ($epoch epochs, $j sequences in current epoch). "
                                  * "Loss increase: $meanloss - $(meanlosses[end - 1]) = "
                                  * "$(round(lossdiff, digits=3)) "
                                  * "($(round((lossratio - 1) * 100, digits=2)) %). "

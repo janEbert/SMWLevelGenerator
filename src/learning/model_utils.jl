@@ -9,7 +9,8 @@ import Flux
 using Flux.Tracker: gradient
 #using Zygote
 
-export LearningModel, makeloss, dataiteratorparams, calculate_loss, step!
+export LearningModel, AbstractDiscriminator, AbstractGenerator
+export makeloss, dataiteratorparams, calculate_loss, step!
 export makesoftloss, soft_criterion
 export toggle_gpu, should_use_gpu, togpu
 export mae, bce
@@ -44,6 +45,9 @@ respective implementation to be sure. They are chosen to be sensible defaults bu
 be correct for `YourModel`.
 """
 abstract type LearningModel end
+
+abstract type AbstractDiscriminator <: LearningModel end
+abstract type AbstractGenerator <: LearningModel end
 
 # TODO allow setting the precision of the models (may not work due to Flux)
 

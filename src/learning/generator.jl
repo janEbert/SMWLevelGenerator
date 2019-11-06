@@ -6,12 +6,10 @@ using ....InputStatistics
 using ....ModelUtils
 import ....ModelUtils: makeloss
 
-export AbstractGenerator, GeneratorModel
+export GeneratorModel
 export generator1d, generator2d, generator3dtiles, generator3d
 
 # TODO implement virtual batch norm
-
-abstract type AbstractGenerator <: LearningModel end
 
 struct GeneratorModel{M} <: AbstractGenerator
     model::M

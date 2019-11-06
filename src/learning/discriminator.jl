@@ -6,12 +6,10 @@ using ....InputStatistics
 using ....ModelUtils
 import ....ModelUtils: makeloss
 
-export AbstractDiscriminator, DiscriminatorModel
+export DiscriminatorModel
 export discriminator1d, discriminator2d, discriminator3dtiles, discriminator3d
 
 # TODO Use constant input part as well! Maybe as parallel connection?
-
-abstract type AbstractDiscriminator <: LearningModel end
 
 struct DiscriminatorModel{M} <: AbstractDiscriminator
     model::M

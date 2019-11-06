@@ -14,6 +14,7 @@ using TensorBoardLogger
 
 using ..DataIterator
 using ..GAN
+using ..WassersteinGAN
 using ..MetadataPredictor
 using ..ModelUtils
 using ..TrainingUtils
@@ -23,24 +24,26 @@ export gan_trainingloop!, GANTrainingParameters, GTPs
 Base.@kwdef struct GANTrainingParameters
     epochs::Integer = 10
 
-    lr::Float64                               = 0.0002
-    betas::Tuple{Float64, Float64}            = (0.5, 0.999)
-    batch_size::Integer                       = 32
-    d_warmup_steps::Integer                   = 0
-    logevery::Integer                         = 200
-    saveevery::Integer                        = 1000
-    dataiter_threads::Integer                 = 0
-    logdir::AbstractString                    = joinpath("exps", newexpdir("gan"))
-    params_logfile::AbstractString            = "params.json"
-    logfile::AbstractString                   = "training.log"
-    earlystoppingwaitepochs::Integer          = 10
-    earlystoppingthreshold::AbstractFloat     = Inf32
-    criterion::Function                       = Flux.binarycrossentropy
-    overfit_on_batch::Bool                    = false
-    meta_lr::Float64                          = 0.001
-    meta_criterion::Function                  = Flux.mse
-    meta_testratio::AbstractFloat             = 0.1
-    seed::Integer                             = 0
+    lr::Float64                           = 0.0002
+    betas::Tuple{Float64, Float64}        = (0.5, 0.999)
+    batch_size::Integer                   = 32
+    use_wasserstein_loss::Bool            = true
+    d_warmup_steps::Integer               = 0
+    d_steps_per_g_step::Integer           = 1
+    logevery::Integer                     = 200
+    saveevery::Integer                    = 1000
+    dataiter_threads::Integer             = 0
+    logdir::AbstractString                = joinpath("exps", newexpdir("gan"))
+    params_logfile::AbstractString        = "params.json"
+    logfile::AbstractString               = "training.log"
+    earlystoppingwaitepochs::Integer      = 10
+    earlystoppingthreshold::AbstractFloat = Inf32
+    criterion::Function                   = Flux.binarycrossentropy
+    overfit_on_batch::Bool                = false
+    meta_lr::Float64                      = 0.001
+    meta_criterion::Function              = Flux.mse
+    meta_testratio::AbstractFloat         = 0.1
+    seed::Integer                         = 0
 end
 
 "Shorthand for GANTrainingParameters for interactive use."
@@ -144,12 +147,14 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
             k => v isa Function ? Symbol(v) : v for (k, v) in meta_model.hyperparams)
     end
 
-    epochs     = params.epochs
-    batch_size = params.batch_size
-    logdir     = params.logdir
-    logevery   = params.logevery
-    saveevery  = params.saveevery
-    d_warmup_steps  = params.d_warmup_steps
+    epochs               = params.epochs
+    batch_size           = params.batch_size
+    use_wasserstein_loss = params.use_wasserstein_loss
+    d_warmup_steps       = params.d_warmup_steps
+    d_steps_per_g_step   = params.d_steps_per_g_step
+    logdir               = params.logdir
+    logevery             = params.logevery
+    saveevery            = params.saveevery
 
     max_d_loss = typemin(eltype(d_trainlosses_real))
     max_d_testloss = typemin(eltype(d_testlosses))
@@ -244,7 +249,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
         for epoch in 1:epochs
             gan_dataiterator!(trainiter, db, trainindices, batch_size, dataiter_threads)
-            for i in 1:cld(length(trainindices), batch_size)
+            for (i, j) in zip(1:cld(length(trainindices), batch_size),
+                              Iterators.countfrom(1, batch_size))
                 if steps < past_steps
                     take!(trainiter)
                     steps += 1
@@ -283,13 +289,17 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 push!(d_trainlosses_fake, d_l_fake.data)
                 @tblog tblogger d_loss_fake=d_l_fake.data log_step_increment=0
 
-                grads = gradient(() -> d_l_real + d_l_fake, d_params)
+                if use_wasserstein_loss
+                    grads = gradient(() -> d_l_real - d_l_fake, d_params)
+                else
+                    grads = gradient(() -> d_l_real + d_l_fake, d_params)
+                end
 
                 # Update
                 Flux.Optimise.update!(d_optim, d_params, grads)
 
 
-                if steps > d_warmup_steps || steps == 0
+                if steps % d_steps_per_g_step == 0 && (steps > d_warmup_steps || steps == 0)
                     # Generator
                     # Use real labels for modified loss function
                     g_l = g_loss(noise_batch, real_target)
@@ -304,7 +314,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
 
                 # Metadata predictor
-                if !isnothing(meta_model) && (overfit_on_batch || i > length(testindices))
+                if !isnothing(meta_model) && (overfit_on_batch || j > length(testindices))
                     l = meta_loss(real_batch, meta_batch)
                     push!(meta_trainlosses, l.data)
                     @tblog tblogger meta_predictor_loss=l.data log_step_increment=0
@@ -362,7 +372,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                     timediff = time() - starttime
                     logprint(logger, "Epoch $(lpad(epoch, ndigits(epochs))) / "
                              * "$epochs; sequence "
-                             * "$(lpad(i, ndigits(length(trainindices)))) / "
+                             * "$(lpad(j, ndigits(length(trainindices)))) / "
                              * "$(length(trainindices)); discriminator loss: "
                              * "$(lpad(@sprintf("%.4f", testloss), max_d_testlossdigits)) "
                              * "test, $(lpad(@sprintf("%.4f", d_l), max_d_lossdigits)) "
@@ -391,7 +401,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                                          logdir, starttimestr)
                         end
                         logprint(logger, "Early stopping activated after $steps training "
-                                 * "steps ($epoch epochs, $i sequences in current epoch). "
+                                 * "steps ($epoch epochs, $j sequences in current epoch). "
                                  * "Loss increase: $testloss - $(d_testlosses[end - 1]) = "
                                  * "$(round(lossdiff, digits=3)) "
                                  * "($(round((lossratio - 1) * 100, digits=2)) %). "
