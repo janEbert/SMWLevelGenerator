@@ -96,9 +96,8 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
     local testlosses
     steps = UInt64(0)
 
-    dataiter_threads = params.dataiter_threads
-    trainiter = gan_dataiteratorchannel(db, 3)
-    testiter  = gan_dataiteratorchannel(db, 3)
+    trainiter = gan_dataiterator(db, 3, trainindices, batch_size, params.dataiter_threads)
+    testiter  = gan_dataiterator(db, 3, testindices,  batch_size, params.dataiter_threads)
 
     loss = makeloss(model, params.criterion)
     parameters = Flux.params(model)
@@ -128,8 +127,7 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                  * "epochs. Seed: $(params.seed).")
 
         # Initial test
-        testlosses = testmodel(model, testiter, db, testindices,
-                               batch_size, dataiter_threads, loss)
+        testlosses = testmodel(model, testiter, testindices, batch_size, loss)
         meanloss = mean(testlosses)
         varloss  = var(testlosses, mean=meanloss)
         if past_steps == 0
@@ -147,7 +145,6 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                  * "total time: $(@sprintf("%.2f", timediff / 60)) min.")
 
         for epoch in 1:epochs
-            gan_dataiterator!(trainiter, db, trainindices, batch_size, dataiter_threads)
             for (i, j) in zip(1:cld(length(trainindices), batch_size),
                               Iterators.countfrom(1, batch_size))
                 if steps < past_steps
@@ -167,8 +164,7 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                 steps += 1
 
                 if logevery != 0 && steps % logevery == 0
-                    testlosses = testmodel(model, testiter, db, testindices,
-                                           batch_size, dataiter_threads, loss)
+                    testlosses = testmodel(model, testiter, testindices, batch_size, loss)
                     meanloss = mean(testlosses)
                     varloss  = var(testlosses, mean=meanloss)
                     @tblog(tblogger, meantestloss=meanloss, vartestloss=varloss,
@@ -220,8 +216,8 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                 end
                 if saveevery != 0 && steps % saveevery == 0
                     if logevery != 0 && steps % logevery != 0
-                        testlosses = testmodel(model, testiter, db, testindices,
-                                               batch_size, dataiter_threads, loss)
+                        testlosses = testmodel(model, testiter, testindices,
+                                               batch_size, loss)
                         meanloss = mean(testlosses)
                         varloss  = var(testlosses, mean=meanloss)
                         @tblog(tblogger, meantestloss=meanloss, vartestloss=varloss,
@@ -247,9 +243,7 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
 end
 
 
-function testmodel(model, testiter, db, testindices, batch_size, dataiter_threads,
-                   loss)
-    gan_dataiterator!(testiter, db, testindices, batch_size, dataiter_threads)
+function testmodel(model, testiter, testindices, batch_size, loss)
     Flux.testmode!(model)
     testlosses = Float32[]
 

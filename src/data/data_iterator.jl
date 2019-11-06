@@ -115,15 +115,17 @@ dataiterator_channeltype(data, as_matrix::Val{false}) = Vector{Float32}
 function dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                           splitindices::AbstractVector, per_tile::Bool, reverse_rows::Val,
                           join_pad::Val, as_matrix::Val)
-    try
-        for index in splitindices
-            @inbounds row = db[index]
-            put!(channel, preprocess(row, per_tile, reverse_rows, join_pad, as_matrix))
+    # try
+        while true
+            for index in splitindices
+                @inbounds row = db[index]
+                put!(channel, preprocess(row, per_tile, reverse_rows, join_pad, as_matrix))
+            end
         end
-    catch e
-        print("Error in data iterator task: ")
-        showerror(stdout, e)
-    end
+    # catch e
+    #     print("Error in data iterator task: ")
+    #     showerror(stdout, e)
+    # end
 end
 
 function dataiterator!(channel::AbstractChannel, db::IndexedTable,
@@ -148,10 +150,10 @@ function dataiterator!(channel::AbstractChannel, db::IndexedTable,
 end
 
 # TODO speed test for data iterator num_threads in trainingutils
-function dataiterator(db::IndexedTable, splitindices::AbstractVector,
+function dataiterator(db::IndexedTable, buffersize::Integer, splitindices::AbstractVector,
                       num_threads::Integer=0, per_tile=false, reverse_rows=false;
                       join_pad=false, as_matrix=false)
-    channel = dataiteratorchannel(db, 4, Val(join_pad), Val(as_matrix))
+    channel = dataiteratorchannel(db, buffersize, Val(join_pad), Val(as_matrix))
     return dataiterator!(channel, db, splitindices, num_threads, per_tile, reverse_rows;
                          join_pad=join_pad, as_matrix=as_matrix)
 end
@@ -357,36 +359,38 @@ end
 
 
 function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
-                              trainindices::AbstractVector, batch_size::Integer)
-    try
+                              splitindices::AbstractVector, batch_size::Integer)
+    # try
         screendims = db[1].data isa AbstractVector{<:Number} ? 3 : 4
         screen_buffer = [Array{Float32, screendims}(undef, ntuple(_ -> 0, screendims))
                          for _ in 1:batch_size]
         constantinput_buffer = [Vector{Float32}(undef, 0) for _ in 1:batch_size]
-        for indices in Iterators.partition(trainindices, batch_size)
-            for (i, index) in enumerate(indices)
-                @inbounds row = db[index]
-                screenview = gan_preprocess(row)
-                screen_buffer[i] = reshape(screenview, size(screenview)..., 1, 1)
-                constantinput_buffer[i] = getconstantinput(row)
+        while true
+            for indices in Iterators.partition(splitindices, batch_size)
+                for (i, index) in enumerate(indices)
+                    @inbounds row = db[index]
+                    screenview = gan_preprocess(row)
+                    screen_buffer[i] = reshape(screenview, size(screenview)..., 1, 1)
+                    constantinput_buffer[i] = getconstantinput(row)
+                end
+                # TODO pre-allocate and fill array instead of reduction
+                if length(indices) == batch_size
+                    screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
+                                          @view screen_buffer[1:end])
+                    constantinput_batch = reduce(hcat, @view constantinput_buffer[1:end])
+                else
+                    screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
+                                          view(screen_buffer, 1:length(indices)))
+                    constantinput_batch = reduce(hcat,
+                                                 view(constantinput_buffer, 1:length(indices)))
+                end
+                put!(channel, (screen_batch, constantinput_batch))
             end
-            # TODO pre-allocate and fill array instead of reduction
-            if length(indices) == batch_size
-                screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
-                                      @view screen_buffer[1:end])
-                constantinput_batch = reduce(hcat, @view constantinput_buffer[1:end])
-            else
-                screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
-                                      view(screen_buffer, 1:length(indices)))
-                constantinput_batch = reduce(hcat,
-                                             view(constantinput_buffer, 1:length(indices)))
-            end
-            put!(channel, (screen_batch, constantinput_batch))
         end
-    catch e
-        print("Error in data iterator task: ")
-        showerror(stdout, e)
-    end
+    # catch e
+    #     print("Error in data iterator task: ")
+    #     showerror(stdout, e)
+    # end
 end
 
 function gan_dataiteratorchannel(db::IndexedTable, buffersize)
@@ -398,29 +402,29 @@ function gan_dataiteratorchannel(db::IndexedTable, buffersize)
 end
 
 function gan_dataiterator!(channel::AbstractChannel, db::IndexedTable,
-                           trainindices::AbstractVector, batch_size::Integer,
+                           splitindices::AbstractVector, batch_size::Integer,
                            num_threads::Integer=0)
     @static if VERSION >= v"1.3-"
         if num_threads > 0
-            per_thread_split_length = cld(length(trainindices), num_threads)
-            for indices in Iterators.partition(trainindices, per_thread_split_length)
+            per_thread_split_length = cld(length(splitindices), num_threads)
+            for indices in Iterators.partition(splitindices, per_thread_split_length)
                 task = Threads.@spawn gan_dataiteratortask(channel, db,
-                                                           trainindices, batch_size)
+                                                           splitindices, batch_size)
             end
         else
-            task = @async gan_dataiteratortask(channel, db, trainindices, batch_size)
+            task = @async gan_dataiteratortask(channel, db, splitindices, batch_size)
         end
     else
-        task = @async gan_dataiteratortask(channel, db, trainindices, batch_size)
+        task = @async gan_dataiteratortask(channel, db, splitindices, batch_size)
     end
     return channel
 end
 
-function gan_dataiterator(channel::AbstractChannel, db::IndexedTable,
-                          trainindices::AbstractVector, batch_size::Integer,
+function gan_dataiterator(db::IndexedTable, buffersize::Integer,
+                          splitindices::AbstractVector, batch_size::Integer,
                           num_threads::Integer=0)
-    channel = gan_dataiteratorchannel(3)
-    return gan_dataiterator!(channel, db, trainindices, batch_size, num_threads)
+    channel = gan_dataiteratorchannel(db, buffersize)
+    return gan_dataiterator!(channel, db, splitindices, batch_size, num_threads)
 end
 
 firstscreen(data::AbstractVector) = view(data, 1:LevelStatistics.screencols)

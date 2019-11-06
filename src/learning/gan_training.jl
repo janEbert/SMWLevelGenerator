@@ -168,9 +168,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     const_fake_target = togpu(zeros(size(const_noise)[end]))
     steps = UInt64(0)
 
-    dataiter_threads = params.dataiter_threads
-    trainiter = gan_dataiteratorchannel(db, 3)
-    testiter  = gan_dataiteratorchannel(db, 3)
+    trainiter = gan_dataiterator(db, 3, trainindices, batch_size, params.dataiter_threads)
+    testiter  = gan_dataiterator(db, 3, testindices,  batch_size, params.dataiter_threads)
     curr_batch_size = 0
     curr_batch_size_changed = false
     local real_target
@@ -222,8 +221,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
         end
 
         if !isnothing(meta_model)
-            testlosses = testmodel(meta_model, testiter, db, testindices,
-                                   batch_size, dataiter_threads, meta_loss)
+            testlosses = testmodel(meta_model, testiter, testindices, batch_size, meta_loss)
             meanloss = mean(testlosses)
             varloss  = var(testlosses, mean=meanloss)
             if meta_steps == 0
@@ -248,7 +246,6 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
         end
 
         for epoch in 1:epochs
-            gan_dataiterator!(trainiter, db, trainindices, batch_size, dataiter_threads)
             for (i, j) in zip(1:cld(length(trainindices), batch_size),
                               Iterators.countfrom(1, batch_size))
                 if steps < past_steps
@@ -360,8 +357,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                     end
 
                     if !isnothing(meta_model)
-                        testlosses = testmodel(meta_model, testiter, db, testindices,
-                                               batch_size, dataiter_threads, meta_loss)
+                        testlosses = testmodel(meta_model, testiter, testindices,
+                                               batch_size, meta_loss)
                         meanloss = mean(testlosses)
                         varloss  = var(testlosses, mean=meanloss)
                         @tblog(tblogger, meta_predictor_meanloss=meanloss,
@@ -430,8 +427,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                         push!(d_testlosses, testloss)
 
                         if !isnothing(meta_model)
-                            testlosses = testmodel(meta_model, testiter, db, testindices,
-                                                   batch_size, dataiter_threads, meta_loss)
+                            testlosses = testmodel(meta_model, testiter, testindices,
+                                                   batch_size, meta_loss)
                             meanloss = mean(testlosses)
                             varloss  = var(testlosses, mean=meanloss)
                             @tblog(tblogger, meta_predictor_meanloss=meanloss,
@@ -478,9 +475,7 @@ function testmodel(d_model, d_loss, fake_batch, const_fake_target)
     return d_l
 end
 
-function testmodel(meta_model, testiter, db, testindices, batch_size, dataiter_threads,
-                   meta_loss)
-    gan_dataiterator!(testiter, db, testindices, batch_size, dataiter_threads)
+function testmodel(meta_model, testiter, testindices, batch_size, meta_loss)
     Flux.testmode!(meta_model)
     testlosses = Float32[]
 

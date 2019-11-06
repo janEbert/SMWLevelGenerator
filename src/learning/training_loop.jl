@@ -116,13 +116,10 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
     steps = UInt64(0)
 
     dataiterparams = dataiteratorparams(model)
-    dataiter_threads = params.dataiter_threads
-    per_tile         = params.per_tile
-    reverse_rows     = params.reverse_rows
-    trainiter = dataiteratorchannel(db, 4, Val(dataiterparams.join_pad),
-                                    Val(dataiterparams.as_matrix))
-    testiter  = dataiteratorchannel(db, 4, Val(dataiterparams.join_pad),
-                                    Val(dataiterparams.as_matrix))
+    trainiter = dataiterator(db, 4, trainindices, params.dataiter_threads, params.per_tile,
+                             params.reverse_rows; dataiterparams...)
+    testiter  = dataiterator(db, 4, testindices,  params.dataiter_threads, params.per_tile,
+                             params.reverse_rows; dataiterparams...)
     # TODO store max loss and log (as in logging) normalized loss (maybe).
     #      only applicable when sequences are padded to have the same length
     # TODO make function for that so it can be calculated online; then maybe normalize loss
@@ -160,8 +157,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                  * "Seed: $(params.seed).")
 
         # Initial test
-        testlosses = testmodel(model, testiter, db, testindices, dataiter_threads,
-                               per_tile, reverse_rows, dataiterparams, loss)
+        testlosses = testmodel(model, testiter, testindices, dataiterparams, loss)
         meanloss = mean(testlosses)
         varloss  = var(testlosses, mean=meanloss)
         if past_steps == 0
@@ -179,8 +175,6 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                  * "total time: $(@sprintf("%.2f", timediff / 60)) min.")
 
         for epoch in 1:epochs
-            dataiterator!(trainiter, db, trainindices, dataiter_threads,
-                          per_tile, reverse_rows; dataiterparams...)
             # Cannot iterate directly over a RemoteChannel.
             for i in 1:length(trainindices)
                 # Continue exactly where training stopped.
@@ -195,8 +189,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                 steps += 1
 
                 if logevery != 0 && steps % logevery == 0
-                    testlosses = testmodel(model, testiter, db, testindices,
-                                           dataiter_threads, per_tile, reverse_rows,
+                    testlosses = testmodel(model, testiter, testindices,
                                            dataiterparams, loss)
                     meanloss = mean(testlosses)
                     varloss  = var(testlosses, mean=meanloss)
@@ -249,8 +242,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                 end
                 if saveevery != 0 && steps % saveevery == 0
                     if logevery != 0 && steps % logevery != 0
-                        testlosses = testmodel(model, testiter, db, testindices,
-                                               dataiter_threads, per_tile, reverse_rows,
+                        testlosses = testmodel(model, testiter, testindices,
                                                dataiterparams, loss)
                         meanloss = mean(testlosses)
                         varloss = var(testlosses, mean=meanloss)
@@ -297,10 +289,7 @@ end
 Return a `Vector{Float32}` of losses obtained by apply the given model to all data in the
 to be reset `testiter`.
 """
-function testmodel(model, testiter, db, testindices, dataiter_threads,
-                   per_tile, reverse_rows, dataiterparams, loss)
-    dataiterator!(testiter, db, testindices, dataiter_threads,
-                  per_tile, reverse_rows; dataiterparams...)
+function testmodel(model, testiter, testindices, dataiterparams, loss)
     Flux.testmode!(model)
     testlosses = Float32[]
 
