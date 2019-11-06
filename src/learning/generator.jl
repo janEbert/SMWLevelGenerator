@@ -34,17 +34,9 @@ function makeloss(g_model::GeneratorModel, d_model, criterion)
     end
 end
 
-"A convolutional transpose layer without learnable bias."
-function ConvTransposeNoBias(k::NTuple{N, Integer}, ch::Pair{<:Integer, <:Integer},
-                             activation=identity; init=Flux.glorot_uniform, stride=1, pad=0,
-                             dilation=1) where N
-    Flux.ConvTranspose(Flux.param(init(k..., reverse(ch)...)), zeros(Float32, ch[2]),
-                       activation, stride=stride, pad=pad, dilation=dilation)
-end
-
 function buildmodel(num_features, imgsize, generator_inputsize, dimensionality;
-                    normalization=Flux.BatchNorm, activation=Flux.relu,
-                    output_activation=tanh, kernelsize=(4, 4))
+                    modeltype=GeneratorModel, normalization=Flux.BatchNorm,
+                    activation=Flux.relu, output_activation=tanh, kernelsize=(4, 4))
     imgchannels = imgsize[end]
     j = 2 ^ (convert(Int, log2(imgsize[1])) - 3)
     layers = [
@@ -64,7 +56,7 @@ function buildmodel(num_features, imgsize, generator_inputsize, dimensionality;
     push!(layers, ConvTransposeNoBias(kernelsize, num_features => imgchannels,
                                       output_activation, stride=2, pad=1))
     model = Flux.Chain(layers...) |> togpu
-    GeneratorModel(model, Dict{Symbol, Any}(
+    modeltype(model, Dict{Symbol, Any}(
         :dimensionality => dimensionality,
         :inputsize      => generator_inputsize,
 
@@ -78,8 +70,8 @@ function buildmodel(num_features, imgsize, generator_inputsize, dimensionality;
 end
 
 function manualmodel(num_features, imgsize, generator_inputsize, dimensionality;
-                     normalization=Flux.BatchNorm, activation=Flux.relu,
-                     output_activation=tanh, kernelsize=(4, 4))
+                     modeltype=GeneratorModel, normalization=Flux.BatchNorm,
+                     activation=Flux.relu, output_activation=tanh, kernelsize=(4, 4))
     imgchannels = imgsize[end]
     model = Flux.Chain(
         # last dimension (amount of batches) is ignored in these comments
@@ -100,7 +92,7 @@ function manualmodel(num_features, imgsize, generator_inputsize, dimensionality;
                             stride=(2,1), pad=4, dilation=(2, 3)),
         # output size is 27 x 16 x (imgchannels)
     ) |> togpu
-    GeneratorModel(model, Dict{Symbol, Any}(
+    modeltype(model, Dict{Symbol, Any}(
         :dimensionality => dimensionality,
         :inputsize      => generator_inputsize,
 

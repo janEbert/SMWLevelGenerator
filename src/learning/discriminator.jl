@@ -34,14 +34,6 @@ function makeloss(model::DiscriminatorModel, criterion)
     end
 end
 
-"A convolutional layer without learnable bias."
-function ConvNoBias(k::NTuple{N, Integer}, ch::Pair{<:Integer, <:Integer},
-                    activation=identity; init=Flux.glorot_uniform, stride=1, pad=0,
-                    dilation=1) where N
-    Flux.Conv(Flux.param(init(k..., ch...)), zeros(Float32, ch[2]), activation,
-              stride=stride, pad=pad, dilation=dilation)
-end
-
 function powers(n, b=2)
     res = []
     x = 1
@@ -53,7 +45,7 @@ function powers(n, b=2)
     return res
 end
 
-function buildmodel(num_features, imgsize, dimensionality;
+function buildmodel(num_features, imgsize, dimensionality; modeltype=DiscriminatorModel,
                     normalization=Flux.BatchNorm, activation=leakyrelu,
                     output_activation=Flux.sigmoid, kernelsize=(4, 4), first_stride=(2, 1))
     imgchannels = imgsize[end]
@@ -70,7 +62,7 @@ function buildmodel(num_features, imgsize, dimensionality;
     push!(layers, ConvNoBias(kernelsize, num_features * last_j => 1, output_activation,
                              stride=1, pad=0))
     model = Flux.Chain(layers...) |> togpu
-    DiscriminatorModel(model, Dict{Symbol, Any}(
+    modeltype(model, Dict{Symbol, Any}(
         :dimensionality => dimensionality,
 
         :num_features      => num_features,
@@ -82,7 +74,7 @@ function buildmodel(num_features, imgsize, dimensionality;
     ))
 end
 
-function manualmodel(num_features, imgsize, dimensionality;
+function manualmodel(num_features, imgsize, dimensionality; modeltype=DiscriminatorModel,
                      normalization=Flux.BatchNorm, activation=leakyrelu,
                      output_activation=Flux.sigmoid, kernelsize=(4, 4))
     imgchannels = imgsize[end]
@@ -101,7 +93,7 @@ function manualmodel(num_features, imgsize, dimensionality;
         ConvNoBias(kernelsize, num_features * 4 => 1, output_activation, stride=2, pad=1)
         # output size is 1 x 1 x 1 (scalar value)
     ) |> togpu
-    DiscriminatorModel(model, Dict{Symbol, Any}(
+    modeltype(model, Dict{Symbol, Any}(
         :dimensionality => dimensionality,
 
         :num_features      => num_features,

@@ -14,6 +14,7 @@ export makeloss, dataiteratorparams, calculate_loss, step!
 export makesoftloss, soft_criterion
 export toggle_gpu, should_use_gpu, togpu
 export mae, bce, leakyrelu
+export ConvNoBias, ConvTransposeNoBias
 
 """
     LearningModel
@@ -174,7 +175,7 @@ togpu(x) = should_use_gpu() ? Flux.gpu(x) : identity(x)
 # togpu(x::AbstractSparseMatrix) = should_use_gpu() ? CuSparseMatrixCSR(x) : identity(x)
 
 # togpu(x::AbstractSparseVector) = should_use_gpu() ? CuSparseVector(x) : identity(x)
-
+
 
 "Mean absolute error."
 mae(y_hat, y) = sum(abs.(y_hat .- y)) * 1 // length(y)
@@ -187,6 +188,24 @@ end
 bce(y_hat, y) = Flux.binarycrossentropy(y_hat, y; ϵ=1f-12)
 
 leakyrelu(x) = Flux.leakyrelu(x, 0.2f0)
+
+
+"A convolutional layer without learnable bias."
+function ConvNoBias(k::NTuple{N, Integer}, ch::Pair{<:Integer, <:Integer},
+                    activation=identity; init=Flux.glorot_uniform, stride=1, pad=0,
+                    dilation=1) where N
+    Flux.Conv(Flux.param(init(k..., ch...)), zeros(Float32, ch[2]), activation,
+              stride=stride, pad=pad, dilation=dilation)
+end
+
+"A convolutional transpose layer without learnable bias."
+function ConvTransposeNoBias(k::NTuple{N, Integer}, ch::Pair{<:Integer, <:Integer},
+                             activation=identity; init=Flux.glorot_uniform, stride=1, pad=0,
+                             dilation=1) where N
+    Flux.ConvTranspose(Flux.param(init(k..., reverse(ch)...)), zeros(Float32, ch[2]),
+                       activation, stride=stride, pad=pad, dilation=dilation)
+end
+
 
 
 """
