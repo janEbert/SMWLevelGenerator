@@ -16,6 +16,8 @@ export random1d, random2d, random3dtiles, random3d
 # GANs
 export discriminator1d, discriminator2d, discriminator3dtiles, discriminator3d
 export generator1d, generator2d, generator3dtiles, generator3d
+export wsdiscriminator1d, wsdiscriminator2d, wsdiscriminator3dtiles, wsdiscriminator3d
+export wsgenerator1d, wsgenerator2d, wsgenerator3dtiles, wsgenerator3d
 # Metadata predictors
 export metapredictor1d, metapredictor2d, metapredictor3dtiles, metapredictor3d
 

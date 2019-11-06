@@ -13,7 +13,7 @@ export LearningModel, AbstractDiscriminator, AbstractGenerator
 export makeloss, dataiteratorparams, calculate_loss, step!
 export makesoftloss, soft_criterion
 export toggle_gpu, should_use_gpu, togpu
-export mae, bce
+export mae, bce, leakyrelu
 
 """
     LearningModel
@@ -185,6 +185,8 @@ end
 
 "Approximate PyTorch binary cross entropy loss."
 bce(y_hat, y) = Flux.binarycrossentropy(y_hat, y; ϵ=1f-12)
+
+leakyrelu(x) = Flux.leakyrelu(x, 0.2f0)
 
 
 """

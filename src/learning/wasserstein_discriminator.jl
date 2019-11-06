@@ -42,8 +42,6 @@ function ConvNoBias(k::NTuple{N, Integer}, ch::Pair{<:Integer, <:Integer},
               stride=stride, pad=pad, dilation=dilation)
 end
 
-leakyrelu(x) = Flux.leakyrelu(x, 0.2f0)
-
 function powers(n, b=2)
     res = []
     x = 1
