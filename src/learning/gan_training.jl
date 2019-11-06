@@ -274,7 +274,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 # Clamp weights
                 if use_wasserstein_loss
                     for p in d_params
-                        clamp!(p.data, -0.1f0, 0.1f0)
+                        clamp!(p.data, -0.01f0, 0.01f0)
                     end
                 end
 

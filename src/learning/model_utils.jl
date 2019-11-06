@@ -1,5 +1,6 @@
 module ModelUtils
 
+import Base.clamp!
 using SparseArrays
 
 using BSON
@@ -205,6 +206,27 @@ function ConvTransposeNoBias(k::NTuple{N, Integer}, ch::Pair{<:Integer, <:Intege
     Flux.ConvTranspose(Flux.param(init(k..., reverse(ch)...)), zeros(Float32, ch[2]),
                        activation, stride=stride, pad=pad, dilation=dilation)
 end
+
+function Base.clamp!(a::CuVecOrMat, low, high)
+    function kernel(a, low, high)
+        col = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+        row = (blockIdx().y - 1) * blockDim().y + threadIdx().y
+        if col <= size(a, 1) && row <= size(a, 2)
+            a[col, row] = clamp(a[col, row], low, high)
+        end
+        return
+    end
+
+    max_threads = 256
+    threads_x = min(max_threads, size(a, 1))
+    threads_y = min(div(max_threads, threads_x), size(a, 2))
+    threads = (threads_x, threads_y)
+    blocks = ceil.(Int, (size(a, 1), size(a, 2)) ./ threads)
+
+    @cuda threads=threads blocks=blocks kernel(a, low, high)
+    return a
+end
+
 
 
 
