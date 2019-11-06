@@ -289,6 +289,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 push!(d_trainlosses_fake, d_l_fake.data)
                 @tblog tblogger d_loss_fake=d_l_fake.data log_step_increment=0
 
+                # TODO remove this parameter and implement step! like for other models
                 if use_wasserstein_loss
                     grads = gradient(() -> d_l_real - d_l_fake, d_params)
                 else

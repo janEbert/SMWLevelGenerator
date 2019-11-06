@@ -6,8 +6,7 @@ using JuliaDB
 
 using ..DataIterator
 using ..InputStatistics
-using ..ModelUtils: LearningModel, togpu
-using ..GAN: AbstractGenerator
+using ..ModelUtils: LearningModel, AbstractGenerator, togpu
 using ..SequenceGenerator
 using ..ScreenGenerator
 using ..LevelFormatReverter

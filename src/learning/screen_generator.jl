@@ -1,8 +1,7 @@
 module ScreenGenerator
 
 using ..InputStatistics
-using ..ModelUtils: LearningModel, togpu
-using ..GAN: AbstractGenerator
+using ..ModelUtils: LearningModel, AbstractGenerator, togpu
 using ..LevelStatistics
 
 export generatescreen, generatemetadata, randinput
