@@ -1,5 +1,7 @@
 module WassersteinDiscriminator
 
+using Statistics: mean
+
 import Flux
 
 using ....InputStatistics
