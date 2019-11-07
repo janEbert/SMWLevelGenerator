@@ -296,7 +296,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
                 # TODO remove this parameter and implement step! like for other models
                 if use_wasserstein_loss
-                    grads = gradient(() -> d_l_real - d_l_fake, d_params)
+                    grads = gradient(() -> d_l_fake - d_l_real, d_params)
                 else
                     grads = gradient(() -> d_l_real + d_l_fake, d_params)
                 end
@@ -323,7 +323,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                     l = meta_loss(real_batch, meta_batch)
                     push!(meta_trainlosses, l.data)
                     @tblog tblogger meta_predictor_loss=l.data log_step_increment=0
-                    grads = gradient(() -> l, meta_params)
+                    grads = gradient(() -> -l, meta_params)
 
                     Flux.Optimise.update!(meta_optim, meta_params, grads)
                 end
