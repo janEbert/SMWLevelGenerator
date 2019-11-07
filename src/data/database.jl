@@ -13,6 +13,23 @@ using ..DataCompressor
 
 export generatedb, generatecsv
 
+abstract type AbstractCompression end
+struct NoCompression <: AbstractCompression end
+struct SparseCompression <: AbstractCompression end
+struct SparseIndexCompression <: AbstractCompression end
+struct HardCompression <: AbstractCompression end
+
+makecompressionfunction(::NoCompression) = identity
+makecompressionfunction(::SparseCompression) = sparse
+makecompressionfunction(::SparseIndexCompression) = x -> sparse(x) |> compressindices
+makecompressionfunction(::HardCompression) = x -> sparse(x, dims=3) |> compressdata
+
+compressionmap = Dict{Int, AbstractCompression}(
+    0 => NoCompression(),
+    1 => SparseCompression(),
+    2 => SparseIndexCompression(),
+    3 => HardCompression(),
+)
 
 # TODO Save _all_ level metadata (cheap but useful). Need to also change all parsers and
 #      structs.
@@ -21,7 +38,7 @@ export generatedb, generatecsv
 """
     generatedb(dest::AbstractString, rootdir::AbstractString=leveldir;
                formatfunction::Function=to3d, flags::Union{AbstractString, Nothing}=nothing,
-               makesparse=true, verbose=true)
+               compression=1, verbose=true)
 
 Generate a database at the given destination path containing data for all levels found under
 the given directory.
@@ -29,8 +46,8 @@ Can also pass the function used to build up levels. It is passed one argument (t
 By default, use [`to3d`](@ref).
 The flags to use in the [`buildlevel`](@ref) function can  be given in the `flags` argument.
 If `flags` is `nothing`, the default flags for the given `formatfunction` will be used.
-`makesparse` controls whether a sparse representation of the data will be saved. This saves
-space for high dimensional data.
+`compression` controls how far the data will be compressed, trading performance for space
+efficiency. This is mostly relevant for highly-dimensional data.
 
 As the method of [`to3d`](@ref) that takes in `Level`s does not have a `flags` argument,
 flags have to be supplied independently.
@@ -48,7 +65,7 @@ end
 """
     generatedb_inline(dest::AbstractString, rootdir::AbstractString=leveldir;
                       formatfunction::Function=to3d,
-                      flags::Union{AbstractString, Nothing}=nothing, makesparse=true)
+                      flags::Union{AbstractString, Nothing}=nothing, compression=1)
 
 Return a database containing data for all levels found under the given directory.
 Can also pass the function used to build up levels. It is passed one argument (the `Level`).
@@ -71,7 +88,7 @@ end
 # TODO only compress if desired
 """
     generatedata(rootdir::AbstractString=leveldir; formatfunction::Function=to3d,
-                 flags::Union{AbstractString, Nothing}=nothing, makesparse=true)
+                 flags::Union{AbstractString, Nothing}=nothing, compression=1, verbose=true)
 
 Return a `NamedTuple` and `Vector` containing the metadata and object data respectively
 for all levels found under the given directory.
@@ -79,28 +96,45 @@ Can also pass the function used to build up levels. It is passed one argument (t
 By default, use [`to3d`](@ref).
 The flags to use in the [`buildlevel`](@ref) function can  be given in the `flags` argument.
 If `flags` is `nothing`, the default flags for the given `formatfunction` will be used.
-`makesparse` controls whether a sparse representation of the data will be saved. This saves
-space for high dimensional data.
-`verbose` controls whether progress messages are printed.
 
-As the method of [`to3d`](@ref) that takes in `Level`s does not have a `flags` argument,
-flags have to be supplied independently.
+`compression` controls the amount of compression applied to the data.
+It can range from 0 to 3. The different values affect the behaviour in the following way:
+   0: no compression
+   1: convert data to sparse arrays
+   2: compress sparse arrays further by adjusting their index type
+   3: (only for 3D data) compress 3D sparse arrays by removing empty ones.
+      This will greatly improve space efficiency but performance during data iteration
+      will suffer; may not matter if using enough data iterator threads.
+
+`verbose` controls whether progress messages are printed.
 """
 function generatedata(rootdir::AbstractString=leveldir; formatfunction::Function=to3d,
                       flags::Union{AbstractString, Symbol, Nothing}=nothing,
-                      makesparse::Bool=true, verbose::Bool=true)
+                      compression::Union{Integer, AbstractCompression}=1,
+                      verbose::Bool=true)
     i = one(UInt)
     totalsize = zero(UInt)
     funcsymbol = nameof(formatfunction)
     if isnothing(flags)
-        flags = dimensionality_defaultflags[Symbol(String(funcsymbol)[end - 1:end])]
+        funcdim = Symbol(String(funcsymbol)[end - 1:end])
+        @assert haskey(dimensionality_defaultflags, funcdim) ("must supply flags with "
+                                                              * "custom `formatfunction`")
+        flags = dimensionality_defaultflags[funcdim]
     elseif flags isa Symbol
         flags = dimensionality_defaultflags[flags]
     end
-    if funcsymbol === :to1d && makesparse
+    if funcsymbol === :to1d && compression > 0
         @warn ("if using the 1-dimensional `formatfunction`, it makes sense to set "
-               * "`makesparse` to `false` as it is more space efficient.")
+               * "`compression` to `0` as it is more space efficient.")
     end
+
+    # Initialize compression function
+    if compression isa Integer
+        compression = get(compressionmap, Int(compression)) do
+            throw(ArgumentError("`compression` must be between (including) 0 and 3"))
+        end
+    end
+    compressionfunction = makecompressionfunction(compression)
 
     # Level data saved separately due to (yet) unknown type
     lists = (
@@ -141,15 +175,7 @@ function generatedata(rootdir::AbstractString=leveldir; formatfunction::Function
             else
                 level = buildlevel(file, flags, verbose=false)
             end
-            if makesparse
-                if funcsymbol === :to3d
-                    data = compressdata(sparse(formatfunction(level)))
-                else
-                    data = sparse(formatfunction(level))
-                end
-            else
-                data = formatfunction(level)
-            end
+            data = formatfunction(level) |> compressionfunction
             totalsize += Base.summarysize(data)
 
             if !defined_datalist
@@ -200,138 +226,138 @@ function addentry!(lists::NamedTuple, datalist::AbstractVector,
     push!(datalist, data)
 end
 
-"""
-    generatecsv(dest::AbstractString, rootdir::AbstractString=leveldir;
-                formatfunction::Function=to3d,
-                flags::Union{AbstractString, Nothing}=nothing,
-                makesparse=true, writeevery=0, verbose=true)
+# """
+#     generatecsv(dest::AbstractString, rootdir::AbstractString=leveldir;
+#                 formatfunction::Function=to3d,
+#                 flags::Union{AbstractString, Nothing}=nothing,
+#                 makesparse=true, writeevery=0, verbose=true)
 
-Generate a CSV file at `dest` containing the data for all levels found under the
-given directory.
-Can also pass the function used to build up levels. It is passed one argument (the `Level`).
-By default, use [`to3d`](@ref).
-The flags to use in the [`buildlevel`](@ref) function can  be given in the `flags` argument.
-If `flags` is `nothing`, the default flags for the given `formatfunction` will be used.
-`makesparse` controls whether a sparse representation of the data will be saved. This saves
-space for high dimensional data.
-A write instruction is issued every `writeevery` levels.
-`verbose` controls whether progress messages are printed.
+# Generate a CSV file at `dest` containing the data for all levels found under the
+# given directory.
+# Can also pass the function used to build up levels. It is passed one argument (the `Level`).
+# By default, use [`to3d`](@ref).
+# The flags to use in the [`buildlevel`](@ref) function can  be given in the `flags` argument.
+# If `flags` is `nothing`, the default flags for the given `formatfunction` will be used.
+# `makesparse` controls whether a sparse representation of the data will be saved. This saves
+# space for high dimensional data.
+# A write instruction is issued every `writeevery` levels.
+# `verbose` controls whether progress messages are printed.
 
-As the method of [`to3d`](@ref) that takes in `Level`s does not have a `flags` argument,
-flags have to be supplied independently.
-"""
-function generatecsv(dest::AbstractString, rootdir::AbstractString=leveldir;
-                     formatfunction::Function=to3d,
-                     flags::Union{AbstractString, Nothing}=nothing, makesparse::Bool=true,
-                     writeevery::Unsigned=convert(Unsigned, 50), verbose::Bool=true)
-    i = one(UInt)
-    totalsize = zero(UInt)
-    if isnothing(flags)
-        funcsymbol = nameof(formatfunction)
-        flags = dimensionality_defaultflags[Symbol(String(funcsymbol)[end - 1:end])]
-    end
+# As the method of [`to3d`](@ref) that takes in `Level`s does not have a `flags` argument,
+# flags have to be supplied independently.
+# """
+# function generatecsv(dest::AbstractString, rootdir::AbstractString=leveldir;
+#                      formatfunction::Function=to3d,
+#                      flags::Union{AbstractString, Nothing}=nothing, makesparse::Bool=true,
+#                      writeevery::Unsigned=convert(Unsigned, 50), verbose::Bool=true)
+#     i = one(UInt)
+#     totalsize = zero(UInt)
+#     if isnothing(flags)
+#         funcsymbol = nameof(formatfunction)
+#         flags = dimensionality_defaultflags[Symbol(String(funcsymbol)[end - 1:end])]
+#     end
 
-    # Level data added later due to (yet) unknown type
-    dataframe = DataFrame(
-        # DB primary key
-        id = UInt[],
+#     # Level data added later due to (yet) unknown type
+#     dataframe = DataFrame(
+#         # DB primary key
+#         id = UInt[],
 
-        # LevelStats
-        hack             = String[],
-        number           = UInt16[],
-        screens          = UInt8[],
-        mode             = UInt8[],
-        fgbggfx          = UInt8[],
-        lmexpandedformat = UInt8[],
+#         # LevelStats
+#         hack             = String[],
+#         number           = UInt16[],
+#         screens          = UInt8[],
+#         mode             = UInt8[],
+#         fgbggfx          = UInt8[],
+#         lmexpandedformat = UInt8[],
 
-        # Sprite header
-        # If this first entry is `false`, the rest should be ignored.
-        # We do not use `missing` because this is _assumed_ to be faster.
-        hasspriteheader               = Bool[],
-        sprites_buoyancy              = Bool[],
-        sprites_disablelayer2buoyancy = Bool[],
-        sprites_newsystem             = Bool[],
-        sprites_mode                  = UInt8[],
-    )
+#         # Sprite header
+#         # If this first entry is `false`, the rest should be ignored.
+#         # We do not use `missing` because this is _assumed_ to be faster.
+#         hasspriteheader               = Bool[],
+#         sprites_buoyancy              = Bool[],
+#         sprites_disablelayer2buoyancy = Bool[],
+#         sprites_newsystem             = Bool[],
+#         sprites_mode                  = UInt8[],
+#     )
 
-    datacol_added = false
+#     datacol_added = false
 
-    starttime = time()
-    println("Generating data...")
-    for dir in filter(isdir, map(d -> joinpath(rootdir, d), readdir(rootdir)))
-        # We choose an arbitrary extension to filter by just so we don't read in the same
-        # level multiple times.
-        for file in map(f -> joinpath(dir, f),
-                        filter(f -> endswith(f, ".map"), readdir(dir)))
-            if isnothing(flags)
-                level = buildlevel(file, verbose=false)
-            else
-                level = buildlevel(file, flags, verbose=false)
-            end
-            if makesparse
-                # TODO only apply compressdata if 3d
-                data = compressdata(sparse(formatfunction(level)))
-            else
-                data = formatfunction(level)
-            end
-            totalsize += Base.summarysize(data)
+#     starttime = time()
+#     println("Generating data...")
+#     for dir in filter(isdir, map(d -> joinpath(rootdir, d), readdir(rootdir)))
+#         # We choose an arbitrary extension to filter by just so we don't read in the same
+#         # level multiple times.
+#         for file in map(f -> joinpath(dir, f),
+#                         filter(f -> endswith(f, ".map"), readdir(dir)))
+#             if isnothing(flags)
+#                 level = buildlevel(file, verbose=false)
+#             else
+#                 level = buildlevel(file, flags, verbose=false)
+#             end
+#             if makesparse
+#                 # TODO only apply compressdata if 3d
+#                 data = compressdata(sparse(formatfunction(level)))
+#             else
+#                 data = formatfunction(level)
+#             end
+#             totalsize += Base.summarysize(data)
 
-            if !datacol_added
-                dataframe.data = typeof(data)[]
-                CSV.write(dest, dataframe)
-                datacol_added = true
-            end
+#             if !datacol_added
+#                 dataframe.data = typeof(data)[]
+#                 CSV.write(dest, dataframe)
+#                 datacol_added = true
+#             end
 
-            addentry!(dataframe, i, level, data)
+#             addentry!(dataframe, i, level, data)
 
-            if i % writeevery == 0
-                CSV.write(dest, dataframe, delim=';', append=true)
-                deleterows!(dataframe, 1:size(dataframe, 1))
-            end
-            printprogress(i, totalsize, verbose)
-            i += 1
-        end
-    end
-    datacol_added || @warn "the root directory contained no levels."
-    println("Done after $(round(Int, time() - starttime)) seconds.")
-end
+#             if i % writeevery == 0
+#                 CSV.write(dest, dataframe, delim=';', append=true)
+#                 deleterows!(dataframe, 1:size(dataframe, 1))
+#             end
+#             printprogress(i, totalsize, verbose)
+#             i += 1
+#         end
+#     end
+#     datacol_added || @warn "the root directory contained no levels."
+#     println("Done after $(round(Int, time() - starttime)) seconds.")
+# end
 
-"Add an entry to the given `AbstractDataFrame`, using the supplied data."
-function addentry!(dataframe::AbstractDataFrame, i::UInt, level::Level, data::AbstractArray)
-    stats = level.stats
+# "Add an entry to the given `AbstractDataFrame`, using the supplied data."
+# function addentry!(dataframe::AbstractDataFrame, i::UInt, level::Level, data::AbstractArray)
+#     stats = level.stats
 
-    rowhead = [
-        i,
+#     rowhead = [
+#         i,
 
-        hack(stats),
-        stats.number,
-        stats.screens,
-        stats.mode,
-        stats.fgbggfx,
-        stats.lmexpandedformat,
-    ]
+#         hack(stats),
+#         stats.number,
+#         stats.screens,
+#         stats.mode,
+#         stats.fgbggfx,
+#         stats.lmexpandedformat,
+#     ]
 
-    spriteheader = level.spriteheader
-    if isnothing(spriteheader)
-        rowmiddle = [
-            false,
-            false,
-            false,
-            false,
-            0x0,
-        ]
-    else
-        rowmiddle = [
-            true,
-            spriteheader.buoyancy,
-            spriteheader.disablelayer2buoyancy,
-            spriteheader.newsystem,
-            spriteheader.mode,
-        ]
-    end
+#     spriteheader = level.spriteheader
+#     if isnothing(spriteheader)
+#         rowmiddle = [
+#             false,
+#             false,
+#             false,
+#             false,
+#             0x0,
+#         ]
+#     else
+#         rowmiddle = [
+#             true,
+#             spriteheader.buoyancy,
+#             spriteheader.disablelayer2buoyancy,
+#             spriteheader.newsystem,
+#             spriteheader.mode,
+#         ]
+#     end
 
-    push!(dataframe, vcat(rowhead, rowmiddle, [data]))
-end
+#     push!(dataframe, vcat(rowhead, rowmiddle, [data]))
+# end
 
 # TODO try JLD/HDF5 backend
 

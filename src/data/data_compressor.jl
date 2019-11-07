@@ -3,7 +3,7 @@ module DataCompressor
 using SparseArrays
 import SparseArrays: sparse
 
-export compressdata, decompressdata, unsparse
+export unsparse, compressindices, decompressindices, compressdata, decompressdata
 
 const defaultindextype = Int
 const compressedindextype = UInt16
@@ -14,17 +14,35 @@ const compressedindextype = UInt16
 Return the given `AbstractArray{T, 3}` as a `Vector{SparseMatrixCSC{T}}` where each
 element in the `Vector` is a slice along the second dimension of the given array.
 """
-function sparse(array::AbstractArray{T, 3}) where T
-    map(sparse, eachslice(array, dims=2))
+function sparse(array::AbstractArray{T, 3}; dims=2) where T
+    map(sparse, eachslice(array, dims=dims))
 end
 
 "Return the given `AbstractVector{SparseMatrixCSC{T}}` as an `Array{T, 3}`."
-function unsparse(sparsearray::AbstractVector{SparseMatrixCSC{T}}) where T
-    reduce((a, b) -> cat(a, b, dims=2), map(Array, sparsearray))
+function unsparse(sparsearray::AbstractVector{SparseMatrixCSC{T}}; dims=2) where T
+    reduce((a, b) -> cat(a, b, dims=dims), map(Array, sparsearray))
 end
 
-# TODO remove compression for dim2; it's useless. instead use dim3 compression in database generation if desired, obtaining space for speed.
-# TODO also possibly use BitArrays instead of dim2 compression; they are much smaller but will probably need conversion afterwards for speed (maybe; test this)
+function compressindices(data::SparseMatrixCSC{T, defaultindextype}) where T
+    convert(SparseMatrixCSC{T, compressedindextype}, data)
+end
+
+function compressindices(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}) where T
+    convert(AbstractVector{SparseMatrixCSC{T, compressedindextype}}, data)
+end
+
+function decompressindices(data::SparseMatrixCSC{T, compressedindextype}) where T
+    convert(SparseMatrixCSC{T, defaultindextype}, data)
+end
+
+function decompressindices(data::AbstractVector{
+                                         SparseMatrixCSC{T, compressedindextype}}) where T
+    convert(AbstractVector{SparseMatrixCSC{T, defaultindextype}}, data)
+end
+
+# TODO possibly use BitArrays non-dim3 compression; they are much smaller but will probably
+#      need conversion afterwards for speed (maybe; test this)
+
 """
 Return the given `AbstractVector` of sparse data as a `Vector` of `Pair`s containing the
 index and data of each non-empty (`count(!iszero, x) > 0`) entry.
@@ -64,15 +82,20 @@ function decompressdata(compressed::AbstractVector{
         fillat!(data, i, x)
         j += 0x001
     end
-    return data
+    if tosparse
+        return sparse(unsparse(data, dims=3))
+    else
+        return data
+    end
 end
 
-function emptyat!(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}, index::Integer) where T
-    data[index] = sparse(defaultindextype[], defaultindextype[], T[])
+function emptyat!(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}},
+                  index::Integer) where T
+    data[index] = spzeros(T, defaultindextype, 0, 0)
 end
 
 function emptyat!(data::AbstractArray{T, 3}, index::Integer) where T
-    data[:, index, :] .= 0
+    data[:, :, index] .= 0
 end
 
 function fillat!(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}}, index::Integer,
@@ -82,7 +105,7 @@ end
 
 function fillat!(data::AbstractArray{T, 3}, index::Integer,
                  x::SparseMatrixCSC{T, compressedindextype}) where T
-    data[:, index, :] = x
+    data[:, :, index] = x
 end
 
 end # module
