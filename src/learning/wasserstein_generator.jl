@@ -29,7 +29,7 @@ function makeloss(g_model::WassersteinGeneratorModel, d_model, ::Any)
         fakes = g_model(x)
         y_hat = d_model(fakes)
         # The paper says `mean` but the code has nothing (implying `sum` for us)
-        l = sum(y_hat)
+        l = mean(y_hat)
         return l
     end
 end
