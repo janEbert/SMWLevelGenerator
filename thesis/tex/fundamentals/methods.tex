@@ -43,31 +43,64 @@ Tasked with completing an unfinished sequence, we turn our head to
 time series prediction models. The models we are using are also called
 sequence-to-sequence models. We will closely orient ourselves on
 natural language processing techniques, specifically natural language
-generation. The models we evaluate are long short term memory (LSTM)~\cite{}
-stacks and transformer-based models. More specifically, the LSTM
-stacks are based on \emph{char-rnns}~\cite{andrejKarpathyCharrnn2019}
-and the transformer-based models are
+generation. The models we evaluate are long short-term memory
+(LSTM)~\cite{hochreiterLongShorttermMemory1997} stacks (with a
+fully-connected layer at the end) and transformer-based models. More
+specifically, the LSTM stacks are based on
+\emph{char-rnns}~\cite{andrejKarpathyCharrnn2019} and the
+transformer-based models are
 \emph{GPT-2}~\cite{radfordLanguageModelsAre,OpenaiGpt22019} models. As
 a baseline, we implement a non-learning random model that simply
 outputs sequences of either 1 or 0 based on a user-supplied chance
 $p \in [0, 1]$.
 
-A long short term memory cell's specialty is a memory that
+A long short-term memory cell's specialty is a recurrent memory that
 ``remembers'' values of a sequence, depending on connection weights.
 Due to this behaviour, it is well suited for both non-linear and
 long-term dependencies in Mario levels as both can be captured from
 any prior, relevant sequence element (for example, a keyhole at the
-beginning of the level implies a key later).
+beginning of the level implies a key later and the other way around).
 
+An LSTM cell is defined by the following formulae (reproduced from~\cite{hochreiterLongShorttermMemory1997}):
+\begin{align*}
+  y
+\end{align*}
 
+Transformer-based architectures rely on a combination of attention
+functions with multiple ``heads'' with dense networks. These networks
+improve upon the LSTM with parallelizability which~-- with the
+required computational power for increasingly large neural networks~--
+is a very important factor. Unlike LSTMs, transformers do not keep a
+hidden state; they analyze the whole input at once. Due to not having
+to keep a state, transformers can analyze multiple different inputs at
+once, non-sequentially. This enables the parallelizability which in
+turn enables faster training enabling larger models. With these
+advantages, transformers should be better suited to the task. With the
+GPT-2 architecture~\cite{radfordLanguageModelsAre}, transformers'
+capabilities in natural language generation tasks have been shown.
+While those models used an amount of parameters that could not
+possibly be trained with our available resources, we hope that a
+smaller, trainable model may still be marginally larger than an LSTM
+with the same training time.
+
+% TODO viel zu erklären hier
 
 \subsubsection{Generative Methods}
 
+For our only actual generator, we supply two models: a standard deep
+convolutional generative adversarial network
+(DCGAN)~\cite{radfordUnsupervisedRepresentationLearning2016} and a
+Wasserstein GAN (also based on the DCGAN). Both of these models are
+specially fitted with stride, padding and dilation values to obtain
+the correct screen size ($27 \times 16 \times ch$, where $ch$ is the
+number of channels or layers).
 % TODO
-
 
 \subsubsection{Image Processing}
 
+Similar to the generative models, we also use a deep convolutional
+network with stride, padding and dilation values fitted towards the
+correct screen size.
 % TODO
 
 

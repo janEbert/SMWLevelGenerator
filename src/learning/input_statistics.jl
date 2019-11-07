@@ -23,6 +23,7 @@ const layers3d = (
 
 const constantinputsize = 6
 
+# TODO compute 3d input sizes from the flags
 # Sequence prediction
 const inputsize1d = 1 + constantinputsize
 const inputsize2d = screenrows + constantinputsize

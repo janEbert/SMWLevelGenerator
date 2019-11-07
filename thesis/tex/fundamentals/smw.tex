@@ -94,12 +94,12 @@ the ``vanilla'' game; we will use these terms interchangeably). Also,
 to assert some form of quality in the dataset, only hacks with a
 rating greater than or equal to 3.0 were downloaded (our rating is the
 mean of all individual ratings, ranging from 1.0 to 5.0 and including
-\emph{None} for no individual ratings). All in all, over 17000 unique
-levels in over 300 hacks were obtained thanks to the community keeping
-a masterpiece alive and fresh for not only all the years since the
-game's release but also for many years to come. While this amount of
-data is not a lot relative to what deep learning models usually train
-on in 2019 (with data points in the millions, even approaching
+\emph{None} for no individual ratings). All in all, over 17\,000
+unique levels in over 300 hacks were obtained thanks to the community
+keeping a masterpiece alive and fresh for not only all the years since
+the game's release but also for many years to come. While this amount
+of data is not a lot relative to what deep learning models usually
+train on in 2019 (with data points in the millions, even approaching
 billions), it may be enough for our models to get a grasp on what
 makes a level enjoyable.
 
@@ -172,7 +172,7 @@ to train on horizontal levels. While support for vertical levels in
 database generation exists, models that support both types of levels
 are more complicated. Also, vertical levels only make up a fraction of
 total levels, so not a lot of data is lost (circa 2000 of the over
-17000 levels are vertical).
+17\,000 levels are vertical).
 
 Calling a screen a matrix is not the whole truth. While screens itself
 are basically only areas in a level, those areas can contain many
@@ -187,9 +187,11 @@ community, the term ``layer'' refers to both interactive and graphical
 tilemaps (of which there are three of). When we refer to the second
 meaning, we will explicitly list a number behind the layer (for
 example ``layer 2''). \\
-Disregarding the previously explained screens, levels consist mainly
-of five different types of data which each correspond to a file dumped
-by Lunar Magic. The types and a short description are listed here:
+Aside from the previously explained screens, levels consist mainly of
+five different \emph{object types} which each correspond to a file
+dumped by Lunar Magic. Also, each of these object types needs many
+layers that contain all the data. The types and a short description
+are listed here:
 \begin{enumerate}
 \item \emph{Tiles} are most of the static blocks in a level. They
   usually make up the ground, platforms, walls and ceiling of a level
@@ -252,26 +254,30 @@ by Lunar Magic. The types and a short description are listed here:
   may point to the same secondary entrance.
 \end{enumerate}
 
-Now that we have described the different kinds of data layers we will
+Now that we have described the different kinds of object types we will
 be dealing with, we will take a quick look at how they expand in the
 abstract space our model is going to work with. It should be noted
-that each individual ``type'' of something regards its own layer to
-get a binary encoding of the level. Prior to constructing our data, we
-need to know the amount of layers. We already know that there are 512
-unique tiles in the vanilla game. For the sprites, we need the amount
-of unique sprites used over all hacks. To represent all possible
-exits, we need the maximum amount of screen exits and connected
-secondary exits and entrances. In each hack, we count the amount of
-screen exits and connected secondary exits and entrances and take the
-maximum of each of these over all hacks. We also need 2 layers to
-represent the level's main and midway entrance points. If we sum up
-the total amount of all unique tiles and sprites, the maximum amount
-of screen exits and (connected) secondary exits and secondary
-entrances plus the two entrance points, we get a total of
+that each object type contains individual \emph{type instances} (for
+example, each unique type of tile like ``ground ledge block'' or
+``grey cement block'' is a type instance of the object type ``tile'').
+Each of these type instances regards its own layer to get a binary
+encoding of the level. Prior to constructing our data, we need to know
+the amount of layers. We already know that there are 512 unique tiles
+in the vanilla game. For the sprites, we need the amount of unique
+sprites used over all hacks. To represent all possible exits, we need
+the maximum amount of screen exits and connected secondary exits and
+entrances. In each hack, we count the amount of screen exits and
+connected secondary exits and entrances and take the maximum of each
+of these over all hacks. We also need 2 layers to represent the
+level's main and midway entrance points. If we sum up the total amount
+of all unique tiles and sprites, the maximum amount of screen exits
+and (connected) secondary exits and secondary entrances plus the two
+entrance points, we get a total of
 $512 + 241 + 511 + 449 + 449 + 2 = 2164$ layers. A horizontal level
-consists of 27 rows and at maximum $16 \cdot 32 = 512$ columns (16 columns
-per screen, 32 screens at maximum). We may therefore get a maximum
-amount of $27 \cdot 512 \cdot 2164 \approx 30 \cdot 10^{6}$ entries in the
+consists of 27 rows and at maximum $16 \cdot 32 = 512$ columns (16
+columns per screen, 32 screens at maximum). We may therefore get a
+maximum amount of $27 \cdot 512 \cdot 2164 \approx 30 \cdot 10^{6}$
+entries in the
 abstract, binary representation of a level. \\
 As the dimensionality of levels containing all layers is quite high
 (and mostly filled with emptiness), we provide filters to only process
@@ -282,7 +288,8 @@ each case. Sometimes jumping on an enemy or throwing a Koopa's shell
 may be required to finish the level. These are just some examples of
 the vast majority of possibilities. The filter should include most~--
 if not all~-- sprites required for reaching the goal in the vanilla
-game, though.
+game, though. These filters will be described in detail in
+section~\ref{sec:preprocessing}.
 
 We will now take a look at the effects a level's metadata has on it.
 

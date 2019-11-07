@@ -379,4 +379,79 @@ The game received critical acclaim, praising its atmosphere, gameplay, music and
   file = {/home/jan/Zotero/storage/2E34TL65/Hochreiter and Schmidhuber - 1997 - Long Short-term Memory.pdf}
 }
 
+@article{radfordUnsupervisedRepresentationLearning2016,
+  archivePrefix = {arXiv},
+  eprinttype = {arxiv},
+  eprint = {1511.06434},
+  primaryClass = {cs},
+  title = {Unsupervised {{Representation Learning}} with {{Deep Convolutional Generative Adversarial Networks}}},
+  url = {http://arxiv.org/abs/1511.06434},
+  abstract = {In recent years, supervised learning with convolutional networks (CNNs) has seen huge adoption in computer vision applications. Comparatively, unsupervised learning with CNNs has received less attention. In this work we hope to help bridge the gap between the success of CNNs for supervised learning and unsupervised learning. We introduce a class of CNNs called deep convolutional generative adversarial networks (DCGANs), that have certain architectural constraints, and demonstrate that they are a strong candidate for unsupervised learning. Training on various image datasets, we show convincing evidence that our deep convolutional adversarial pair learns a hierarchy of representations from object parts to scenes in both the generator and discriminator. Additionally, we use the learned features for novel tasks - demonstrating their applicability as general image representations.},
+  urldate = {2019-11-06},
+  date = {2016-01-07},
+  keywords = {Computer Science - Computer Vision and Pattern Recognition,Computer Science - Machine Learning},
+  author = {Radford, Alec and Metz, Luke and Chintala, Soumith},
+  file = {/home/jan/Zotero/storage/B8YX5DCW/Radford et al. - 2016 - Unsupervised Representation Learning with Deep Con.pdf;/home/jan/Zotero/storage/JNAXAKRI/1511.html}
+}
+
+@article{arjovskyWassersteinGAN2017,
+  archivePrefix = {arXiv},
+  eprinttype = {arxiv},
+  eprint = {1701.07875},
+  primaryClass = {cs, stat},
+  title = {Wasserstein {{GAN}}},
+  url = {http://arxiv.org/abs/1701.07875},
+  abstract = {We introduce a new algorithm named WGAN, an alternative to traditional GAN training. In this new model, we show that we can improve the stability of learning, get rid of problems like mode collapse, and provide meaningful learning curves useful for debugging and hyperparameter searches. Furthermore, we show that the corresponding optimization problem is sound, and provide extensive theoretical work highlighting the deep connections to other distances between distributions.},
+  urldate = {2019-11-06},
+  date = {2017-12-06},
+  keywords = {Computer Science - Machine Learning,Statistics - Machine Learning},
+  author = {Arjovsky, Martin and Chintala, Soumith and Bottou, Léon},
+  file = {/home/jan/Zotero/storage/KX5RM663/Arjovsky et al. - 2017 - Wasserstein GAN.pdf;/home/jan/Zotero/storage/V72BAI6B/1701.html}
+}
+
+@article{srivastavaDropoutSimpleWay2014,
+  title = {Dropout: {{A Simple Way}} to {{Prevent Neural Networks}} from {{Overfitting}}},
+  volume = {15},
+  url = {http://jmlr.org/papers/v15/srivastava14a.html},
+  shorttitle = {Dropout},
+  journaltitle = {Journal of Machine Learning Research},
+  urldate = {2019-11-07},
+  date = {2014},
+  pages = {1929-1958},
+  author = {Srivastava, Nitish and Hinton, Geoffrey and Krizhevsky, Alex and Sutskever, Ilya and Salakhutdinov, Ruslan},
+  file = {/home/jan/Zotero/storage/VE5Q4GXZ/Srivastava et al. - 2014 - Dropout A Simple Way to Prevent Neural Networks f.pdf;/home/jan/Zotero/storage/NUQBKGH6/srivastava14a.html}
+}
+
+@article{ioffeBatchNormalizationAccelerating2015,
+  archivePrefix = {arXiv},
+  eprinttype = {arxiv},
+  eprint = {1502.03167},
+  primaryClass = {cs},
+  title = {Batch {{Normalization}}: {{Accelerating Deep Network Training}} by {{Reducing Internal Covariate Shift}}},
+  url = {http://arxiv.org/abs/1502.03167},
+  shorttitle = {Batch {{Normalization}}},
+  abstract = {Training Deep Neural Networks is complicated by the fact that the distribution of each layer's inputs changes during training, as the parameters of the previous layers change. This slows down the training by requiring lower learning rates and careful parameter initialization, and makes it notoriously hard to train models with saturating nonlinearities. We refer to this phenomenon as internal covariate shift, and address the problem by normalizing layer inputs. Our method draws its strength from making normalization a part of the model architecture and performing the normalization for each training mini-batch. Batch Normalization allows us to use much higher learning rates and be less careful about initialization. It also acts as a regularizer, in some cases eliminating the need for Dropout. Applied to a state-of-the-art image classification model, Batch Normalization achieves the same accuracy with 14 times fewer training steps, and beats the original model by a significant margin. Using an ensemble of batch-normalized networks, we improve upon the best published result on ImageNet classification: reaching 4.9\% top-5 validation error (and 4.8\% test error), exceeding the accuracy of human raters.},
+  urldate = {2019-11-07},
+  date = {2015-03-02},
+  keywords = {Computer Science - Machine Learning},
+  author = {Ioffe, Sergey and Szegedy, Christian},
+  file = {/home/jan/Zotero/storage/NNM7KCEP/Ioffe and Szegedy - 2015 - Batch Normalization Accelerating Deep Network Tra.pdf;/home/jan/Zotero/storage/68JHJXZC/1502.html}
+}
+
+@article{kingmaAdamMethodStochastic2017,
+  archivePrefix = {arXiv},
+  eprinttype = {arxiv},
+  eprint = {1412.6980},
+  primaryClass = {cs},
+  title = {Adam: {{A Method}} for {{Stochastic Optimization}}},
+  url = {http://arxiv.org/abs/1412.6980},
+  shorttitle = {Adam},
+  abstract = {We introduce Adam, an algorithm for first-order gradient-based optimization of stochastic objective functions, based on adaptive estimates of lower-order moments. The method is straightforward to implement, is computationally efficient, has little memory requirements, is invariant to diagonal rescaling of the gradients, and is well suited for problems that are large in terms of data and/or parameters. The method is also appropriate for non-stationary objectives and problems with very noisy and/or sparse gradients. The hyper-parameters have intuitive interpretations and typically require little tuning. Some connections to related algorithms, on which Adam was inspired, are discussed. We also analyze the theoretical convergence properties of the algorithm and provide a regret bound on the convergence rate that is comparable to the best known results under the online convex optimization framework. Empirical results demonstrate that Adam works well in practice and compares favorably to other stochastic optimization methods. Finally, we discuss AdaMax, a variant of Adam based on the infinity norm.},
+  urldate = {2019-11-07},
+  date = {2017-01-29},
+  keywords = {Computer Science - Machine Learning},
+  author = {Kingma, Diederik P. and Ba, Jimmy},
+  file = {/home/jan/Zotero/storage/YJ57NCSD/Kingma and Ba - 2017 - Adam A Method for Stochastic Optimization.pdf;/home/jan/Zotero/storage/XABZYVAJ/1412.html}
+}
+
 

@@ -2,6 +2,8 @@ module SequenceGenerator
 
 using Flux: reset!
 
+# This import is only for documentation reference purposes.
+import LevelFormatter
 using ..InputStatistics
 using ..ModelUtils: LearningModel, togpu
 using ..LevelStatistics
@@ -78,11 +80,7 @@ end
 """
 Return the given sequence's elements as one concatenated `Array`.
 The dimensionality of the returned `Array` is determined by the argument of the same name
-which allows the following `Symbol`s:
-   - Symbol("1d")
-   - Symbol("2d")
-   - Symbol("3dtiles")
-   - Symbol("3d")
+which allows any `Symbol` in [`LevelFormatter.dimensionality_defaultflags`](@ref).
 """
 function postprocess(sequence::AbstractVector{T},
                      dimensionality::Symbol) where {T <: AbstractVector{Float32}}
@@ -94,12 +92,17 @@ function postprocess(sequence::AbstractVector{T},
         return reduce(vcat, sequence)
     elseif dimensionality === Symbol("2d")
         return reduce(hcat, sequence)
-    elseif dimensionality === Symbol("3dtiles")
+    # Explicit code for safety:
+    # elseif dimensionality === Symbol("3dtiles")
+    #     return reduce(hcat, map(x -> reshape(x, (convert(Int, screenrowshori), 1,
+    #             convert(Int, uniquevanillatiles))), sequence))
+    # elseif dimensionality === Symbol("3d")
+    #     return reduce(hcat, map(x -> reshape(x, (convert(Int, screenrowshori), 1,
+    #                                              convert(Int, layers3d))), sequence))
+    # Implicit code for extensibility:
+    elseif String(dimensionality)[1:2] == "3d"
         return reduce(hcat, map(x -> reshape(x, (convert(Int, screenrowshori), 1,
-                convert(Int, uniquevanillatiles))), sequence))
-    elseif dimensionality === Symbol("3d")
-        return reduce(hcat, map(x -> reshape(x, (convert(Int, screenrowshori), 1,
-                                                 convert(Int, layers3d))), sequence))
+                                                 :)), sequence))
     else
         throw(ValueError("unknown dimensionality"))
     end

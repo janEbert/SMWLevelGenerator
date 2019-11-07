@@ -311,7 +311,6 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                     g_l = g_loss(noise_batch, real_target)
                     push!(g_trainlosses, g_l.data)
                     @tblog tblogger g_loss=g_l.data log_step_increment=0
-                    # Use real labels for modified loss function
                     grads = gradient(() -> g_l, g_params)
 
                     # Update

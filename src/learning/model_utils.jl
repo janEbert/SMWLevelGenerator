@@ -11,6 +11,9 @@ import Flux
 using Flux.Tracker: gradient
 #using Zygote
 
+# This import is only for documentation reference purposes.
+import LevelFormatter
+
 export LearningModel, AbstractDiscriminator, AbstractGenerator
 export makeloss, dataiteratorparams, calculate_loss, step!
 export makesoftloss, soft_criterion
@@ -30,8 +33,8 @@ A `LearningModel` has to implement one field `hyperparams::Dict{Symbol, Any}` wh
 parameters that differentiate the model from another model of the same type (or not).
 The following keys are required in the `hyperparams` dictionary.
    - dimensionality::Symbol: What kind of level data will this be used with, which input
-                             will it accept? Can be any `Symbol` of "1d", "2d", "3dtiles"
-                             or "3d".
+                             will it accept? Can be any `Symbol` in
+                             [`LevelFormatter.dimensionality_defaultflags`](@ref).
 
 An implementation `YourModel <: LearningModel` should also implement the
 following functions:

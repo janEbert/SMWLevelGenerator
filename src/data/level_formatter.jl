@@ -13,15 +13,16 @@ Screen exits are ignored for the 1D output format.
 """
 module LevelFormatter
 
-using SparseArrays
-import SparseArrays: sparse
-
 using ..LevelStatistics
 using ..LevelBuilder
 
 export to1d, to2d, to3d, dimensionality_defaultflags
 
 
+"""
+Default flags for each type (or dimensionality) of training data.
+All of these must start with either "1d", "2d" or "3d".
+"""
 const dimensionality_defaultflags = Dict{Symbol, String}(
     Symbol("1d") => "t",
     Symbol("2d") => "t",
@@ -29,8 +30,11 @@ const dimensionality_defaultflags = Dict{Symbol, String}(
     Symbol("3d") => "tesx",
 )
 
-# TODO automatically find correct `keep` tiles for the level
-#      (based on maximum of list of certain tiles in first screen?)
+# TODO automatically find correct `keep` tiles for the level (see further below where to
+#      put this)
+#      based on the first non-empty tile below Mario!
+#      optionally based on maximum of list of certain tiles in first screen?
+
 
 """
     to1d(level::Level; keep::UInt16=0x100, empty::UInt16=0x025, binaryout=true,
@@ -118,6 +122,9 @@ end
 function to1d(file, flags::Union{AbstractString,
                                  AbstractChar}=dimensionality_defaultflags[Symbol("1d")];
               kwargs...)
+    # TODO probably find heuristically chosen tile here; check if entrance flag is
+    # contained. if yes, leave level as is; otherwise add it to flags, build level and
+    # remove those layers later. add heuristically chosen tile to `to1d` function as `keep`
     level = buildlevel(file, flags)
     to1d(level; kwargs...)
 end
