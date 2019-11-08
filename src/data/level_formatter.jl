@@ -30,11 +30,6 @@ const dimensionality_defaultflags = Dict{Symbol, String}(
     Symbol("3d") => "tesx",
 )
 
-# TODO automatically find correct `keep` tiles for the level (see further below where to
-#      put this)
-#      based on the first non-empty tile below Mario!
-#      optionally based on maximum of list of certain tiles in first screen?
-
 
 """
     to1d(level::Level; keep::UInt16=0x100, empty::UInt16=0x025, binaryout=true,
@@ -122,11 +117,13 @@ end
 function to1d(file, flags::Union{AbstractString,
                                  AbstractChar}=dimensionality_defaultflags[Symbol("1d")];
               kwargs...)
-    # TODO probably find heuristically chosen tile here; check if entrance flag is
-    # contained. if yes, leave level as is; otherwise add it to flags, build level and
-    # remove those layers later. add heuristically chosen tile to `to1d` function as `keep`
-    level = buildlevel(file, flags)
-    to1d(level; kwargs...)
+    if 't' in flags
+        level, groundtile = find_ground_tile(file, flags)
+        to1d(level; keep=groundtile, kwargs...)
+    else
+        level = buildlevel(file, flags)
+        to1d(level; kwargs...)
+    end
 end
 
 
@@ -175,8 +172,13 @@ end
 function to2d(file, flags::Union{AbstractString,
                                  AbstractChar}=dimensionality_defaultflags[Symbol("2d")];
               kwargs...)
-    level = buildlevel(file, flags)
-    to2d(level; kwargs...)
+    if 't' in flags
+        level, groundtile = find_ground_tile(file, flags)
+        to2d(level; keep=groundtile, kwargs...)
+    else
+        level = buildlevel(file, flags)
+        to2d(level; kwargs...)
+    end
 end
 
 # TODO Could refactor this into `to2d` using `1 - Int(keepempty)` or
@@ -299,6 +301,68 @@ function to3d(file, flags::Union{AbstractString,
     to3d(level, 't' in flags; kwargs...)
 end
 
+
+"""
+    find_ground_tile(file, flags)
+
+Return the level in the given file loaded with the given flags (see [`buildlevel`](@ref))
+and the first tile in the level below Mario's starting position that is non-empty (in
+vertical levels the first non-empty tile to the right due to the transposition).
+"""
+function find_ground_tile(file, flags)
+    @assert 't' in flags "no tiles in level; cannot find ground tile"
+    if 'e' in flags
+        level = buildlevel(file, flags)
+        remove_entrances = false
+    else
+        level = buildlevel(file, flags * 'e')
+        remove_entrances = true
+    end
+
+    entrance_y, entrance_x = mainentrance(level.stats)
+    # Start at the first tile below Mario's actual starting position.
+    entrance_y += 2
+    # Copy so vertical caching is faster. Also, the horizontal copy is very small.
+    if isvertical(level.stats)
+        searchregion = LevelBuilder.tilelayer(level)[entrance_x, entrance_y:end]
+    else
+        searchregion = LevelBuilder.tilelayer(level)[entrance_y:end, entrance_x]
+    end
+    tileindex = findfirst(!isequal(0x25), searchregion)
+
+    if isnothing(tileindex)
+        groundtile = 0x100
+    else
+        groundtile = searchregion[tileindex]
+    end
+
+    remove_entrances && (level = remove_entrance_layers(level))
+    return level, groundtile
+end
+
+"Remove the entrance layers from the given level and return a new one."
+function remove_entrance_layers(level::Level)
+    offsets = copy(level.offsets)
+    # We could just do `haskey` but this is more resistant to changes to `buildlevel`.
+    get(offsets, :entrances, 0) == 0 && return copy(level)
+
+    data = level.data
+    data = @views cat(
+        data[:, :, firstindex(data, 3):level.offsets[:entrances] - 1],
+        data[:, :, level.offsets[:entrances] + 2:end],
+        dims=3)
+
+    if get(offsets, :sprites, 0) > 2
+        offsets[:sprites] -= 2
+    end
+    if get(offsets, :goalsprites, 0) > 2
+        offsets[:goalsprites] -= 2
+    end
+    if get(offsets, :secondaryentrances, 0) > 2
+        offsets[:secondaryentrances] -= 2
+    end
+    return Level(data, offsets, level.stats, level.spriteheader)
+end
 
 """
     tostring(level::AbstractVector)
