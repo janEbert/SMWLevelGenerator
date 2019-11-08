@@ -1,5 +1,7 @@
 module WassersteinGenerator
 
+using Statistics: mean
+
 import Flux
 
 using ....InputStatistics

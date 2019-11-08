@@ -12,7 +12,7 @@ using Flux.Tracker: gradient
 #using Zygote
 
 # This import is only for documentation reference purposes.
-import LevelFormatter
+import ..LevelFormatter
 
 export LearningModel, AbstractDiscriminator, AbstractGenerator
 export makeloss, dataiteratorparams, calculate_loss, step!

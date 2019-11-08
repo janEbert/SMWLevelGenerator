@@ -94,14 +94,29 @@ the ``vanilla'' game; we will use these terms interchangeably). Also,
 to assert some form of quality in the dataset, only hacks with a
 rating greater than or equal to 3.0 were downloaded (our rating is the
 mean of all individual ratings, ranging from 1.0 to 5.0 and including
-\emph{None} for no individual ratings). All in all, over 17\,000
-unique levels in over 300 hacks were obtained thanks to the community
-keeping a masterpiece alive and fresh for not only all the years since
-the game's release but also for many years to come. While this amount
-of data is not a lot relative to what deep learning models usually
-train on in 2019 (with data points in the millions, even approaching
-billions), it may be enough for our models to get a grasp on what
-makes a level enjoyable.
+\emph{None} for no individual ratings). Sadly, some hacks are
+protected via an encryption (possibly offered by Lunar Magic) and do
+not allow reading their data; we had to omit all of these. All in all,
+over 17\,000 unique levels in over 300 hacks were obtained thanks to
+the community keeping a masterpiece alive and fresh for not only all
+the years since the game's release but also for many years to come.
+While this amount of data is not a lot relative to what deep learning
+models usually train on in 2019 (with data points in the millions,
+even approaching billions), it may be enough for our models to get a
+grasp on what makes a level enjoyable.
+
+Finally, as mentioned, hacks operate on the real ROM as patches. Most
+of the levels of the original ROM are usually untouched and remain the
+same even after applying the patch. As we dump all levels contained in
+a ROM, we remove these duplicated levels afterwards. If any one of the
+dumped files is changed, we do not remove the level as it may be a
+bonus level or a level solely containing the goal post (often used for
+ghost houses). \\
+In the original ROM, there are several duplicated ``test'' levels
+which are also removed. Hack authors may also leave unfinished levels
+or test levels in the ROMs which we cannot reliably detect. This will
+``pollute'' our dataset a little but will hopefully not have a great
+effect during training.
 
 \subsubsection{Levels}
 \label{sec:levels}

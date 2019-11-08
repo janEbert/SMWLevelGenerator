@@ -311,7 +311,11 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                     g_l = g_loss(noise_batch, real_target)
                     push!(g_trainlosses, g_l.data)
                     @tblog tblogger g_loss=g_l.data log_step_increment=0
-                    grads = gradient(() -> g_l, g_params)
+                    if use_wasserstein_loss
+                        grads = gradient(() -> -g_l, g_params)
+                    else
+                        grads = gradient(() -> g_l, g_params)
+                    end
 
                     # Update
                     Flux.Optimise.update!(g_optim, g_params, grads)

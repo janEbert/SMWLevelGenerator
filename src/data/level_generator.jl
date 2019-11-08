@@ -23,6 +23,9 @@ const level105dbid_2d_t = 0x2b7d
 const level105dbid_3d_t = 0x2b7d
 const level105dbid_3d_tesx = 0x2b7d
 
+# TODO Take `reverse_rows` into account!
+# TODO and `each_tile`
+
 function setup_generation(modelpath::AbstractString, dbpath::AbstractString)
     cp = BSON.load(modelpath)
     model = togpu(cp[:model])
@@ -103,7 +106,9 @@ function predict_from_index(model, db, index, from_method, first_screen)
 end
 
 function predict_from_row(model, row, from_method, first_screen)
-    input = DataIterator.preprocess(row, false, false, Val(false), Val(false))
+    dataiterparams = dataiteratorparams(model)
+    input = DataIterator.preprocess(row, false, false, Val(dataiterparams.join_pad),
+                                    Val(dataiterparams.as_matrix))
     if first_screen
         constantinput, sequence = generatesequence(model, input[1:screencols])
     else

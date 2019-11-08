@@ -7,6 +7,9 @@ using ..SecondaryLevelStats
 using ..Sprites
 
 export Level, buildlevel
+# If we export these, fix some name conflicts.
+# export tilelayer, mainentrancelayer, midwayentrancelayer, spritelayer, goalspritelayer
+# export secondaryentrancelayer, screenexitlayer, secondaryexitlayer
 
 "Mapping from characters flags to argument names."
 const flagdict = Dict{Char, Symbol}(
