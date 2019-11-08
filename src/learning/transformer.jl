@@ -90,8 +90,8 @@ function GPT2Block(inputsize::Integer, heads::Integer, attnhiddensize::Integer,
     GPT2Block(
         Flux.LayerNorm(inputsize),
         Transformers.Basic.MultiheadAttention(heads, inputsize, attnhiddensize, inputsize;
-                                        future=look_ahead,
-                                        pdrop=p_dropout_attn),
+                                              future=look_ahead,
+                                              pdrop=p_dropout_attn),
         Flux.LayerNorm(inputsize),
         Transformers.Basic.PwFFN(inputsize, ffhiddensize, activation),
         Flux.Dropout(p_dropout_attn),

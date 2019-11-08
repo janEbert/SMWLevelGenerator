@@ -26,8 +26,8 @@ Base.@kwdef struct TrainingParameters
     epochs::Integer = 10
 
     lr::Float64                                      = 0.0002
-    warmupepochs::Integer                            = 1  # TODO unused
-    warmuplr::Float64                                = 0.0001  # TODO unused
+    warmupepochs::Integer                            = 0  # TODO unused
+    warmuplr::Float64                                = 0.00005  # TODO unused
     logevery::Integer                                = 300
     saveevery::Integer                               = 1500
     testratio::AbstractFloat                         = 0.1
