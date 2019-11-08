@@ -11,7 +11,7 @@ using ..LevelBuilder
 using ..LevelFormatter
 using ..DataCompressor
 
-export generatedb, generatecsv
+export generatedb, generate_default_databases
 
 abstract type AbstractCompression end
 struct NoCompression <: AbstractCompression end
@@ -38,7 +38,7 @@ compressionmap = Dict{Int, AbstractCompression}(
 """
     generatedb(dest::AbstractString, rootdir::AbstractString=leveldir;
                formatfunction::Function=to3d, flags::Union{AbstractString, Nothing}=nothing,
-               compression=1, verbose=true)
+               compression=2, verbose=true)
 
 Generate a database at the given destination path containing data for all levels found under
 the given directory.
@@ -65,7 +65,7 @@ end
 """
     generatedb_inline(dest::AbstractString, rootdir::AbstractString=leveldir;
                       formatfunction::Function=to3d,
-                      flags::Union{AbstractString, Nothing}=nothing, compression=1)
+                      flags::Union{AbstractString, Nothing}=nothing, compression=2)
 
 Return a database containing data for all levels found under the given directory.
 Can also pass the function used to build up levels. It is passed one argument (the `Level`).
@@ -88,7 +88,7 @@ end
 # TODO only compress if desired
 """
     generatedata(rootdir::AbstractString=leveldir; formatfunction::Function=to3d,
-                 flags::Union{AbstractString, Nothing}=nothing, compression=1, verbose=true)
+                 flags::Union{AbstractString, Nothing}=nothing, compression=2, verbose=true)
 
 Return a `NamedTuple` and `Vector` containing the metadata and object data respectively
 for all levels found under the given directory.
@@ -110,7 +110,7 @@ It can range from 0 to 3. The different values affect the behaviour in the follo
 """
 function generatedata(rootdir::AbstractString=leveldir; formatfunction::Function=to3d,
                       flags::Union{AbstractString, Symbol, Nothing}=nothing,
-                      compression::Union{Integer, AbstractCompression}=1,
+                      compression::Union{Integer, AbstractCompression}=2,
                       verbose::Bool=true)
     i = one(UInt)
     totalsize = zero(UInt)
@@ -142,12 +142,14 @@ function generatedata(rootdir::AbstractString=leveldir; formatfunction::Function
         id = UInt[],
 
         # LevelStats
-        hack             = String[],
-        number           = UInt16[],
-        screens          = UInt8[],
-        mode             = UInt8[],
-        fgbggfx          = UInt8[],
-        lmexpandedformat = UInt8[],
+        hack                 = String[],
+        number               = UInt16[],
+        screens              = UInt8[],
+        mode                 = UInt8[],
+        fgbggfx              = UInt8[],
+        lmexpandedformat     = UInt8[],
+        mainentranceaction   = UInt8[],
+        midwayentranceaction = UInt8[],
 
         # Sprite header
         # If this first entry is `false`, the rest should be ignored.
@@ -207,6 +209,8 @@ function addentry!(lists::NamedTuple, datalist::AbstractVector,
     push!(lists.mode, stats.mode)
     push!(lists.fgbggfx, stats.fgbggfx)
     push!(lists.lmexpandedformat, stats.lmexpandedformat)
+    push!(lists.mainentranceaction, mainentranceaction(stats))
+    push!(lists.midwayentranceaction, midwayentranceaction(stats))
 
     spriteheader = level.spriteheader
     if isnothing(spriteheader)
@@ -366,6 +370,16 @@ end
 # data) on which a formatting method has to be called. use case is saving space but
 # increasing computation time (not one db for each type of data but have to format data
 # when loading)
+
+function generate_default_databases(dir=".")
+    generatedb(joinpath(dir, "levels_1d_singleline_flags_t.jdb"),
+               formatfunction=to1d, compression=0)
+    generatedb(joinpath(dir, "levels_1d_notsingleline_flags_t.jdb"),
+               formatfunction=x -> to1d(x, singleline=false), flags="t", compression=0)
+    generatedb(joinpath(dir, "levels_2d_flags_t.jdb"), formatfunction=to2d, compression=1)
+    generatedb(joinpath(dir, "levels_3d_flags_t.jdb"), flags="t")
+    generatedb(joinpath(dir, "levels_3d_flags_tesx.jdb"), compression=3)
+end
 
 function printprogress(i, totalsize, verbose)
     if i % 50 == 0

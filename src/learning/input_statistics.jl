@@ -21,7 +21,9 @@ const layers3d = (
     + maximumentrances                  # secondary entrances
 )
 
-const constantinputsize = 6
+# Always add one more than there are entries in `DataIterator.getconstantinput`
+# for the "has-not-ended-bit"!
+const constantinputsize = 10
 
 # TODO compute 3d input sizes from the flags
 # Sequence prediction

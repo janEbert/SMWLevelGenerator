@@ -17,6 +17,11 @@ function deconstructconstantinput(constantinput::AbstractVector{UInt16})
         :screens,
         :mode,
         :fgbggfx,
+        :mainentranceaction,
+        :midwayentranceaction,
+
+        :sprites_buoyancy,
+        :sprites_disablelayer2buoyancy,
         :sprites_mode,
     )
     return NamedTuple{names}(constantinput)

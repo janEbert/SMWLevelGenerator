@@ -1,7 +1,7 @@
 module SMWLevelGenerator
 
 # Data preparation
-export generatedb
+export generatedb, generate_default_databases
 # These are primarily for testing and benchmarking.
 export loaddb, dataiterator, dataiterator!, dataiteratorchannel
 

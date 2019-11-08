@@ -167,6 +167,11 @@ function getconstantinput(row::NamedTuple)
         row.screens,
         row.mode,
         row.fgbggfx,
+        row.mainentranceaction,
+        row.midwayentranceaction,
+
+        row.sprites_buoyancy,
+        row.sprites_disablelayer2buoyancy,
         row.sprites_mode,
     ]
 end

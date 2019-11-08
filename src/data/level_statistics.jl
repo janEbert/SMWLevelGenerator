@@ -10,7 +10,8 @@ using ..XYTables
 
 export LevelStats, getstats, isvertical, isboss, islayer2, screencolumns, screenrows
 export tilesperscreen, hack, name
-export mainentrance, midwayentrance, makemainentrancelayer, makemidwayentrancelayer
+export mainentrance, midwayentrance, mainentranceaction, midwayentranceaction
+export makemainentrancelayer, makemidwayentrancelayer
 export screencols, screenrowshoritop, screenrowshoribottom, screenrowshori, screenrowsvert
 export leveldir, originalleveldir, uniquevanillatiles
 
@@ -126,6 +127,9 @@ struct MainEntrance <: Entrance
     verticalsubscreenbit::UInt8
     "Screen the main entrance resides in."
     screen::UInt8
+
+    "Entrance action. Also determines whether the level is a water level."
+    entranceaction::UInt8
 end
 
 "Information about a level's midway entrance."
@@ -141,6 +145,8 @@ struct MidwayEntrance <: Entrance
     separateentrance::Bool
     "Whether the midway entrance is redirected to another level."
     redirect::Bool
+    "Entrance action. Also determines whether the level is a water level."
+    entranceaction::UInt8
 end
 
 # TODO create new structs for headers, insert those directly, write methods to reference
@@ -262,6 +268,19 @@ function midwayentrance(stats::LevelStats)
     end
 end
 
+function mainentranceaction(stats::LevelStats)
+    return stats.mainentrance.entranceaction
+end
+
+function midwayentranceaction(stats::LevelStats)
+    entrance = stats.midwayentrance
+    if entrance.separateentrance
+        return entrance.entranceaction
+    else
+        return stats.mainentrance.entranceaction
+    end
+end
+
 "Return a `Matrix{UInt8}` of zeros with a one at the main entrance."
 function makemainentrancelayer(stats::LevelStats)
     makeentrancelayer(mainentrance(stats)..., stats)
@@ -340,7 +359,8 @@ function getstats(level::IO, filename::AbstractString="<Unknown>")
     mainentrance = MainEntrance(secondaryheaderstats.y, secondaryheaderstats.x,
                                 secondaryheaderstats.horizontalsubscreenbit,
                                 secondaryheaderstats.verticalsubscreenbit,
-                                secondaryheaderstats.screen)
+                                secondaryheaderstats.screen,
+                                secondaryheaderstats.entranceaction)
     midwayentrance = createmidwayentrance(midwayentrancestats, secondaryheaderstats)
 
     return LevelStats(filename, info.number, headerstats.screens, headerstats.mode,
@@ -441,7 +461,8 @@ function parsesecondaryheaderbits(headerbits::AbstractString)
         verticalsubscreenbit   = verticalsubscreenbits[xref]
     end
     # layer3settingbits = headerbits[9:10]
-    # entranceactionbits = headerbits[11:13]
+    entranceactionbits = headerbits[11:13]
+    entranceaction = parse(UInt8, entranceactionbits, base=2)
     # Do **not** parse the following bits! Another bit needs to be prepended from the
     # midway entrance information.
     midwayentrancescreentailbits = headerbits[17:20]
@@ -465,7 +486,8 @@ function parsesecondaryheaderbits(headerbits::AbstractString)
     # bgpositionbits = headerbits[52:56]
     (y=y, x=x, horizontalsubscreenbit=horizontalsubscreenbit,
         verticalsubscreenbit=verticalsubscreenbit, screen=screen,
-        midwayentrancescreentailbits=midwayentrancescreentailbits, xymethod2=xymethod2, )
+        midwayentrancescreentailbits=midwayentrancescreentailbits, xymethod2=xymethod2,
+        entranceaction=entranceaction, )
 end
 
 """
@@ -484,7 +506,8 @@ function parsemidwayentrancebits(midwaybits::AbstractString)
         # waterbits = midwaybits[2]
         xbits = midwaybits[5] * midwaybits[13:16]
         x = parse(UInt8, xbits, base=2)
-        # entranceactionbits = midwaybits[6:8]
+        entranceactionbits = midwaybits[6:8]
+        entranceaction = parse(UInt8, entranceactionbits, base=2)
         ybits = midwaybits[27:32] * midwaybits[9:12]
         y = parse(UInt16, ybits, base=2)
         # relativefgbgbits = midwaybits[17]
@@ -497,10 +520,11 @@ function parsemidwayentrancebits(midwaybits::AbstractString)
         # We have these bits twice because the behaviour depends on `relativefgbg`.
         # fgbgoffsetbits = headerbits[26] * fgpositionbits * bgpositionbits
         return (y=y, x=x, screenheadbits=screenheadbits,
-                separateentrance=separateentrance, redirect=redirect)
+                separateentrance=separateentrance, redirect=redirect,
+                entranceaction=entranceaction)
     else
         return (y=0x000, x=0x0, screenheadbits=screenheadbits,
-                separateentrance=separateentrance, redirect=false)
+                separateentrance=separateentrance, redirect=false, entranceaction=0x0)
     end
 end
 
@@ -514,7 +538,7 @@ function createmidwayentrance(midwayentrancestats::NamedTuple,
     # The `separateentrance` bit will be evaluated later.
     MidwayEntrance(midwayentrancestats.y, midwayentrancestats.x,
                    midwayentrancescreen, midwayentrancestats.separateentrance,
-                   midwayentrancestats.redirect)
+                   midwayentrancestats.redirect, midwayentrancestats.entranceaction)
 end
 
 """
