@@ -61,9 +61,10 @@ function createlevelinfo(mainentrancedata::NamedTuple, midwayentrancedata::Named
                           stats::NamedTuple, constantinputdata::NamedTuple)
     data = UInt8[]
     numberfirst, numbersecond = tolittleendian(constantinputdata.number)
-    secondaryheader = createsecondaryheader(mainentrancedata, midwayentrancedata, stats)
+    secondaryheader = createsecondaryheader(mainentrancedata, midwayentrancedata, stats,
+                                            constantinputdata)
     @assert length(secondaryheader) == 7 "unexpected secondary header size"
-    midwayentrance = createmidwayentrancebytes(midwayentrancedata)
+    midwayentrance = createmidwayentrancebytes(midwayentrancedata, constantinputdata)
     header = createheader(constantinputdata)
     @assert length(header) == 5 "unexpected header size"
 
@@ -81,18 +82,19 @@ function createlevelinfo(mainentrancedata::NamedTuple, midwayentrancedata::Named
 end
 
 function createsecondaryheader(mainentrancedata::NamedTuple, midwayentrancedata::NamedTuple,
-                               stats::NamedTuple)
+                               stats::NamedTuple, constantinputdata::NamedTuple)
     # Default values taken from level 105 in the original game
     header = BitVector()
     ybits = tobits(mainentrancedata.y)
     xbits = tobits(mainentrancedata.x)
     midwayentrancescreenbits = tobits(midwayentrancedata.screen)
     screenbits = tobits(mainentrancedata.screen)
+    entranceactionbits = tobits(constantinputdata.mainentranceaction)
 
     append!(header, (0, 1, 0, 1))  # layer2scrollbits
     append!(header, ybits[end - 3:end])
     append!(header, (0, 0))  # layer3settingbits
-    append!(header, (0, 0, 0))  # entranceactionbits
+    append!(header, entranceactionbits[end - 2:end])
     append!(header, xbits[end - 2:end])
     append!(header, midwayentrancescreenbits[end - 3:end])
     append!(header, (1, 0))  # fgpositionbits
@@ -119,18 +121,20 @@ function createsecondaryheader(mainentrancedata::NamedTuple, midwayentrancedata:
     return tobytes(header)
 end
 
-function createmidwayentrancebytes(midwayentrancedata::NamedTuple)
+function createmidwayentrancebytes(midwayentrancedata::NamedTuple,
+                                   constantinputdata::NamedTuple)
     midway = BitVector()
     screenbits = tobits(midwayentrancedata.screen)
     xbits = tobits(midwayentrancedata.x)
     ybits = tobits(midwayentrancedata.y)
+    entranceactionbits = tobits(constantinputdata.midwayentranceaction)
 
     push!(midway, 0)  # slipperybits
     push!(midway, 0)  # waterbits
     push!(midway, midwayentrancedata.separateentrance)
     push!(midway, screenbits[end - 4])
     push!(midway, xbits[end - 4])
-    append!(midway, (0, 0, 0))  # entranceactionbits
+    append!(midway, entranceactionbits[end - 2:end])
     append!(midway, ybits[end - 3:end])
     append!(midway, xbits[end - 3:end])
     push!(midway, 0)  # relativefgbgbits
