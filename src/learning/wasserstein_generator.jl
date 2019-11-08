@@ -41,18 +41,18 @@ function wsgenerator1d(num_features=16, generator_inputsize=32, imgsize=imgsize1
                modeltype=WassersteinGeneratorModel, kernelsize=(4,), kwargs...)
 end
 
-function wsgenerator2d(num_features=64, generator_inputsize=64, imgsize=imgsize2d; kwargs...)
+function wsgenerator2d(num_features=64, generator_inputsize=96, imgsize=imgsize2d; kwargs...)
     manualmodel(num_features, imgsize, generator_inputsize, Symbol("2d");
                 modeltype=WassersteinGeneratorModel, kwargs...)
 end
 
-function wsgenerator3dtiles(num_features=128, generator_inputsize=128, imgsize=imgsize3dtiles;
+function wsgenerator3dtiles(num_features=128, generator_inputsize=144, imgsize=imgsize3dtiles;
                           kwargs...)
     manualmodel(num_features, imgsize, generator_inputsize, Symbol("3dtiles");
                 modeltype=WassersteinGeneratorModel, kwargs...)
 end
 
-function wsgenerator3d(num_features=256, generator_inputsize=128, imgsize=imgsize3d;
+function wsgenerator3d(num_features=256, generator_inputsize=256, imgsize=imgsize3d;
                      kwargs...)
     manualmodel(num_features, imgsize, generator_inputsize, Symbol("3d");
                 modeltype=WassersteinGeneratorModel, kwargs...)
