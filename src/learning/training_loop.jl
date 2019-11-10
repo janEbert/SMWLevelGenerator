@@ -32,6 +32,7 @@ Base.@kwdef struct TrainingParameters
     logevery::Integer                                = 300
     saveevery::Integer                               = 1500
     testratio::AbstractFloat                         = 0.1
+    buffer_size::Integer                             = 4
     dataiter_threads::Integer                        = 0
     per_tile::Bool                                   = false
     reverse_rows::Bool                               = false
@@ -118,10 +119,12 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
     steps = UInt64(0)
 
     dataiterparams = dataiteratorparams(model)
-    trainiter = dataiterator(db, 4, trainindices, batch_size, params.dataiter_threads,
-                             params.per_tile, params.reverse_rows; dataiterparams...)
-    testiter  = dataiterator(db, 4, testindices,  batch_size, params.dataiter_threads,
-                             params.per_tile, params.reverse_rows; dataiterparams...)
+    trainiter = dataiterator(db, buffer_size, trainindices, batch_size,
+                             params.dataiter_threads, params.per_tile, params.reverse_rows;
+                             dataiterparams...)
+    testiter  = dataiterator(db, buffers_size, testindices,  batch_size,
+                             params.dataiter_threads, params.per_tile, params.reverse_rows;
+                             dataiterparams...)
     # TODO store max loss and log (as in logging) normalized loss (maybe).
     #      only applicable when sequences are padded to have the same length
     # TODO make function for that so it can be calculated online; then maybe normalize loss

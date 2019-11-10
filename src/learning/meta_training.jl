@@ -27,6 +27,7 @@ Base.@kwdef struct MetaTrainingParameters
     logevery::Integer                     = 300
     saveevery::Integer                    = 1500
     testratio::AbstractFloat              = 0.1
+    buffer_size::Integer                  = 3
     dataiter_threads::Integer             = 0
     logdir::AbstractString                = joinpath("exps", newexpdir("meta"))
     params_logfile::AbstractString        = "params.json"
@@ -96,8 +97,10 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
     local testlosses
     steps = UInt64(0)
 
-    trainiter = gan_dataiterator(db, 3, trainindices, batch_size, params.dataiter_threads)
-    testiter  = gan_dataiterator(db, 3, testindices,  batch_size, params.dataiter_threads)
+    trainiter = gan_dataiterator(db, buffer_size, trainindices, batch_size,
+                                 params.dataiter_threads)
+    testiter  = gan_dataiterator(db, buffer_size, testindices,  batch_size,
+                                 params.dataiter_threads)
 
     loss = makeloss(model, params.criterion)
     parameters = Flux.params(model)

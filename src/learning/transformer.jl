@@ -163,7 +163,7 @@ function GPT2(inputsize::Integer, num_heads::Integer, attnhiddensize::Integer,
                 GPT2Block(inputsize, num_heads, attnhiddensize, ffhiddensize;
                           look_ahead=false, activation=activation,
                           p_dropout_attn=p_dropout_attn)
-                for i = 1:num_layers
+                for _ in 1:num_layers
             ]...
         ),
         Flux.LayerNorm(inputsize)

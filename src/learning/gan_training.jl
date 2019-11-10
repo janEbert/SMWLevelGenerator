@@ -32,6 +32,7 @@ Base.@kwdef struct GANTrainingParameters
     d_steps_per_g_step::Integer           = 1
     logevery::Integer                     = 200
     saveevery::Integer                    = 1000
+    buffer_size::Integer                  = 3
     dataiter_threads::Integer             = 0
     logdir::AbstractString                = joinpath("exps", newexpdir("gan"))
     params_logfile::AbstractString        = "params.json"
@@ -168,8 +169,10 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     const_fake_target = togpu(zeros(size(const_noise)[end]))
     steps = UInt64(0)
 
-    trainiter = gan_dataiterator(db, 3, trainindices, batch_size, params.dataiter_threads)
-    testiter  = gan_dataiterator(db, 3, testindices,  batch_size, params.dataiter_threads)
+    trainiter = gan_dataiterator(db, buffer_size, trainindices, batch_size,
+                                 params.dataiter_threads)
+    testiter  = gan_dataiterator(db, buffer_size, testindices,  batch_size,
+                                 params.dataiter_threads)
     curr_batch_size = 0
     curr_batch_size_changed = false
     local real_target
