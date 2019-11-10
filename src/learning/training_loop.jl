@@ -4,7 +4,7 @@ using Dates: now
 using Logging: SimpleLogger, Info
 using Printf: @sprintf
 using Statistics: mean, var
-using Random: seed!
+using Random: rand!, seed!
 
 using BSON  # we currently use a fork (pr #47) due to issue #3
 import Flux
@@ -68,6 +68,8 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                        params::TrainingParameters=TrainingParameters())
     seed!(params.seed)
     set_zero_subnormals(true)
+    # Initialize CURAND
+    rand!(togpu(zeros(2)))
 
     paramdict = Dict{Symbol, Any}(field => getproperty(params, field) |>
                                   x -> x isa Function ? Symbol(x) : x
