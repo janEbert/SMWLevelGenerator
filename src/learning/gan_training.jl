@@ -169,9 +169,9 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     const_fake_target = togpu(zeros(size(const_noise)[end]))
     steps = UInt64(0)
 
-    trainiter = gan_dataiterator(db, buffer_size, trainindices, batch_size,
+    trainiter = gan_dataiterator(db, params.buffer_size, trainindices, batch_size,
                                  params.dataiter_threads)
-    testiter  = gan_dataiterator(db, buffer_size, testindices,  batch_size,
+    testiter  = gan_dataiterator(db, params.buffer_size, testindices,  batch_size,
                                  params.dataiter_threads)
     curr_batch_size = 0
     curr_batch_size_changed = false

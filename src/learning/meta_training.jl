@@ -97,9 +97,9 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
     local testlosses
     steps = UInt64(0)
 
-    trainiter = gan_dataiterator(db, buffer_size, trainindices, batch_size,
+    trainiter = gan_dataiterator(db, params.buffer_size, trainindices, batch_size,
                                  params.dataiter_threads)
-    testiter  = gan_dataiterator(db, buffer_size, testindices,  batch_size,
+    testiter  = gan_dataiterator(db, params.buffer_size, testindices,  batch_size,
                                  params.dataiter_threads)
 
     loss = makeloss(model, params.criterion)

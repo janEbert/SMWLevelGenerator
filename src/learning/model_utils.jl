@@ -75,9 +75,8 @@ function makeloss(model, criterion)
     function loss(x, y)
         y_hat = model.(x)
         rows = size(first(y), 1)
-        l = @inbounds @views sum(sum(criterion.(Iterators.partition(y_hat[i], rows),
-                                                Iterators.partition(y[i], rows))
-                                     for i in eachindex(y)))
+        l = sum(Iterators.flatten(criterion.(eachcol(e_hat), eachcol(e))
+                                  for (e_hat, e) in zip(y_hat, y)))
         # l = @inbounds @views sum(criterion(y_hat[i][:, col], y[i][:, col])
         #                          for i in eachindex(y) for col in axes(y[i], 2))
         return l

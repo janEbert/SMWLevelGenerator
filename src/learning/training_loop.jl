@@ -119,10 +119,10 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
     steps = UInt64(0)
 
     dataiterparams = dataiteratorparams(model)
-    trainiter = dataiterator(db, buffer_size, trainindices, batch_size,
+    trainiter = dataiterator(db, params.buffer_size, trainindices, batch_size,
                              params.dataiter_threads, params.per_tile, params.reverse_rows;
                              dataiterparams...)
-    testiter  = dataiterator(db, buffers_size, testindices,  batch_size,
+    testiter  = dataiterator(db, params.buffer_size, testindices,  batch_size,
                              params.dataiter_threads, params.per_tile, params.reverse_rows;
                              dataiterparams...)
     # TODO store max loss and log (as in logging) normalized loss (maybe).
