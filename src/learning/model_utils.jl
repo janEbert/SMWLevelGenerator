@@ -71,9 +71,15 @@ Return a 2-argument loss function applying the model to the input sequence `x` a
 the loss of the prediction in relation to the target sequence `y`.
 """
 function makeloss(model, criterion)
+    # Loss for a batch of `AbstractVector{<:AbstractMatrix}` data.
     function loss(x, y)
         y_hat = model.(x)
-        l = sum(criterion.(y_hat, y))
+        rows = size(first(y), 1)
+        l = @inbounds @views sum(sum(criterion.(Iterators.partition(y_hat[i], rows),
+                                                Iterators.partition(y[i], rows))
+                                     for i in eachindex(y)))
+        # l = @inbounds @views sum(criterion(y_hat[i][:, col], y[i][:, col])
+        #                          for i in eachindex(y) for col in axes(y[i], 2))
         return l
     end
 end
@@ -141,14 +147,18 @@ function soft_criterion(#=model=#::Any, y_hat, y, criterion)
     total = 0.0f0
     last_elem = nothing
     second_to_last = nothing
-    for (e_hat, e) in zip(y_hat, y)
-        if last_elem != second_to_last
-            total += criterion(e_hat, e)
-        else
-            total += 0.1f0 * criterion(e_hat, e)
+    # Loss for a batch of `AbstractVector{<:AbstractMatrix}` data.
+    for i in eachindex(y)
+        for col in axes(y[i], 2)
+            @inbounds @views e_hat, e = y_hat[i][:, col], y[i][:, col]
+            if last_elem != second_to_last
+                total += criterion(e_hat, e)
+            else
+                total += 0.1f0 * criterion(e_hat, e)
+            end
+            second_to_last = last_elem
+            last_elem = e
         end
-        second_to_last = last_elem
-        last_elem = e
     end
     return total
 end

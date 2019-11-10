@@ -19,7 +19,7 @@ function sparse(array::AbstractArray{T, 3}; dims=2) where T
 end
 
 "Return the given `AbstractVector{SparseMatrixCSC{T}}` as an `Array{T, 3}`."
-function unsparse(sparsearray::AbstractVector{SparseMatrixCSC{T}}; dims=2) where T
+function unsparse(sparsearray::AbstractVector{<:SparseMatrixCSC}; dims=2)
     reduce((a, b) -> cat(a, b, dims=dims), map(Array, sparsearray))
 end
 
@@ -76,7 +76,7 @@ function decompressdata(compressed::AbstractVector{
     j = 0x001
     for (i, x) in compressed
         while j < i
-            emptyat!(data, j)
+            emptyat!(data, j, size(x))
             j += 0x001
         end
         fillat!(data, i, x)
@@ -90,11 +90,11 @@ function decompressdata(compressed::AbstractVector{
 end
 
 function emptyat!(data::AbstractVector{SparseMatrixCSC{T, defaultindextype}},
-                  index::Integer) where T
-    data[index] = spzeros(T, defaultindextype, 0, 0)
+                  index::Integer, emptysize::Tuple) where T
+    data[index] = spzeros(T, defaultindextype, emptysize)
 end
 
-function emptyat!(data::AbstractArray{T, 3}, index::Integer) where T
+function emptyat!(data::AbstractArray{T, 3}, index::Integer, ::Any) where T
     data[:, :, index] .= 0
 end
 

@@ -206,9 +206,9 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                  * "Seed: $(params.seed).")
 
         if past_steps == 0
-            testfakes = [g_model(const_noise).data]
+            testfakes = [Flux.data(g_model(const_noise))]
         else
-            push!(testfakes, g_model(const_noise).data)
+            push!(testfakes, Flux.data(g_model(const_noise)))
         end
         testloss = testmodel(d_model, d_loss, testfakes[end], const_fake_target)
         if past_steps > 0
@@ -277,7 +277,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
                 # Train on real batch
                 d_l_real = d_loss(real_batch, real_target)
-                d_l = d_l_real.data
+                d_l = Flux.data(d_l_real)
                 push!(d_trainlosses_real, d_l)
                 @tblog tblogger d_loss_real=d_l
 
@@ -290,9 +290,9 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 fake_batch = g_model(noise_batch)
 
                 d_l_fake = d_loss(fake_batch, fake_target)
-                d_l += d_l_fake.data
-                push!(d_trainlosses_fake, d_l_fake.data)
-                @tblog tblogger d_loss_fake=d_l_fake.data log_step_increment=0
+                d_l += Flux.data(d_l_fake)
+                push!(d_trainlosses_fake, Flux.data(d_l_fake))
+                @tblog tblogger d_loss_fake=Flux.data(d_l_fake) log_step_increment=0
 
                 # TODO remove this parameter and implement step! like for other models
                 if use_wasserstein_loss
@@ -309,8 +309,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                     # Generator
                     # Use real labels for modified loss function
                     g_l = g_loss(noise_batch, real_target)
-                    push!(g_trainlosses, g_l.data)
-                    @tblog tblogger g_loss=g_l.data log_step_increment=0
+                    push!(g_trainlosses, Flux.data(g_l))
+                    @tblog tblogger g_loss=Flux.data(g_l) log_step_increment=0
                     if use_wasserstein_loss
                         grads = gradient(() -> -g_l, g_params)
                     else
@@ -325,8 +325,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 # Metadata predictor
                 if !isnothing(meta_model) && (overfit_on_batch || j > length(testindices))
                     l = meta_loss(real_batch, meta_batch)
-                    push!(meta_trainlosses, l.data)
-                    @tblog tblogger meta_predictor_loss=l.data log_step_increment=0
+                    push!(meta_trainlosses, Flux.data(l))
+                    @tblog tblogger meta_predictor_loss=Flux.data(l) log_step_increment=0
                     grads = gradient(() -> -l, meta_params)
 
                     Flux.Optimise.update!(meta_optim, meta_params, grads)
@@ -336,7 +336,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 steps += 1
 
                 if logevery != 0 && steps % logevery == 0
-                    push!(testfakes, g_model(const_noise).data)
+                    push!(testfakes, Flux.data(g_model(const_noise)))
                     testloss = testmodel(d_model, d_loss, testfakes[end], const_fake_target)
                     @tblog tblogger d_testloss=testloss log_step_increment=0
                     if d_l > max_d_loss
@@ -348,7 +348,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                         max_d_testlossdigits = ndigits(trunc(Int, max_d_testloss)) + 5
                     end
                     if g_l > max_g_loss
-                        max_g_loss = g_l.data
+                        max_g_loss = Flux.data(g_l)
                         max_g_lossdigits = ndigits(trunc(Int, max_g_loss)) + 5
                     end
                     push!(d_testlosses, testloss)
@@ -386,8 +386,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                              * "$(lpad(@sprintf("%.4f", testloss), max_d_testlossdigits)) "
                              * "test, $(lpad(@sprintf("%.4f", d_l), max_d_lossdigits)) "
                              * "train; generator loss: "
-                             * "$(lpad(@sprintf("%.4f", g_l.data), max_g_lossdigits))); "
-                             * "mean time per step: "
+                             * "$(lpad(@sprintf("%.4f", Flux.data(g_l)), max_g_lossdigits))"
+                             * "; mean time per step: "
                              * "$(@sprintf("%.3f", timediff / steps)) s; "
                              * "total time: $(@sprintf("%.2f", timediff / 60)) min.")
                     if !isnothing(meta_model)
@@ -423,7 +423,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 end
                 if saveevery != 0 && steps % saveevery == 0
                     if logevery != 0 && steps % logevery != 0
-                        push!(testfakes, g_model(const_noise).data)
+                        push!(testfakes, Flux.data(g_model(const_noise)))
                         testloss = testmodel(d_model, d_loss, testfakes[end],
                                              const_fake_target)
                         @tblog tblogger d_testloss=testloss log_step_increment=0
@@ -473,7 +473,7 @@ end
 
 function testmodel(d_model, d_loss, fake_batch, const_fake_target)
     Flux.testmode!(d_model)
-    d_l = d_loss(fake_batch, const_fake_target).data
+    d_l = Flux.data(d_loss(fake_batch, const_fake_target))
     Flux.testmode!(d_model, false)
     return d_l
 end
@@ -484,7 +484,7 @@ function testmodel(meta_model, testiter, testindices, batch_size, meta_loss)
 
     for i in 1:cld(length(testindices), batch_size)
         real_batch, meta_batch = map(togpu, take!(testiter))
-        l = meta_loss(real_batch, meta_batch).data
+        l = Flux.data(meta_loss(real_batch, meta_batch))
         push!(testlosses, l)
     end
     Flux.testmode!(meta_model, false)

@@ -10,7 +10,7 @@ using Logging
 using ..InputStatistics: constantinputsize
 using ..ModelUtils: togpu
 
-export @tblog, logprint, newexpdir, maketarget, cleanup
+export @tblog, logprint, newexpdir, batchtogpu, maketarget, cleanup
 
 """
     @tblog(logger, exs...)
@@ -52,16 +52,20 @@ end
 
 newexpdir(prefix="exp") = replace("$(prefix)_$(now())", ':' => '-')
 
-"""
-    maketarget(seq, is_joined_padded::Val{Bool}, each_is_padded::Val{Bool})
+batchtogpu(batch) = togpu(batch)
+batchtogpu(batch::AbstractVector{<:AbstractArray}) = togpu.(batch)
 
-Return the target (prediction) sequence of the given sequence.
-The result is obtained by removing the first element of `seq` and appending zeros of the
-same size instead. Also, the constant input part (except the "has not ended"-bit) is removed
-from each element.
+"""
+    maketarget(batch, is_joined_padded::Val{Bool}, is_matrix::Val{Bool})
+
+Return the target (prediction) batch of the given batch.
+The result is obtained by removing the first element of each sequence in the batch and
+appending zeros of the same size instead. Also, the constant input part (except the
+"has not ended"-bit) is removed from each sequence element.
 In addition, the result is appropriately moved to the GPU.
 `Val{Bool}` means a `Val` type of a `Bool` instance.
 
+# TODO these are wrong!
 ```jldoctest; setup = :(ENV["SMWLG_IGNORE_GPU"] = true)
 julia> maketarget([[1:10;], [11:20;]], Val(false), Val(false))
        # Removes the constant part as well!
@@ -70,39 +74,51 @@ julia> maketarget([[1:10;], [11:20;]], Val(false), Val(false))
  [0, 0, 0, 0, 0]
 ```
 """
-function maketarget(seq, #=is_joined_padded=#::Val{false},
-                    each_is_padded::Val{false})::AbstractVector{<:AbstractVector}
+function maketarget(
+        batch::AbstractVector{<:AbstractVector})::AbstractVector{<:AbstractVector}
     # TODO check 1d and 2d case
     # It's much faster to view even sparse arrays than copy them
     # even though their calculation afterwards _should_ be faster.
-    @inbounds target = @views map(x -> (x[constantinputsize:end]),
-                                  seq[firstindex(seq) + 1:end])
+    @inbounds target = @views map(x -> x[constantinputsize:end],
+                                  batch[firstindex(batch) + 1:end])
     # Need to do indexing this way, otherwise we get a type error.
     @inbounds push!(target, @views zero(target[end])[firstindex(target[end]):end])
-    togpu.(target)
+    batchtogpu(target)
 end
 
-function maketarget(seq, #=is_joined_padded=#::Val{false},
-                    each_is_padded::Val{true})::AbstractMatrix
+function maketarget(
+        batch::AbstractVector{<:AbstractMatrix})::AbstractVector{<:AbstractMatrix}
     # TODO check 1d and 2d case
     # It's much faster to view even sparse arrays than copy them
     # even though their calculation afterwards _should_ be faster.
-    @inbounds target = @view seq[constantinputsize:end, firstindex(seq, 2) + 1:end]
+    @inbounds target = @views map(x -> x[constantinputsize:end, :],
+                                  batch[firstindex(batch) + 1:end])
     # Need to do indexing this way, otherwise we get a type error.
-    target = hcat(target, @views zero(target[:, end])[firstindex(target[:, end]):end])
-    togpu.(target)
+    @inbounds push!(target, @views zero(target[end])[firstindex(target[end], 1):end, :])
+    batchtogpu(target)
+end
+
+function maketarget(batch::AbstractArray{T, 3})::AbstractArray{T, 3} where T
+    # TODO check 1d and 2d case
+    # It's much faster to view even sparse arrays than copy them
+    # even though their calculation afterwards _should_ be faster.
+    @inbounds target = @view batch[constantinputsize:end, firstindex(batch, 2) + 1:end, :]
+    # Need to do indexing this way, otherwise we get a type error.
+    targetview = @view target[:, end:end, :]
+    target = hcat(target, @view zero(targetview)[firstindex(targetview, 1):end, :,
+                                                 firstindex(targetview, 3):end])
+    batchtogpu(target)
 end
 
 # TODO need to change DataIterator.preprocess to something that makes sense; then fix this.
-function maketarget(seq, #=is_joined_padded=#::Val{true},
-                    #=each_is_padded=#::Val)::AbstractVector
+function maketarget(batch::AbstractMatrix)::AbstractMatrix
     error("not correctly implemented yet")
     # It's much faster to view even sparse arrays than copy them
     # even though their calculation afterwards _should_ be faster.
-    @inbounds target = @view seq[firstindex(seq) + 1:end]
+    @inbounds target = @view batch[firstindex(batch) + 1:end]
     # Need to do indexing this way, otherwise we get a type error.
     @inbounds push!(target, @views zero(target[end])[firstindex(target[end]):end])
-    togpu.(target)
+    batchtogpu(target)
 end
 
 cleanup(dataiter::RemoteChannel) = finalize(dataiter)

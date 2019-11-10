@@ -4,6 +4,7 @@ import Base: rpad
 using Random
 using SparseArrays
 
+using Flux: batchseq
 using JuliaDB
 
 using ..DataCompressor: compressedindextype, defaultindextype, decompressdata
@@ -80,70 +81,106 @@ function traintestsplit(db::IndexedTable, testratio::Real=0.1, seed=0)
     return trainindices, testindices
 end
 
-function dataiteratorchannel(db::IndexedTable, buffersize, join_pad::Val, as_matrix::Val)
-    channeltype = dataiterator_channeltype(db[1].data, join_pad, as_matrix)
+function dataiteratorchannel(db::IndexedTable, buffersize, per_tile::Bool,
+                             reverse_rows::Val, join_pad::Val, as_matrix::Val)
+    firstseq = preprocess(db[1], per_tile, reverse_rows, join_pad, as_matrix)
+    seqbuffer = makeseqbuffer(firstseq, 1)
+    setbatchindex!(seqbuffer, 1, firstseq)
+    batch = makebatch(seqbuffer, 1)
+    channeltype = typeof(batch)
     return Channel{channeltype}(buffersize)
 end
-
-function dataiterator_channeltype(data, #=join_pad=#::Val{true}, #=as_matrix=#::Val)
-    dataiterator_channeltype(data, Val(false))
-end
-
-function dataiterator_channeltype(data, #=join_pad=#::Val{false}, as_matrix::Val{true})
-    dataiterator_channeltype(data, as_matrix)
-end
-
-function dataiterator_channeltype(data, #=join_pad=#::Val{false}, as_matrix::Val{false})
-    Vector{dataiterator_channeltype(data, as_matrix)}
-end
-
-function dataiterator_channeltype(data::Union{AbstractVector{<:Pair},
-                                              AbstractVector{<:SparseMatrixCSC}},
-                                  as_matrix::Val{true})
-    SparseMatrixCSC{Float32, defaultindextype}
-end
-
-function dataiterator_channeltype(data::Union{AbstractVector{<:Pair},
-                                              AbstractVector{<:SparseMatrixCSC}},
-                                  as_matrix::Val{false})
-    SparseVector{Float32, defaultindextype}
-end
-
-dataiterator_channeltype(data, as_matrix::Val{true})  = Matrix{Float32}
-dataiterator_channeltype(data, as_matrix::Val{false}) = Vector{Float32}
+
 
 function dataiteratortask(channel::AbstractChannel, db::IndexedTable,
-                          splitindices::AbstractVector, per_tile::Bool, reverse_rows::Val,
-                          join_pad::Val, as_matrix::Val)
-    # try
+                          splitindices::AbstractVector, batch_size::Integer,
+                          per_tile::Bool, reverse_rows::Val, join_pad::Val, as_matrix::Val)
+    try
+        firstseq = preprocess(db[1], per_tile, reverse_rows, join_pad, as_matrix)
+        seqbuffer = makeseqbuffer(firstseq, batch_size)
+        firstseq = nothing
         while true
-            for index in splitindices
-                @inbounds row = db[index]
-                put!(channel, preprocess(row, per_tile, reverse_rows, join_pad, as_matrix))
+            # We do not cycle here to simplify the amount of batches per epoch.
+            for indices in Iterators.partition(splitindices, batch_size)
+                for (i, index) in enumerate(indices)
+                    @inbounds row = db[index]
+                    seq = preprocess(row, per_tile, reverse_rows, join_pad, as_matrix)
+                    setbatchindex!(seqbuffer, i, seq)
+                end
+                put!(channel, makebatch(seqbuffer, length(indices)))
             end
         end
-    # catch e
-    #     print("Error in data iterator task: ")
-    #     showerror(stdout, e)
-    # end
+    catch e
+        print("Error in data iterator task: ")
+        showerror(stdout, e)
+    end
 end
 
+function makeseqbuffer(firstseq::AbstractVector, batch_size::Integer)
+    return similar(firstseq, size(firstseq, 1), batch_size)
+end
+
+function makeseqbuffer(firstseq::AbstractVector{<:AbstractVector}, batch_size::Integer)
+    return [similar(firstseq) for _ in 1:batch_size]
+end
+
+function makeseqbuffer(firstseq::AbstractMatrix, batch_size::Integer)
+    # We don't use `zeros` so we keep the matrix type of `firstseq`.
+    zeroseq = similar(firstseq, size(firstseq, 1), LevelStatistics.maxcolshori, batch_size)
+    zeroseq .= 0
+    return zeroseq
+end
+
+function setbatchindex!(buffer::AbstractMatrix, index, data::AbstractVector)
+    buffer[firstindex(buffer, 1):firstindex(buffer, 1) + length(data) - 1, index] = data
+    buffer[firstindex(buffer, 1) + length(data):end, index] .= 0
+    return buffer
+end
+
+function setbatchindex!(buffer::AbstractVector{<:AbstractVector}, index,
+                        data::AbstractVector{<:AbstractVector})
+    buffer[index] = data
+    return buffer
+end
+
+function setbatchindex!(buffer::AbstractArray{T, 3}, index, data::AbstractMatrix) where T
+    buffer[firstindex(buffer, 1):firstindex(buffer, 1) + size(data, 1) - 1,
+           firstindex(buffer, 2):firstindex(buffer, 2) + size(data, 2) - 1, index] = data
+    buffer[firstindex(buffer, 1) + size(data, 1):end,
+           firstindex(buffer, 2) + size(data, 2):end, index] .= 0
+    return buffer
+end
+
+makebatch(buffer::AbstractMatrix, batch_size) = view(buffer, :, 1:batch_size)
+
+function makebatch(buffer::AbstractVector{<:AbstractVector}, batch_size)
+    # TODO maybe roll our own which is faster
+    return batchseq(view(buffer, 1:batch_size), zero(first(first(buffer))))
+end
+
+function makebatch(buffer::AbstractArray{T, 3}, batch_size) where T
+    return view(buffer, :, :, 1:batch_size)
+end
+
+
 function dataiterator!(channel::AbstractChannel, db::IndexedTable,
-                       splitindices::AbstractVector, num_threads::Integer=0,
-                       per_tile=false, reverse_rows=false; join_pad=false, as_matrix=false)
+                       splitindices::AbstractVector, batch_size::Integer,
+                       num_threads::Integer=0, per_tile=false, reverse_rows=false;
+                       join_pad=false, as_matrix=false)
     @static if VERSION >= v"1.3-"
         if num_threads > 0
             per_thread_split_length = cld(length(splitindices), num_threads)
             for indices in Iterators.partition(splitindices, per_thread_split_length)
-                task = Threads.@spawn dataiteratortask(channel, db, indices, per_tile,
-                        Val(reverse_rows), Val(join_pad), Val(as_matrix))
+                task = Threads.@spawn dataiteratortask(channel, db, indices, batch_size,
+                                                       per_tile, Val(reverse_rows),
+                                                       Val(join_pad), Val(as_matrix))
             end
         else
-            task = @async dataiteratortask(channel, db, splitindices, per_tile,
+            task = @async dataiteratortask(channel, db, splitindices, batch_size, per_tile,
                                            Val(reverse_rows), Val(join_pad), Val(as_matrix))
         end
     else
-        task = @async dataiteratortask(channel, db, splitindices, per_tile,
+        task = @async dataiteratortask(channel, db, splitindices, batch_size, per_tile,
                                        Val(reverse_rows), Val(join_pad), Val(as_matrix))
     end
     return channel
@@ -151,11 +188,12 @@ end
 
 # TODO speed test for data iterator num_threads in trainingutils
 function dataiterator(db::IndexedTable, buffersize::Integer, splitindices::AbstractVector,
-                      num_threads::Integer=0, per_tile=false, reverse_rows=false;
-                      join_pad=false, as_matrix=false)
-    channel = dataiteratorchannel(db, buffersize, Val(join_pad), Val(as_matrix))
-    return dataiterator!(channel, db, splitindices, num_threads, per_tile, reverse_rows;
-                         join_pad=join_pad, as_matrix=as_matrix)
+                      batch_size::Integer, num_threads::Integer=0,
+                      per_tile=false, reverse_rows=false; join_pad=false, as_matrix=false)
+    channel = dataiteratorchannel(db, buffersize, per_tile, Val(reverse_rows),
+                                  Val(join_pad), Val(as_matrix))
+    return dataiterator!(channel, db, splitindices, batch_size, num_threads,
+                         per_tile, reverse_rows; join_pad=join_pad, as_matrix=as_matrix)
 end
 
 
@@ -268,7 +306,7 @@ function build_result(data, constantinput, reverse_rows::Val, as_matrix::Val{tru
     for (res_col, data_col) in zip(eachcol(result_matrix), slicedata(data, reverse_rows))
         # res_col[1:constantinputsize - 1]   = constantinput
         # res_col[constantinputsize]         = 1
-        res_col[constantinputsize + 1:end] = data_col
+        res_col[constantinputsize + 1:end] .= data_col
     end
     result_matrix isa AbstractSparseArray || (result_matrix[constantinputsize, end] = 0)
     return result_matrix
@@ -290,7 +328,7 @@ end
 
 function construct_empty_result(data::AbstractVector,
                                 constantinputsize, #=as_matrix=#::Val{true})
-    Matrix(Float32, constantinputsize + 1, length(data))
+    Matrix{Float32}(undef, constantinputsize + 1, length(data))
 end
 
 function construct_empty_result(data::AbstractMatrix,
@@ -352,15 +390,6 @@ end
 function normalize!(sequence::AbstractVector{<:AbstractArray}, mean, variance)
     normalize!.(sequence, mean, variance)
 end
-
-function makebatch(dataiterator::AbstractChannel, batchsize::Integer)
-    error("not implemented.")
-    firstelem = take!(dataiterator)
-    seqtype = typeof(firstelem)
-    sequences = Vector{}(undef, ) # TODO hier stehen geblieben
-    batch = cat((reduce(hcat, gen)
-                 for gen in Iterators.take(dataiterator, batchsize))..., dims=3)
-end
 
 
 function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
@@ -371,6 +400,7 @@ function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                          for _ in 1:batch_size]
         constantinput_buffer = [Vector{Float32}(undef, 0) for _ in 1:batch_size]
         while true
+            # We do not cycle here to simplify the amount of batches per epoch.
             for indices in Iterators.partition(splitindices, batch_size)
                 for (i, index) in enumerate(indices)
                     @inbounds row = db[index]
@@ -379,16 +409,11 @@ function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                     constantinput_buffer[i] = getconstantinput(row)
                 end
                 # TODO pre-allocate and fill array instead of reduction
-                if length(indices) == batch_size
-                    screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
-                                          @view screen_buffer[1:end])
-                    constantinput_batch = reduce(hcat, @view constantinput_buffer[1:end])
-                else
-                    screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
-                                          view(screen_buffer, 1:length(indices)))
-                    constantinput_batch = reduce(hcat,
-                                                 view(constantinput_buffer, 1:length(indices)))
-                end
+                screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
+                                      view(screen_buffer, 1:length(indices)))
+                constantinput_batch = reduce(hcat,
+                                             view(constantinput_buffer,
+                                                  1:length(indices)))
                 put!(channel, (screen_batch, constantinput_batch))
             end
         end

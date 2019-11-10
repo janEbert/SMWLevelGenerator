@@ -1,6 +1,6 @@
 module SequenceGenerator
 
-using Flux: reset!
+using Flux: reset!, data
 
 # This import is only for documentation reference purposes.
 import ..LevelFormatter
@@ -32,7 +32,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractArray)
     reset!(model)
     # While the "sequence has not ended yet" bit is not set...
     while sequence[end][1] != 0 && length(sequence) < LevelStatistics.maxcolshori
-        push!(sequence, model(togpu(vcat(constantinput, sequence[end]))).data)
+        push!(sequence, data(model(togpu(vcat(constantinput, sequence[end])))))
     end
     if sequence[end][1] != 0
         println("Force stopped generation due to maximum level length.")
@@ -57,7 +57,7 @@ function generatesequence(model::LearningModel, initialscreen::AbstractVector{T}
     # Give the model the initial inputs, pre-tuning it (and disregard the predictions.)
     model.(initialscreen[1:end - 1])
     while sequence[end][1] != 0 && length(sequence) < LevelStatistics.maxcolshori
-        push!(sequence, model(togpu(vcat(constantinput, sequence[end]))).data)
+        push!(sequence, data(model(togpu(vcat(constantinput, sequence[end])))))
     end
     if sequence[end][1] != 0
         println("Force stopped generation due to maximum level length.")

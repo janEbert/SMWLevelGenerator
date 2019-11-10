@@ -19,10 +19,23 @@ Flux.@treelike TransformerModel
 
 (model::TransformerModel)(input) = model.model(input)
 
+function makeloss(model::TransformerModel, criterion::typeof(Flux.mse))
+    function loss(x, y)
+        y_hat = model(x)
+        # Modified MSE for this input.
+        l = sum((y_hat .- y).^2) * (1 // size(y, 1))
+        return l
+    end
+end
+
 function makeloss(model::TransformerModel, criterion)
     function loss(x, y)
         y_hat = model(x)
-        @inbounds l = sum(@views criterion(y_hat[:, i], y[:, i]) for i in axes(y, 2))
+        rowsize = size(y, 1)
+        l = sum(criterion.(Iterators.partition(y_hat, rowsize),
+                           Iterators.partition(y,     rowsize)))
+        # @inbounds l = sum(@views criterion(y_hat[:, i, b], y[:, i, b])
+        #                   for b in axes(y, 3) for i in axes(y, 2))
         return l
     end
 end
@@ -45,18 +58,21 @@ Return a reduced loss from predicting a sequence element differently when the tw
 sequence elements were the same.
 """
 function soft_criterion(::TransformerModel, y_hat, y, criterion)
+    # TODO Does this throw a StackOverflowError?
     total = 0.0f0
     last_elem = nothing
     second_to_last = nothing
-    for i in axes(y, 2)
-        @inbounds @views e_hat, e = y_hat[:, i], y[:, i]
-        if last_elem != second_to_last
-            total += criterion(e_hat, e)
-        else
-            total += 0.1f0 * criterion(e_hat, e)
+    for b in axes(y, 3)
+        for i in axes(y, 2)
+            @inbounds @views e_hat, e = y_hat[:, i, b], y[:, i, b]
+            if last_elem != second_to_last
+                total += criterion(e_hat, e)
+            else
+                total += 0.1f0 * criterion(e_hat, e)
+            end
+            second_to_last = last_elem
+            last_elem = e
         end
-        second_to_last = last_elem
-        last_elem = e
     end
     return total
 end
@@ -191,13 +207,13 @@ function GPT2Predictor(inputsize::Integer, outputsize::Integer, num_heads::Integ
             inputsize, num_heads, attnhiddensize, ffhiddensize, num_layers;
             activation=Flux.gelu, p_dropout_ff=p_dropout_ff, p_dropout_attn=p_dropout_attn
         ),
-        Flux.Dense(inputsize, outputsize, output_activation)
+        Transformers.Positionwise(Flux.Dense(inputsize, outputsize, output_activation))
     )
 end
 
 function (gpt::GPT2Predictor)(input, mask=nothing;
                               return_all_outputs::Val{false}=Val(false))
-    input = gpt.embedding(input)
+    input = input .+ gpt.embedding(input)
     output = gpt.gpt(input, mask, return_all_outputs=return_all_outputs)
     return gpt.output(output)
 end

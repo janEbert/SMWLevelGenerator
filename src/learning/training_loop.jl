@@ -26,6 +26,7 @@ Base.@kwdef struct TrainingParameters
     epochs::Integer = 10
 
     lr::Float64                                      = 0.0002
+    batch_size::Integer                              = 32
     warmupepochs::Integer                            = 0  # TODO unused
     warmuplr::Float64                                = 0.00005  # TODO unused
     logevery::Integer                                = 300
@@ -103,10 +104,11 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
     paramdict[:modelparams] = Dict{Symbol, Any}(k => v isa Function ? Symbol(v) : v
                                                 for (k, v) in model.hyperparams)
 
-    epochs    = params.epochs
-    logdir    = params.logdir
-    logevery  = params.logevery
-    saveevery = params.saveevery
+    epochs     = params.epochs
+    batch_size = params.batch_size
+    logdir     = params.logdir
+    logevery   = params.logevery
+    saveevery  = params.saveevery
 
     maxmeanloss = typemin(eltype(trainlosses))
     maxvarloss = typemin(eltype(trainlosses))
@@ -116,10 +118,10 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
     steps = UInt64(0)
 
     dataiterparams = dataiteratorparams(model)
-    trainiter = dataiterator(db, 4, trainindices, params.dataiter_threads, params.per_tile,
-                             params.reverse_rows; dataiterparams...)
-    testiter  = dataiterator(db, 4, testindices,  params.dataiter_threads, params.per_tile,
-                             params.reverse_rows; dataiterparams...)
+    trainiter = dataiterator(db, 4, trainindices, batch_size, params.dataiter_threads,
+                             params.per_tile, params.reverse_rows; dataiterparams...)
+    testiter  = dataiterator(db, 4, testindices,  batch_size, params.dataiter_threads,
+                             params.per_tile, params.reverse_rows; dataiterparams...)
     # TODO store max loss and log (as in logging) normalized loss (maybe).
     #      only applicable when sequences are padded to have the same length
     # TODO make function for that so it can be calculated online; then maybe normalize loss
@@ -157,7 +159,8 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                  * "Seed: $(params.seed).")
 
         # Initial test
-        testlosses = testmodel(model, testiter, testindices, dataiterparams, loss)
+        testlosses = testmodel(model, testiter, testindices, batch_size,
+                               dataiterparams, loss)
         meanloss = mean(testlosses)
         varloss  = var(testlosses, mean=meanloss)
         if past_steps == 0
@@ -176,7 +179,8 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
 
         for epoch in 1:epochs
             # Cannot iterate directly over a RemoteChannel.
-            for i in 1:length(trainindices)
+            for (i, j) in zip(1:cld(length(trainindices), batch_size),
+                              Iterators.countfrom(1, batch_size))
                 # Continue exactly where training stopped.
                 if steps < past_steps
                     take!(trainiter)
@@ -189,7 +193,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                 steps += 1
 
                 if logevery != 0 && steps % logevery == 0
-                    testlosses = testmodel(model, testiter, testindices,
+                    testlosses = testmodel(model, testiter, testindices, batch_size,
                                            dataiterparams, loss)
                     meanloss = mean(testlosses)
                     varloss  = var(testlosses, mean=meanloss)
@@ -215,7 +219,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                     timediff = time() - starttime
                     logprint(logger, "Epoch $(lpad(epoch, ndigits(epochs))) / "
                              * "$epochs; sequence "
-                             * "$(lpad(i, ndigits(length(trainindices)))) / "
+                             * "$(lpad(j, ndigits(length(trainindices)))) / "
                              * "$(length(trainindices)); mean test loss: "
                              * "$(lpad(@sprintf("%.4f", meanloss), maxmeanlossdigits)) "
                              * "(variance: "
@@ -230,7 +234,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                         savecp(model, optimizer, trainlosses, testlosses, meanlosses,
                                varlosses, steps, logdir, starttimestr)
                         logprint(logger, "Early stopping activated after $steps training "
-                                 * "steps ($epoch epochs, $i sequences in current epoch). "
+                                 * "steps ($epoch epochs, $j sequences in current epoch). "
                                  * "Loss increase: $meanloss - $(meanlosses[end - 1]) = "
                                  * "$(round(lossdiff, digits=3)) "
                                  * "($(round((lossratio - 1) * 100, digits=2)) %). "
@@ -242,7 +246,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                 end
                 if saveevery != 0 && steps % saveevery == 0
                     if logevery != 0 && steps % logevery != 0
-                        testlosses = testmodel(model, testiter, testindices,
+                        testlosses = testmodel(model, testiter, testindices, batch_size,
                                                dataiterparams, loss)
                         meanloss = mean(testlosses)
                         varloss = var(testlosses, mean=meanloss)
@@ -275,39 +279,38 @@ given `trainiter`. Return the loss.
 """
 function training_step!(model, parameters, optimizer, trainiter, dataiterparams,
                         loss, trainlosses, tblogger)
-    seq = togpu.(take!(trainiter))
+    batch = batchtogpu(take!(trainiter))
     # Construct target
-    target = maketarget(seq, Val(dataiterparams.join_pad), Val(dataiterparams.as_matrix))
+    target = maketarget(batch)
 
-    l = step!(model, parameters, optimizer, loss, seq, target).data
+    l = Flux.data(step!(model, parameters, optimizer, loss, batch, target))
     push!(trainlosses, l)
     @tblog tblogger trainloss=l
     return l
 end
 
 """
-Return a `Vector{Float32}` of losses obtained by apply the given model to all data in the
-to be reset `testiter`.
+Return a `Vector{Float32}` of losses obtained by applying the given model to all data in
+the `testiter`.
 """
-function testmodel(model, testiter, testindices, dataiterparams, loss)
+function testmodel(model, testiter, testindices, batch_size, dataiterparams, loss)
     Flux.testmode!(model)
     testlosses = Float32[]
 
-    for i in 1:length(testindices)
-        seq = togpu.(take!(testiter))
+    for i in 1:cld(length(testindices), batch_size)
+        batch = batchtogpu(take!(testiter))
         # Construct target
-        target = maketarget(seq, Val(dataiterparams.join_pad),
-                            Val(dataiterparams.as_matrix))
-
-        l = calculate_loss(model, loss, seq, target).data
+        target = maketarget(batch)
+        l = Flux.data(calculate_loss(model, loss, batch, target))
         push!(testlosses, l)
     end
     Flux.testmode!(model, false)
     return testlosses
 end
+
 
-function getmaxloss(seq, dataiterparams, loss)
-    target = maketarget(seq, Val(dataiterparams.join_pad, Val(dataiterparams.as_matrix)))
+function getmaxloss(batch, dataiterparams, loss)
+    target = maketarget(batch)
     loss(ones(eltype(target), size(target)) .- target, target)
 end
 

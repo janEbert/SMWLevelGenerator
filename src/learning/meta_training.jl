@@ -156,8 +156,8 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                 real_batch, meta_batch = map(togpu, take!(trainiter))
 
                 l = loss(real_batch, meta_batch)
-                push!(trainlosses, l.data)
-                @tblog tblogger trainloss=l.data log_step_increment=0
+                push!(trainlosses, Flux.data(l))
+                @tblog tblogger trainloss=Flux.data(l) log_step_increment=0
                 grads = gradient(() -> l, parameters)
 
                 Flux.Optimise.update!(optim, parameters, grads)
@@ -249,7 +249,7 @@ function testmodel(model, testiter, testindices, batch_size, loss)
 
     for i in 1:cld(length(testindices), batch_size)
         real_batch, meta_batch = map(togpu, take!(testiter))
-        l = loss(real_batch, meta_batch).data
+        l = Flux.data(loss(real_batch, meta_batch))
         push!(testlosses, l)
     end
     Flux.testmode!(model, false)

@@ -27,9 +27,9 @@ struct RandomModel <: LearningModel
 end
 
 function (model::RandomModel)(input)
-    inputlength = length(input)
+    inputlength = size(input, 1)
     @assert inputlength == model.inputsize "input size does not match"
-    result = Vector{eltype(input)}(undef, model.outputsize)
+    result = similar(input, model.outputsize, size(input, 2))
     fillrandom!(result, model.activationchance)
 end
 
@@ -48,23 +48,28 @@ function fillrandom!(array::AbstractArray, activationchance::Real)
     return array
 end
 
-function random1d(activationchance::Real=0.5f0, inputsize::Integer=inputsize1d,
+function random1d(activationchance::Real=0.17624f0, inputsize::Integer=inputsize1d,
                   outputsize::Integer=outputsizeof(inputsize))
+    # Default activation chance for singleline, flags "t" database.
+    # For notsingleline, flags "t": 0.27743f0
     RandomModel(activationchance, inputsize, outputsize, Symbol("1d"))
 end
 
-function random2d(activationchance::Real=0.5f0, inputsize::Integer=inputsize2d,
+function random2d(activationchance::Real=0.01203f0, inputsize::Integer=inputsize2d,
                   outputsize::Integer=outputsizeof(inputsize))
+    # Default activation chance for flags "t" database.
     RandomModel(activationchance, inputsize, outputsize, Symbol("2d"))
 end
 
-function random3dtiles(activationchance::Real=0.5f0, inputsize::Integer=inputsize3dtiles,
+function random3dtiles(activationchance::Real=0.00170f0, inputsize::Integer=inputsize3dtiles,
                        outputsize::Integer=outputsizeof(inputsize))
+    # Default activation chance for flags "t" database.
     RandomModel(activationchance, inputsize, outputsize, Symbol("3dtiles"))
 end
 
-function random3d(activationchance::Real=0.5f0, inputsize::Integer=inputsize3d,
+function random3d(activationchance::Real=0.00046f0, inputsize::Integer=inputsize3d,
                   outputsize::Integer=outputsizeof(inputsize))
+    # Default activation chance for flags "tesx" database.
     RandomModel(activationchance, inputsize, outputsize, Symbol("3d"))
 end
 
