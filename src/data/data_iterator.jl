@@ -159,7 +159,15 @@ function makebatch(buffer::AbstractVector{<:AbstractVector}, batch_size)
 end
 
 function makebatch(buffer::AbstractArray{T, 3}, batch_size) where T
-    return view(buffer, :, :, 1:batch_size)
+    lastcol = findlastnonzerocol(view(buffer, :, :, 1:batch_size))
+    return view(buffer, :, 1:lastcol, 1:batch_size)
+end
+
+function findlastnonzerocol(a::AbstractArray{T, 3}) where T
+    reversedcols = @view a[:, end:-1:1, :]
+    for (i, col) in enumerate(eachslice(reversedcols, dims=2))
+        any(col .!= 0) && return size(a, 2) - i + 1
+    end
 end
 
 

@@ -32,6 +32,7 @@ function makeloss(model::TransformerModel, criterion)
     function loss(x, y)
         y_hat = model(x)
         rowsize = size(y, 1)
+        # TODO maybe substitute with eachslice(..., dims=2)
         l = sum(criterion.(Iterators.partition(y_hat, rowsize),
                            Iterators.partition(y,     rowsize)))
         # @inbounds l = sum(@views criterion(y_hat[:, i, b], y[:, i, b])
