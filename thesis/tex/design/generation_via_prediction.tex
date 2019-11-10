@@ -1,0 +1,85 @@
+\subsection{Generation via Prediction}
+
+We now focus on implementation details and design decisions regarding
+our sequence prediction models. In the following explanations, we will
+assume the level is read column per column. The only difference when
+reading per tile is the input size. While each of our models may have
+different input preferences for a sequence (vector of vectors, matrix,
+...), we will focus our explanation on sequence elements as these all
+follow the same principles. Each sequence element is a vector
+consisting of
+\begin{itemize}
+\item a constant input part containing metadata,
+\item a bit that indicates whether the level has not ended yet (so it
+  is 1 if the level has not ended yet and 0 if this is the last column
+  or beyond), and
+\item a column (or single tile) of the level.
+\end{itemize}
+The constant input part supplies our model with the following
+metadata:
+\begin{itemize}
+\item level number
+\item amount of screens
+\item level mode
+\item level graphics (remember that these influence interactivity as well)
+\item main and midway entrance action (these determine whether the
+  level is a water level)
+\item sprite buoyancy (how sprites interact with water)
+\item disable layer 2 buoyancy (see above but for interaction with layer 2 data)
+\item sprite mode
+\end{itemize}
+As mentioned, this list is easily extensible if desired as our
+foundation contains and parses all relevant information.
+
+To support many different models, we implement an abstract model class
+that requires extending only a few methods for new models (if the
+provided defaults are not already correct). One of these methods
+solves the problem of the desired input for the model. Our data
+iterator will automatically shape the input correctly for each model.
+The currently supported input types are vectors of vectors and
+matrices. Single, long vectors containing the whole sequence are
+implemented but some questions about how their data is ordered must be
+answered individually (for example, is the constant input provided
+only once or for each column like for the other input types).
+
+We will now list our the configuration options for our sequence
+prediction models. As already mentioned, we provide convenience
+functions for model creation for each training data dimensionality. As
+these are only for convenience, they have some
+limitations\footnote{Obviously, any unlisted parameters can be changed
+  manually by modifying the source code as well. This also goes for
+  the models in the following sections.}.
+
+LSTMs are built with the following parameters:
+\begin{itemize}
+\item amount of hidden layers
+\item amount of hidden neurons per hidden layer
+\item optional skip connections from each hidden layer directly to the
+  final activation function
+\item probability of dropout between every two hidden layers starting
+  after the first one
+\item final activation function
+\end{itemize}
+Our transformer creation functions take the following parameters:
+\begin{itemize}
+\item number of attention heads
+\item hidden size of each attention head
+\item hidden size of each fully-connected layer
+\item amount of transformer blocks
+\item final activation function of each block
+\item probability of dropout after attention layers and after each
+  block
+\item probability of dropout after fully-connected layers
+\item final activation function
+\end{itemize}
+The random model has a single parameter~-- its activation chance. \\
+The input and output sizes are also adjustable for each model.
+
+Having described the implementation details for our time series
+prediction models, we will now do the same for our GANs.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../../SMWLevelGenerator"
+%%% End:
+
