@@ -501,16 +501,18 @@ function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_t
                    steps, logdir, starttimestr)
     bson(joinpath(logdir, "discriminator-cp_$steps-steps_loss-$(d_testlosses[end])_"
                   * "$starttimestr.bson"),
-         d_model=Flux.cpu(d_model), d_optim=d_optim, d_trainlosses_real=d_trainlosses_real,
-         d_trainlosses_fake=d_trainlosses_fake, d_testlosses=d_testlosses, steps=steps)
+         d_model=Flux.cpu(d_model), d_optim=d_optim,
+         d_trainlosses_real=Flux.cpu.(d_trainlosses_real),
+         d_trainlosses_fake=Flux.cpu.(d_trainlosses_fake),
+         d_testlosses=Flux.cpu.(d_testlosses), steps=steps)
 end
 
 function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
                    steps, testloss, logdir, starttimestr)
     bson(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(testloss)_"
                   * "$starttimestr.bson"),
-         g_model=Flux.cpu(g_model), g_optim=g_optim, g_trainlosses=g_trainlosses,
-         testfakes=testfakes, const_noise=Flux.cpu(const_noise), steps=steps)
+         g_model=Flux.cpu(g_model), g_optim=g_optim, g_trainlosses=Flux.cpu.(g_trainlosses),
+         testfakes=Flux.cpu.(testfakes), const_noise=Flux.cpu(const_noise), steps=steps)
 end
 
 function load_d_cp(cppath::AbstractString)
@@ -548,15 +550,16 @@ function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
         bson(joinpath(logdir, "meta-cp_$steps-steps_loss-$(meta_trainlosses[end])_"
                       * "$starttimestr.bson"),
              meta_model=Flux.cpu(meta_model), meta_optim=meta_optim,
-             meta_trainlosses=meta_trainlosses, meta_meanlosses=meta_meanlosses,
-             meta_varlosses=meta_varlosses, steps=steps)
+             meta_trainlosses=Flux.cpu.(meta_trainlosses),
+             meta_meanlosses=Flux.cpu.(meta_meanlosses),
+             meta_varlosses=Flux.cpu.(meta_varlosses), steps=steps)
     catch e
-        e isa ErrorException || rethrow()
         bson(joinpath(logdir, "meta-cp_$steps-steps_loss-$(meta_trainlosses[end])_"
                       * "$starttimestr.bson"),
              meta_model=Flux.cpu(meta_model), meta_optim=nothing,
-             meta_trainlosses=meta_trainlosses, meta_meanlosses=meta_meanlosses,
-             meta_varlosses=meta_varlosses, steps=steps)
+             meta_trainlosses=Flux.cpu.(meta_trainlosses),
+             meta_meanlosses=Flux.cpu.(meta_meanlosses),
+             meta_varlosses=Flux.cpu.(meta_varlosses), steps=steps)
     end
 end
 

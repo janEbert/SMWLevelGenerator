@@ -270,15 +270,15 @@ function save_cp(model, optim, trainlosses, meanlosses,
         bson(joinpath(logdir, "meta-cp_$steps-steps_loss-$(trainlosses[end])_"
                       * "$starttimestr.bson"),
              meta_model=Flux.cpu(model), meta_optim=optim,
-             meta_trainlosses=trainlosses, meta_meanlosses=meanlosses,
-             meta_varlosses=varlosses, steps=steps)
+             meta_trainlosses=Flux.cpu.(trainlosses), meta_meanlosses=Flux.cpu.(meanlosses),
+             meta_varlosses=Flux.cpu.(varlosses), steps=steps)
     catch e
         e isa ErrorException || rethrow()
         bson(joinpath(logdir, "meta-cp-no-optim_$steps-steps_loss-$(trainlosses[end])_"
                       * "$starttimestr.bson"),
              meta_model=Flux.cpu(model), meta_optim=nothing,
-             meta_trainlosses=trainlosses, meta_meanlosses=meanlosses,
-             meta_varlosses=varlosses, steps=steps)
+             meta_trainlosses=Flux.cpu.(trainlosses), meta_meanlosses=Flux.cpu.(meanlosses),
+             meta_varlosses=Flux.cpu.(varlosses), steps=steps)
     end
 end
 

@@ -26,6 +26,10 @@ export TPs, trainingloop!
 export GTPs, gan_trainingloop!
 export MTPs, meta_trainingloop!
 
+# Level generation
+export predict_hack, predict_vanilla, predict_levels, predict_level
+export generatelevel, writelevel, writelevels
+
 
 include("data/xytables.jl")
 include("data/default_dictionary.jl")
@@ -82,6 +86,7 @@ using .MetadataPredictor
 using .TrainingLoop
 using .GANTraining
 using .MetaTraining
+using .LevelGenerator
 
 end # module
 

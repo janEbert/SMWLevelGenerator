@@ -353,8 +353,9 @@ function savecp(model, optimizer, trainlosses, testlosses, meanlosses,
                 varlosses, steps, logdir, starttimestr)
     bson(joinpath(logdir,
                   "model-cp_$steps-steps_loss-$(meanlosses[end])_$starttimestr.bson"),
-         model=Flux.cpu(model), optimizer=optimizer, steps=steps, trainlosses=trainlosses,
-         testlosses=testlosses, meanlosses=meanlosses, varlosses=varlosses)
+         model=Flux.cpu(model), optimizer=optimizer, steps=steps,
+         trainlosses=Flux.cpu.(trainlosses), testlosses=Flux.cpu.(testlosses),
+         meanlosses=Flux.cpu.(meanlosses), varlosses=Flux.cpu.(varlosses))
 end
 
 function test_trainingloop(dbpath::AbstractString="levels_1d_flags_t.jdb")
