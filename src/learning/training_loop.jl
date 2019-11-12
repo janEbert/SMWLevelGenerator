@@ -388,12 +388,16 @@ function savecp(model, optimizer, trainlosses, testlosses, meanlosses,
                 varlosses, steps, logdir, starttimestr, use_bson::Val{false})
     jldopen(joinpath(logdir, "model-cp_$steps-steps_loss-$(Flux.cpu(meanlosses[end]))_"
                      * "$starttimestr.jld"), "w") do io
-        addrequire(io, Flux)
+        addrequire(io, :Flux)
         # TODO Maybe dispatch so we don't always save this.
-        addrequire(io, Transformers)
-        write(io, "model", Flux.cpu(model), "optimizer", optimizer, "steps", steps,
-              "trainlosses", Flux.cpu.(trainlosses), "testlosses", Flux.cpu.(testlosses),
-              "meanlosses", Flux.cpu.(meanlosses), "varlosses", Flux.cpu.(varlosses))
+        addrequire(io, :Transformers)
+        write(io, "model", Flux.cpu(model))
+        write(io, "optimizer", optimizer)
+        write(io, "steps", steps)
+        write(io, "trainlosses", Flux.cpu.(trainlosses))
+        write(io, "testlosses", Flux.cpu.(testlosses))
+        write(io, "meanlosses", Flux.cpu.(meanlosses))
+        write(io, "varlosses", Flux.cpu.(varlosses))
     end
 end
 

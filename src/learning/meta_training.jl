@@ -292,11 +292,13 @@ function save_cp(model, optim, trainlosses, meanlosses,
     #      When the branch is merged, update the package and remove the try-catch.
     jldopen(joinpath(logdir, "meta-cp_$steps-steps_loss-$(Flux.cpu(trainlosses[end]))_"
                      * "$starttimestr.jld"), "w") do io
-        addrequire(io, Flux)
-        write(io, "meta_model", Flux.cpu(model), "meta_optim", optim,
-              "meta_trainlosses", Flux.cpu.(trainlosses),
-              "meta_meanlosses", Flux.cpu.(meanlosses),
-              "meta_varlosses", Flux.cpu.(varlosses), "steps", steps)
+        addrequire(io, :Flux)
+        write(io, "meta_model", Flux.cpu(model))
+        write(io, "meta_optim", optim)
+        write(io, "meta_trainlosses", Flux.cpu.(trainlosses))
+        write(io, "meta_meanlosses", Flux.cpu.(meanlosses))
+        write(io, "meta_varlosses", Flux.cpu.(varlosses))
+        write(io, "steps", steps)
     end
 end
 

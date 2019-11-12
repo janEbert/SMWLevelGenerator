@@ -515,11 +515,13 @@ function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_t
                    steps, logdir, starttimestr, use_bson::Val{false})
     jldopen(joinpath(logdir, "discriminator-cp_$steps-steps_loss-"
                      * "$(Flux.cpu(d_testlosses[end]))_$starttimestr.jld"), "w") do io
-        addrequire(io, Flux)
-        write(io, "d_model", Flux.cpu(d_model), "d_optim", d_optim,
-              "d_trainlosses_real", Flux.cpu.(d_trainlosses_real),
-              "d_trainlosses_fake", Flux.cpu.(d_trainlosses_fake),
-              "d_testlosses", Flux.cpu.(d_testlosses), "steps", steps)
+        addrequire(io, :Flux)
+        write(io, "d_model", Flux.cpu(d_model))
+        write(io, "d_optim", d_optim)
+        write(io, "d_trainlosses_real", Flux.cpu.(d_trainlosses_real))
+        write(io, "d_trainlosses_fake", Flux.cpu.(d_trainlosses_fake))
+        write(io, "d_testlosses", Flux.cpu.(d_testlosses))
+        write(io, "steps", steps)
     end
 end
 
@@ -535,10 +537,13 @@ function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
                    steps, testloss, logdir, starttimestr, use_bson::Val{false})
     jldopen(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(Flux.cpu(testloss))_"
                      * "$starttimestr.jld"), "w") do io
-        addrequire(io, Flux)
-        write(io, "g_model", Flux.cpu(g_model), "g_optim", g_optim,
-              "g_trainlosses", Flux.cpu.(g_trainlosses), "testfakes", Flux.cpu.(testfakes),
-              "const_noise", Flux.cpu(const_noise), "steps", steps)
+        addrequire(io, :Flux)
+        write(io, "g_model", Flux.cpu(g_model))
+        write(io, "g_optim", g_optim)
+        write(io, "g_trainlosses", Flux.cpu.(g_trainlosses))
+        write(io, "testfakes", Flux.cpu.(testfakes))
+        write(io, "const_noise", Flux.cpu(const_noise))
+        write(io, "steps", steps)
     end
 end
 
@@ -615,11 +620,13 @@ function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
     #      When the branch is merged, update the package and remove the try-catch.
     jldopen(joinpath(logdir, "meta-cp_$steps-steps_loss-"
                      * "$(Flux.cpu(meta_trainlosses[end]))_$starttimestr.jld"), "w") do io
-        addrequire(io, Flux)
-        write(io, "meta_model", Flux.cpu(meta_model), "meta_optim", meta_optim,
-              "meta_trainlosses", Flux.cpu.(meta_trainlosses),
-              "meta_meanlosses", Flux.cpu.(meta_meanlosses),
-              "meta_varlosses", Flux.cpu.(meta_varlosses), "steps", steps)
+        addrequire(io, :Flux)
+        write(io, "meta_model", Flux.cpu(meta_model))
+        write(io, "meta_optim", meta_optim)
+        write(io, "meta_trainlosses", Flux.cpu.(meta_trainlosses))
+        write(io, "meta_meanlosses", Flux.cpu.(meta_meanlosses))
+        write(io, "meta_varlosses", Flux.cpu.(meta_varlosses))
+        write(io, "steps", steps)
     end
 end
 
