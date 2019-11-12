@@ -20,6 +20,7 @@ end
 
 "Return the given `AbstractVector{SparseMatrixCSC{T}}` as an `Array{T, 3}`."
 function unsparse(sparsearray::AbstractVector{<:SparseMatrixCSC}; dims=2)
+    # TODO is that `map` really necessary?
     reduce((a, b) -> cat(a, b, dims=dims), map(Array, sparsearray))
 end
 

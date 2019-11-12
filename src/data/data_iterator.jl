@@ -412,9 +412,9 @@ function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
             for indices in Iterators.partition(splitindices, batch_size)
                 for (i, index) in enumerate(indices)
                     @inbounds row = db[index]
-                    screenview = gan_preprocess(row)
+                    screenview, hasendedbit = gan_preprocess(row)
                     screen_buffer[i] = reshape(screenview, size(screenview)..., 1, 1)
-                    constantinput_buffer[i] = getconstantinput(row)
+                    constantinput_buffer[i] = vcat(getconstantinput(row), !hasendedbit)
                 end
                 # TODO pre-allocate and fill array instead of reduction
                 screen_batch = reduce((x, y) -> cat(x, y, dims=screendims),
@@ -465,15 +465,22 @@ function gan_dataiterator(db::IndexedTable, buffersize::Integer,
     return gan_dataiterator!(channel, db, splitindices, batch_size, num_threads)
 end
 
-firstscreen(data::AbstractVector) = view(data, 1:LevelStatistics.screencols)
-firstscreen(data::AbstractMatrix) = view(data, :, 1:LevelStatistics.screencols)
+function firstscreen(data::AbstractVector)
+    view(data, 1:LevelStatistics.screencols), length(data) == LevelStatistics.screencols
+end
+
+function firstscreen(data::AbstractMatrix)
+    view(data, :, 1:LevelStatistics.screencols), size(data, 2) == LevelStatistics.screencols
+end
 
 function firstscreen(data::AbstractArray{T, 3}) where T
-    view(data, :, 1:LevelStatistics.screencols, :)
+    return (view(data, :, 1:LevelStatistics.screencols, :),
+            size(data, 2) == LevelStatistics.screencols)
 end
 
 function firstscreen(data::AbstractVector{<:AbstractSparseMatrix})
-    mapreduce(firstscreen, (x, y) -> cat(x, y, dims=3), data)
+    return (reduce((x, y) -> cat(x, y, dims=2), view(data, 1:LevelStatistics.screencols)),
+            length(data) == LevelStatistics.screencols)
 end
 
 function gan_preprocess(row::NamedTuple)

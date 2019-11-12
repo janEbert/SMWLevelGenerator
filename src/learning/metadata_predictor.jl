@@ -111,28 +111,28 @@ end
 # TODO try out gelu
 
 function metapredictor1d(num_features::Integer=32, inputsize=imgsize1d,
-                         outputsize=constantinputsize - 1; p_dropout=0.1f0,
+                         outputsize=constantinputsize; p_dropout=0.1f0,
                          output_activation=Flux.leakyrelu)
     manual1dmodel(num_features, inputsize, outputsize, p_dropout=p_dropout,
                   output_activation=output_activation)
 end
 
 function metapredictor2d(num_features::Integer=64, inputsize=imgsize1d,
-                         outputsize=constantinputsize - 1, p_dropout=0.1f0,
+                         outputsize=constantinputsize; p_dropout=0.1f0,
                          output_activation=Flux.leakyrelu)
     manualmodel(num_features, inputsize, outputsize, Symbol("2d"),
                 p_dropout=p_dropout, output_activation=output_activation)
 end
 
 function metapredictor3dtiles(num_features::Integer=128, inputsize=imgsize1d,
-                              outputsize=constantinputsize - 1, p_dropout=0.1f0,
+                              outputsize=constantinputsize; p_dropout=0.1f0,
                               output_activation=Flux.leakyrelu)
     manualmodel(num_features, inputsize, outputsize, Symbol("3dtiles"),
                 p_dropout=p_dropout, output_activation=output_activation)
 end
 
 function metapredictor3d(num_features::Integer=256, inputsize=imgsize1d,
-                         outputsize=constantinputsize - 1, p_dropout=0.1f0,
+                         outputsize=constantinputsize; p_dropout=0.1f0,
                          output_activation=Flux.leakyrelu)
     manualmodel(num_features, inputsize, outputsize, Symbol("3d"),
                 p_dropout=p_dropout, output_activation=output_activation)
