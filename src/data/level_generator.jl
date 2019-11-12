@@ -179,6 +179,42 @@ function reshape_first_screen(g_model, first_screen)
     end
 end
 
+function setnotendedbits(screen::AbstractMatrix)
+end
+
+function build_first_screen(model::LearningModel, gen_first_screen, constantinput)
+    dataiterparams = dataiteratorparams(model)
+    if dataiterparams.join_pad
+        error("not implemented.")
+    else
+        if dataiterparams.as_matrix
+            maybevec = reduce(hcat, (vcat(constantinput[1:end - 1], 1, col)
+                                     for col in DataIterator.slicedata(gen_first_screen)))
+            resultmatrix = reshape(maybevec, size(maybevec, 1), size(maybevec, 2))
+            resultmatrix[constantinputsize, end] = constantinput[end]
+            return resultmatrix
+        else
+            result = [vcat(constantinput[1:end - 1], 1, col)
+                      for col in DataIterator.slicedata(gen_first_screen))]
+            result[end][constantinputsize] = constantinput[end]
+        end
+    end
+end
+
+function build_one_input(model::LearningModel, gen_first_screen, constantinput)
+    dataiterparams = dataiteratorparams(model)
+    if dataiterparams.join_pad
+        error("not implemented.")
+    else
+        if dataiterparams.as_matrix
+            reshape(vcat(constantinput,
+                         first(DataIterator.slicedata(gen_first_screen))), :, 1)
+        else
+            vcat(constantinput, first(DataIterator.slicedata(gen_first_screen)))
+        end
+    end
+end
+
 """
     generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
                   meta_model::LearningModel; first_screen=true,
@@ -200,11 +236,9 @@ function generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
     constantinput = generatemetadata(meta_model, gen_first_screen)
     gen_first_screen = reshape_first_screen(g_model, gen_first_screen)
     if first_screen
-        initialinput = reduce(hcat, map(col -> vcat(constantinput, col),
-                                        DataIterator.slicedata(gen_first_screen)))
+        initialinput = build_first_screen(predictor, gen_first_screen, constantinput)
     else
-        initialinput = vcat(constantinput,
-                            vec(view(gen_first_screen, :, firstindex(gen_first_screen, 2))))
+        initialinput = build_one_input(predictor, gen_first_screen, constantinput)
     end
     level = generatesequence(predictor, initialinput)
     if return_intermediate
