@@ -13,14 +13,15 @@ export from1d, from2d, from3d
 
 # Do not use this to try and construct a level.
 function from1d(data::AbstractVector,
-                flags::Union{AbstractString,
+                ::Union{AbstractString,
                              AbstractChar}=dimensionality_defaultflags[Symbol("1d")])
     round.(UInt16, data)
 end
 
-function from2d(data::AbstractMatrix, keep::UInt16=0x100, empty::UInt16=0x025,
-                flags::Union{AbstractString,
-                             AbstractChar}=dimensionality_defaultflags[Symbol("2d")])
+function from2d(data::AbstractMatrix,
+                ::Union{AbstractString,
+                        AbstractChar}=dimensionality_defaultflags[Symbol("2d")],
+                keep::UInt16=0x100, empty::UInt16=0x025,)
     level = round.(UInt16, data)
     keepindices = level .== 1
     level[keepindices]   .= keep

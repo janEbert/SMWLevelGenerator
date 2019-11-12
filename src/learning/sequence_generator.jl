@@ -1,6 +1,6 @@
 module SequenceGenerator
 
-using Flux: reset!, data
+import Flux
 
 # This import is only for documentation reference purposes.
 import ..LevelFormatter
@@ -24,20 +24,39 @@ single first input is any other `AbstractArray`.
 The input will automatically be converted to the correct form in the 1D case.
 """
 function generatesequence(model::LearningModel, initialinput::AbstractArray)
-    isempty(initialinput) && return [], []
-    dimensionality = model.hyperparams[:dimensionality]
+    isempty(initialinput) && return (), []
     constantinput = initialinput[eachindex(initialinput)[1:constantinputsize - 1]]
     # Strip constant input part.
     sequence = [initialinput[eachindex(initialinput)[constantinputsize:end]]]
-    reset!(model)
+    Flux.reset!(model)
     # While the "sequence has not ended yet" bit is not set...
     while sequence[end][1] != 0 && length(sequence) < LevelStatistics.maxcolshori
-        push!(sequence, data(model(togpu(vcat(constantinput, sequence[end])))))
+        push!(sequence, Flux.cpu(Flux.data(
+            model(togpu(vcat(constantinput, sequence[end]))))))
     end
     if sequence[end][1] != 0
         println("Force stopped generation due to maximum level length.")
     end
-    return constantinput, postprocess(sequence, dimensionality)
+    return constantinput, postprocess(sequence, model.hyperparams[:dimensionality])
+end
+
+function generatesequence(model::LearningModel, initialinput::AbstractMatrix)
+    isempty(initialinput) && return (), empty(initialinput)
+    constantinputs = initialinput[1:constantinputsize - 1, :]
+    constantinput = constantinputs[:, 1]
+    sequence = initialinput
+    prediction = sequence[constantinputsize:end, :]
+    Flux.reset!(model)
+    # While the "sequence has not ended yet" bit is not set...
+    while (prediction[1, end] != 0
+           && size(prediction, 2) < LevelStatistics.maxcolshori)
+        prediction = Flux.cpu(Flux.data(model(togpu(sequence))))
+        sequence = hcat(sequence, vcat(constantinput, prediction[:, end]))
+    end
+    if prediction[1, end] != 0
+        println("Force stopped generation due to maximum level length.")
+    end
+    return constantinput, postprocess(prediction, model.hyperparams[:dimensionality])
 end
 
 """
@@ -53,11 +72,12 @@ function generatesequence(model::LearningModel, initialscreen::AbstractVector{T}
     constantinput = initialinput[eachindex(initialinput)[1:constantinputsize - 1]]
     sequence = [inputpart[eachindex(inputpart)[constantinputsize:end]]
                 for inputpart in initialscreen]
-    reset!(model)
+    Flux.reset!(model)
     # Give the model the initial inputs, pre-tuning it (and disregard the predictions.)
     model.(initialscreen[1:end - 1])
     while sequence[end][1] != 0 && length(sequence) < LevelStatistics.maxcolshori
-        push!(sequence, data(model(togpu(vcat(constantinput, sequence[end])))))
+        push!(sequence, Flux.cpu(Flux.data(
+            model(togpu(vcat(constantinput, sequence[end]))))))
     end
     if sequence[end][1] != 0
         println("Force stopped generation due to maximum level length.")
@@ -91,6 +111,34 @@ function postprocess(sequence::AbstractVector{T},
     elseif String(dimensionality)[1:2] == "3d"
         return reduce(hcat, map(x -> reshape(x, (convert(Int, screenrowshori), 1,
                                                  :)), sequence))
+    else
+        throw(ValueError("unknown dimensionality"))
+    end
+end
+
+"""
+Return the given sequence's elements as one concatenated `Array`.
+The dimensionality of the returned `Array` is determined by the argument of the same name
+which allows any `Symbol` in [`LevelFormatter.dimensionality_defaultflags`](@ref).
+"""
+function postprocess(sequence::AbstractMatrix{Float32}, dimensionality::Symbol)
+    # Remove the "has-not-ended"-bit.
+    sequence = sequence[2:end, :]
+    if     dimensionality === Symbol("1d")
+        return vec(sequence)
+    elseif dimensionality === Symbol("2d")
+        return sequence
+    # Explicit code for safety:
+    # elseif dimensionality === Symbol("3dtiles")
+    #     return reduce(hcat, map(x -> reshape(x, (convert(Int, screenrowshori), 1,
+    #             convert(Int, uniquevanillatiles))), sequence))
+    # elseif dimensionality === Symbol("3d")
+    #     return reduce(hcat, map(x -> reshape(x, (convert(Int, screenrowshori), 1,
+    #                                              convert(Int, layers3d))), sequence))
+    # Implicit code for extensibility:
+    elseif String(dimensionality)[1:2] == "3d"
+        return reduce(hcat, map(x -> reshape(x, (convert(Int, screenrowshori), 1,
+                                                 :)), eachcol(sequence)))
     else
         throw(ValueError("unknown dimensionality"))
     end

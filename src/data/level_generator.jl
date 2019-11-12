@@ -4,9 +4,10 @@ using BSON
 using Flux
 using JuliaDB
 
+using ..LevelFormatter: dimensionality_defaultflags
 using ..DataIterator
 using ..InputStatistics
-using ..ModelUtils: LearningModel, AbstractGenerator, togpu
+using ..ModelUtils: LearningModel, AbstractGenerator, dataiteratorparams, togpu
 using ..SequenceGenerator
 using ..ScreenGenerator
 using ..LevelFormatReverter
@@ -51,8 +52,10 @@ function predict_vanilla(modelpath::AbstractString,
                          indices=vanilladbids_2d_t; first_screen=true,
                          write_rom::Union{AbstractString, Nothing}=nothing)
     model, db, from_method = setup_generation(modelpath, dbpath)
+    # Create in parallel, write to ROM sequentially.
     for row in filter(r -> r.id in indices, db)
         sequence, constantinput = predict_from_row(model, row, from_method, first_screen)
+        writeback(sequence, constantinput)
         lmwrite(write_rom, constantinput.number)
     end
 end
@@ -85,6 +88,7 @@ function predict_levels(amount, modelpath::AbstractString,
     for index in indices
         sequence, constantinput = predict_from_index(model, db, index, from_method,
                                                      first_screen)
+        writeback(sequence, constantinput)
         lmwrite(write_rom, constantinput.number)
     end
 end
@@ -121,25 +125,59 @@ end
 
 function predict_from_row(model, row, from_method, first_screen)
     dataiterparams = dataiteratorparams(model)
-    input = DataIterator.preprocess(row, false, false, Val(dataiterparams.join_pad),
+    input = DataIterator.preprocess(row, false, Val(false), Val(dataiterparams.join_pad),
                                     Val(dataiterparams.as_matrix))
     if first_screen
-        constantinput, sequence = generatesequence(model, input[1:screencols])
+        constantinput, sequence = generatesequence(model, getrange(input, 1:screencols))
     else
-        constantinput, sequence = generatesequence(model, input[1])
+        constantinput, sequence = generatesequence(model, getrange(input, 1:1))
     end
     sequence, constantinput = deconstructall(model, sequence, constantinput, from_method)
 end
 
+function getrange(input::AbstractVector, range)
+    range == 1:1 && return input[1]
+    return input[range]
+end
+
+function getrange(input::AbstractMatrix, range)
+    return input[:, range]
+end
+
 function deconstructall(model, sequence, constantinput, from_method)
     # TODO get default flags for dimension!!!!
+    # if Symbol(from_method) === :from3d
     sequence = from_method(sequence,
                            dimensionality_defaultflags[model.hyperparams[:dimensionality]])
+    # else
+    #     # get default ground tile
+    #     sequence = from_method(sequence)
+    # end
     sequence = deconstructlevel(sequence)
     constantinput = deconstructconstantinput(constantinput)
     return sequence, constantinput
 end
 
+
+"""
+    generate_reshaped_screen(g_model::AbstractGenerator, input=randinput(g_model))
+
+Return the output of the given generator applied to the given input.
+"""
+function generate_reshaped_screen(g_model::AbstractGenerator, input=randinput(g_model))
+    first_screen = generatescreen(g_model, input)
+    reshape_first_screen(g_model, first_screen)
+end
+
+function reshape_first_screen(g_model, first_screen)
+    if g_model[:dimensionality] === Symbol("1d")
+        return vec(first_screen)
+    elseif g_model[:dimensionality] === Symbol("2d")
+        return reshape(first_screen, size(first_screen)[1:2])
+    else
+        return first_screen
+    end
+end
 
 """
     generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
@@ -158,18 +196,19 @@ results (in the order listed above).
 function generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
                        meta_model::LearningModel; first_screen=true,
                        input=randinput(g_model), return_intermediate=false)
-    first_screen = generatescreen(g_model, input)
-    constantinput = generatemetadata(meta_model, first_screen)
+    gen_first_screen = generatescreen(g_model, input)
+    constantinput = generatemetadata(meta_model, gen_first_screen)
+    gen_first_screen = reshape_first_screen(g_model, gen_first_screen)
     if first_screen
         initialinput = reduce(hcat, map(col -> vcat(constantinput, col),
-                                        eachcol(first_screen)))
+                                        DataIterator.slicedata(gen_first_screen)))
     else
         initialinput = vcat(constantinput,
-                            vec(view(first_screen, :, firstindex(first_screen, 2))))
+                            vec(view(gen_first_screen, :, firstindex(gen_first_screen, 2))))
     end
     level = generatesequence(predictor, initialinput)
     if return_intermediate
-        return (first_screen, constantinput, level)
+        return (gen_first_screen, constantinput, level)
     else
         return level, constantinput
     end
@@ -179,7 +218,7 @@ function writelevel(predictor::LearningModel, g_model::AbstractGenerator,
                     meta_model::LearningModel; first_screen=true, input=randinput(g_model),
                     write_rom=nothing)
     level, constantinput = generatelevel(predictor, g_model, meta_model,
-                                         first_screen, input)
+                                         first_screen=first_screen, input=input)
     from_method = getfield(LevelFormatReverter,
                            Symbol("from" * String(dimensionality)[1:2]))
     level, constantinput = deconstructall(level, constantinput, from_method)
