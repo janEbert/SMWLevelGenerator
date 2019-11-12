@@ -7,10 +7,14 @@ using Dates: now
 using Distributed: RemoteChannel
 using Logging
 
+using Adapt: adapt
+using CuArrays: CuArray
+import Flux
+
 using ..InputStatistics: constantinputsize
 using ..ModelUtils: togpu
 
-export @tblog, logprint, newexpdir, batchtogpu, maketarget, cleanup
+export @tblog, logprint, newexpdir, batchtogpu, tocpu, maketarget, cleanup
 
 """
     @tblog(logger, exs...)
@@ -54,6 +58,22 @@ newexpdir(prefix="exp") = replace("$(prefix)_$(now())", ':' => '-')
 
 batchtogpu(batch) = togpu(batch)
 batchtogpu(batch::AbstractVector{<:AbstractArray}) = togpu.(batch)
+
+"""
+    tocpu(x)
+
+Map `x` to the CPU.
+"""
+tocpu(x::CuArray) = adapt(Array, x)
+tocpu(x) = Flux.cpu(x)
+
+function tocpu(optim::Flux.ADAM)
+    cpu_states = IdDict()
+    for (k, state_tuple) in optim.state
+        cpu_states[tocpu(k)] = tocpu.(state_tuple)
+    end
+    return Flux.ADAM(optim.eta, optim.beta, cpu_states)
+end
 
 """
     maketarget(batch, is_joined_padded::Val{Bool}, is_matrix::Val{Bool})

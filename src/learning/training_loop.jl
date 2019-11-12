@@ -8,7 +8,7 @@ using Random: rand!, seed!
 
 using BSON  # we currently use a fork (pr #47) due to issue #3
 import Flux
-using JLD
+using JLD2
 import JSON
 using TensorBoardLogger
 import Transformers
@@ -377,27 +377,28 @@ end
 
 function savecp(model, optimizer, trainlosses, testlosses, meanlosses,
                 varlosses, steps, logdir, starttimestr, use_bson::Val{true})
-    bson(joinpath(logdir, "model-cp_$steps-steps_loss-$(Flux.cpu(meanlosses[end]))_"
+    bson(joinpath(logdir, "model-cp_$steps-steps_loss-$(meanlosses[end])_"
                   * "$starttimestr.bson"),
-         model=Flux.cpu(model), optimizer=optimizer, steps=steps,
-         trainlosses=Flux.cpu.(trainlosses), testlosses=Flux.cpu.(testlosses),
-         meanlosses=Flux.cpu.(meanlosses), varlosses=Flux.cpu.(varlosses))
+         model=tocpu(model), optimizer=tocpu(optimizer), steps=steps,
+         trainlosses=trainlosses, testlosses=testlosses,
+         meanlosses=meanlosses, varlosses=varlosses)
 end
 
 function savecp(model, optimizer, trainlosses, testlosses, meanlosses,
                 varlosses, steps, logdir, starttimestr, use_bson::Val{false})
-    jldopen(joinpath(logdir, "model-cp_$steps-steps_loss-$(Flux.cpu(meanlosses[end]))_"
-                     * "$starttimestr.jld"), "w") do io
-        addrequire(io, :Flux)
+    jldopen(joinpath(logdir, "model-cp_$steps-steps_loss-$(meanlosses[end])_"
+                     * "$starttimestr.jld2"), "w") do io
+        # TODO only try to do this when JLD (not JLD2) is used
+        # addrequire(io, :Flux)
         # TODO Maybe dispatch so we don't always save this.
-        addrequire(io, :Transformers)
-        write(io, "model", Flux.cpu(model))
-        write(io, "optimizer", optimizer)
+        # addrequire(io, :Transformers)
+        write(io, "model", tocpu(model))
+        write(io, "optimizer", tocpu(optimizer))
         write(io, "steps", steps)
-        write(io, "trainlosses", Flux.cpu.(trainlosses))
-        write(io, "testlosses", Flux.cpu.(testlosses))
-        write(io, "meanlosses", Flux.cpu.(meanlosses))
-        write(io, "varlosses", Flux.cpu.(varlosses))
+        write(io, "trainlosses", trainlosses)
+        write(io, "testlosses", testlosses)
+        write(io, "meanlosses", meanlosses)
+        write(io, "varlosses", varlosses)
     end
 end
 

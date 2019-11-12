@@ -9,7 +9,7 @@ using Random: seed!, shuffle!
 using BSON
 import Flux
 using Flux.Tracker: gradient
-using JLD
+using JLD2
 import JSON
 using TensorBoardLogger
 
@@ -504,45 +504,46 @@ cleanupall(args::Vararg{Any, 3}) = foreach(cleanup, args)
 function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
                    steps, logdir, starttimestr, use_bson::Val{true})
     bson(joinpath(logdir, "discriminator-cp_$steps-steps_loss-"
-                  * "$(Flux.cpu(d_testlosses[end]))_$starttimestr.bson"),
-         d_model=Flux.cpu(d_model), d_optim=d_optim,
-         d_trainlosses_real=Flux.cpu.(d_trainlosses_real),
-         d_trainlosses_fake=Flux.cpu.(d_trainlosses_fake),
-         d_testlosses=Flux.cpu.(d_testlosses), steps=steps)
+                  * "$(d_testlosses[end])_$starttimestr.bson"),
+         d_model=tocpu(d_model), d_optim=tocpu(d_optim),
+         d_trainlosses_real=d_trainlosses_real,
+         d_trainlosses_fake=d_trainlosses_fake,
+         d_testlosses=d_testlosses, steps=steps)
 end
 
 function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
                    steps, logdir, starttimestr, use_bson::Val{false})
     jldopen(joinpath(logdir, "discriminator-cp_$steps-steps_loss-"
-                     * "$(Flux.cpu(d_testlosses[end]))_$starttimestr.jld"), "w") do io
-        addrequire(io, :Flux)
-        write(io, "d_model", Flux.cpu(d_model))
-        write(io, "d_optim", d_optim)
-        write(io, "d_trainlosses_real", Flux.cpu.(d_trainlosses_real))
-        write(io, "d_trainlosses_fake", Flux.cpu.(d_trainlosses_fake))
-        write(io, "d_testlosses", Flux.cpu.(d_testlosses))
+                     * "$(d_testlosses[end])_$starttimestr.jld2"), "w") do io
+        # addrequire(io, :Flux)
+        write(io, "d_model", tocpu(d_model))
+        write(io, "d_optim", tocpu(d_optim))
+        write(io, "d_trainlosses_real", d_trainlosses_real)
+        write(io, "d_trainlosses_fake", d_trainlosses_fake)
+        write(io, "d_testlosses", d_testlosses)
         write(io, "steps", steps)
     end
 end
 
 function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
                    steps, testloss, logdir, starttimestr, use_bson::Val{true})
-    bson(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(Flux.cpu(testloss))_"
+    bson(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(testloss)_"
                   * "$starttimestr.bson"),
-         g_model=Flux.cpu(g_model), g_optim=g_optim, g_trainlosses=Flux.cpu.(g_trainlosses),
-         testfakes=Flux.cpu.(testfakes), const_noise=Flux.cpu(const_noise), steps=steps)
+         g_model=tocpu(g_model), g_optim=tocpu(g_optim),
+         g_trainlosses=g_trainlosses, testfakes=tocpu.(testfakes),
+         const_noise=tocpu(const_noise), steps=steps)
 end
 
 function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
                    steps, testloss, logdir, starttimestr, use_bson::Val{false})
-    jldopen(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(Flux.cpu(testloss))_"
-                     * "$starttimestr.jld"), "w") do io
-        addrequire(io, :Flux)
-        write(io, "g_model", Flux.cpu(g_model))
-        write(io, "g_optim", g_optim)
-        write(io, "g_trainlosses", Flux.cpu.(g_trainlosses))
-        write(io, "testfakes", Flux.cpu.(testfakes))
-        write(io, "const_noise", Flux.cpu(const_noise))
+    jldopen(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(testloss)_"
+                     * "$starttimestr.jld2"), "w") do io
+        # addrequire(io, :Flux)
+        write(io, "g_model", tocpu(g_model))
+        write(io, "g_optim", tocpu(g_optim))
+        write(io, "g_trainlosses", g_trainlosses)
+        write(io, "testfakes", tocpu.(testfakes))
+        write(io, "const_noise", tocpu(const_noise))
         write(io, "steps", steps)
     end
 end
@@ -599,18 +600,18 @@ function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
     #      When the branch is merged, update the package and remove the try-catch.
     try
         bson(joinpath(logdir, "meta-cp_$steps-steps_loss-"
-                      * "$(Flux.cpu(meta_trainlosses[end]))_$starttimestr.bson"),
-             meta_model=Flux.cpu(meta_model), meta_optim=meta_optim,
-             meta_trainlosses=Flux.cpu.(meta_trainlosses),
-             meta_meanlosses=Flux.cpu.(meta_meanlosses),
-             meta_varlosses=Flux.cpu.(meta_varlosses), steps=steps)
+                      * "$(meta_trainlosses[end])_$starttimestr.bson"),
+             meta_model=tocpu(meta_model), meta_optim=tocpu(meta_optim),
+             meta_trainlosses=meta_trainlosses,
+             meta_meanlosses=meta_meanlosses,
+             meta_varlosses=meta_varlosses, steps=steps)
     catch e
         bson(joinpath(logdir, "meta-cp_$steps-steps_loss-"
-                      * "$(Flux.cpu(meta_trainlosses[end]))_$starttimestr.bson"),
-             meta_model=Flux.cpu(meta_model), meta_optim=nothing,
-             meta_trainlosses=Flux.cpu.(meta_trainlosses),
-             meta_meanlosses=Flux.cpu.(meta_meanlosses),
-             meta_varlosses=Flux.cpu.(meta_varlosses), steps=steps)
+                      * "$(meta_trainlosses[end])_$starttimestr.bson"),
+             meta_model=tocpu(meta_model), meta_optim=nothing,
+             meta_trainlosses=meta_trainlosses,
+             meta_meanlosses=meta_meanlosses,
+             meta_varlosses=meta_varlosses, steps=steps)
     end
 end
 
@@ -619,13 +620,13 @@ function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
     # TODO Due to having to use a different BSON PR branch, this fails.
     #      When the branch is merged, update the package and remove the try-catch.
     jldopen(joinpath(logdir, "meta-cp_$steps-steps_loss-"
-                     * "$(Flux.cpu(meta_trainlosses[end]))_$starttimestr.jld"), "w") do io
-        addrequire(io, :Flux)
-        write(io, "meta_model", Flux.cpu(meta_model))
-        write(io, "meta_optim", meta_optim)
-        write(io, "meta_trainlosses", Flux.cpu.(meta_trainlosses))
-        write(io, "meta_meanlosses", Flux.cpu.(meta_meanlosses))
-        write(io, "meta_varlosses", Flux.cpu.(meta_varlosses))
+                     * "$(meta_trainlosses[end])_$starttimestr.jld2"), "w") do io
+        # addrequire(io, :Flux)
+        write(io, "meta_model", tocpu(meta_model))
+        write(io, "meta_optim", tocpu(meta_optim))
+        write(io, "meta_trainlosses", meta_trainlosses)
+        write(io, "meta_meanlosses", meta_meanlosses)
+        write(io, "meta_varlosses", meta_varlosses)
         write(io, "steps", steps)
     end
 end

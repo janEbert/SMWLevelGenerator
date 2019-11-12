@@ -32,6 +32,16 @@ function makeloss(model::MetadataModel, criterion)
     end
 end
 
+"""
+Reshape `x` of a size like `(1, 1, N, B)` or `(1, N, B)`, where `N` is the number of
+features and `B` the batch size to a matrix of size `(N, :)`.
+"""
+struct BatchToMatrix{I<:Integer}
+    num_features::I
+end
+
+(b::BatchToMatrix)(x) = reshape(x, b.num_features, :)
+
 function manual1dmodel(num_features, imgsize, outputsize, dimensionality=Symbol("1d");
                        p_dropout=0.1f0, kernelsize=(3,),
                        output_activation=identity)
@@ -47,7 +57,7 @@ function manual1dmodel(num_features, imgsize, outputsize, dimensionality=Symbol(
         Flux.Conv(kernelsize, num_features * 4 => num_features * 8, Flux.relu, pad=0),
         Flux.MeanPool(kernelsize),
         Flux.Dropout(p_dropout),
-        x -> reshape(x, num_features * 8, :),
+        BatchToMatrix(num_features * 8),
         Flux.Dense(num_features * 8, outputsize, output_activation)
     ) |> togpu
     MetadataModel(model, Dict{Symbol, Any}(
@@ -83,7 +93,7 @@ function manualmodel(num_features::Integer, imgsize, outputsize::Integer, dimens
         Flux.Conv(kernelsize, num_features * 8 => num_features * 4, Flux.relu,
                   pad=2, dilation=2),
         Flux.MeanPool(kernelsize, pad=1),
-        x -> reshape(x, num_features * 4, :),
+        BatchToMatrix(num_features * 4),
         Flux.Dense(num_features * 4, outputsize, output_activation)
     ) |> togpu
     MetadataModel(model, Dict{Symbol, Any}(
