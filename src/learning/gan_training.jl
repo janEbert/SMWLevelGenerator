@@ -514,7 +514,7 @@ end
 function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
                    steps, logdir, starttimestr, use_bson::Val{false})
     jldopen(joinpath(logdir, "discriminator-cp_$steps-steps_loss-"
-                     * "$(Flux.cpu(d_testlosses[end]))_$starttimestr.jld", "w")) do io
+                     * "$(Flux.cpu(d_testlosses[end]))_$starttimestr.jld"), "w") do io
         addrequire(io, Flux)
         write(io, "d_model", Flux.cpu(d_model), "d_optim", d_optim,
               "d_trainlosses_real", Flux.cpu.(d_trainlosses_real),
