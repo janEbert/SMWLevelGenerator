@@ -9,6 +9,7 @@ using Random: seed!, shuffle!
 using BSON
 import Flux
 using Flux.Tracker: gradient
+using JLD
 import JSON
 using TensorBoardLogger
 
@@ -26,6 +27,7 @@ Base.@kwdef struct MetaTrainingParameters
     batch_size::Integer                   = 32
     logevery::Integer                     = 300
     saveevery::Integer                    = 1500
+    use_bson::Bool                        = false
     testratio::AbstractFloat              = 0.1
     buffer_size::Integer                  = 3
     dataiter_threads::Integer             = 0
@@ -66,9 +68,12 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
         testindices = trainindices
     end
 
+    use_bson = Val(params.use_bson)
+
     if model isa AbstractString
         paramdict[:modelpath] = model
-        (model, optim, trainlosses, meanlosses, varlosses, past_steps) = load_cp(model)
+        (model, optim, trainlosses, meanlosses, varlosses, past_steps) = load_cp(
+                model, use_bson)
     else
         optim = Flux.ADAM(params.lr)
 
@@ -205,7 +210,7 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                     if (epoch > earlystoppingwaitepochs && lossdiff > 0
                             && lossratio >= earlystoppingthreshold)
                         save_cp(model, optim, trainlosses, meanlosses, varlosses,
-                                steps, logdir, starttimestr)
+                                steps, logdir, starttimestr, use_bson)
                         logprint(logger, "Early stopping activated after $steps training "
                                  * "steps ($epoch epochs, $j sequences in current epoch). "
                                  * "Loss increase: $meanloss - $(meanlosses[end - 1]) = "
@@ -229,13 +234,13 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
                         push!(varlosses,  varloss)
                     end
                     save_cp(model, optim, trainlosses, meanlosses, varlosses,
-                            steps, logdir, starttimestr)
+                            steps, logdir, starttimestr, use_bson)
                     logprint(logger, "Saved checkpoint after $steps training steps.")
                 end
             end
         end
         save_cp(model, optim, trainlosses, meanlosses, varlosses,
-                steps, logdir, starttimestr)
+                steps, logdir, starttimestr, use_bson)
         logprint(logger, "Training finished after $steps training steps and "
                  * "$(round((time() - starttime) / 60, digits=2)) minutes.")
     finally
@@ -263,17 +268,16 @@ end
 cleanupall(args::Vararg{Any, 3}) = foreach(cleanup, args)
 
 function save_cp(model, optim, trainlosses, meanlosses,
-                      varlosses, steps, logdir, starttimestr)
+                 varlosses, steps, logdir, starttimestr, use_bson::Val{true})
     # TODO Due to having to use a different BSON PR branch, this fails.
     #      When the branch is merged, update the package and remove the try-catch.
     try
-        bson(joinpath(logdir, "meta-cp_$steps-steps_loss-$(trainlosses[end])_"
+        bson(joinpath(logdir, "meta-cp_$steps-steps_loss-$(Flux.cpu(trainlosses[end]))_"
                       * "$starttimestr.bson"),
              meta_model=Flux.cpu(model), meta_optim=optim,
              meta_trainlosses=Flux.cpu.(trainlosses), meta_meanlosses=Flux.cpu.(meanlosses),
              meta_varlosses=Flux.cpu.(varlosses), steps=steps)
     catch e
-        e isa ErrorException || rethrow()
         bson(joinpath(logdir, "meta-cp-no-optim_$steps-steps_loss-$(trainlosses[end])_"
                       * "$starttimestr.bson"),
              meta_model=Flux.cpu(model), meta_optim=nothing,
@@ -282,15 +286,38 @@ function save_cp(model, optim, trainlosses, meanlosses,
     end
 end
 
-function load_cp(cppath::AbstractString)
-    cp = BSON.load(cppath)
-    model = togpu(cp[:meta_model]::Flux.Chain)
-    optim::Flux.ADAM = cp[:meta_optim]
+function save_cp(model, optim, trainlosses, meanlosses,
+                 varlosses, steps, logdir, starttimestr, use_bson::Val{false})
+    # TODO Due to having to use a different BSON PR branch, this fails.
+    #      When the branch is merged, update the package and remove the try-catch.
+    jldopen(joinpath(logdir, "meta-cp_$steps-steps_loss-$(Flux.cpu(trainlosses[end]))_"
+                     * "$starttimestr.jld"), "w") do io
+        addrequire(io, Flux)
+        write(io, "meta_model", Flux.cpu(model), "meta_optim", optim,
+              "meta_trainlosses", Flux.cpu.(trainlosses),
+              "meta_meanlosses", Flux.cpu.(meanlosses),
+              "meta_varlosses", Flux.cpu.(varlosses), "steps", steps)
+    end
+end
 
-    trainlosses::Vector{Float32} = cp[:meta_trainlosses]
-    meanlosses::Vector{eltype(trainlosses)} = cp[:meta_meanlosses]
-    varlosses::Vector{eltype(trainlosses)} = cp[:meta_varlosses]
-    past_steps::UInt64 = cp[:steps]
+function load_cp(cppath::AbstractString, use_bson::Val{true})
+    cp = BSON.load(cppath)
+    load_cp(cp, Symbol)
+end
+
+function load_cp(cppath::AbstractString, use_bson::Val{false})
+    cp = load(cppath)
+    load_cp(cp, String)
+end
+
+function load_cp(cp::AbstractDict, cpkeytype::Type)
+    model = togpu(cp[cpkeytype("meta_model")]::Flux.Chain)
+    optim::Flux.ADAM = cp[cpkeytype("meta_optim")]
+
+    trainlosses::Vector{Float32} = cp[cpkeytype("meta_trainlosses")]
+    meanlosses::Vector{eltype(trainlosses)} = cp[cpkeytype("meta_meanlosses")]
+    varlosses::Vector{eltype(trainlosses)} = cp[cpkeytype("meta_varlosses")]
+    past_steps::UInt64 = cp[cpkeytype("steps")]
 
     return (model, optim, trainlosses, meanlosses, varlosses, past_steps)
 end

@@ -8,8 +8,10 @@ using Random: rand!, seed!
 
 using BSON  # we currently use a fork (pr #47) due to issue #3
 import Flux
+using JLD
 import JSON
 using TensorBoardLogger
+import Transformers
 
 using ..DataIterator
 using ..InputStatistics
@@ -31,6 +33,7 @@ Base.@kwdef struct TrainingParameters
     warmuplr::Float64                                = 0.00005  # TODO unused
     logevery::Integer                                = 300
     saveevery::Integer                               = 1500
+    use_bson::Bool                                   = false
     testratio::AbstractFloat                         = 0.1
     buffer_size::Integer                             = 4
     dataiter_threads::Integer                        = 0
@@ -88,10 +91,12 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
         testindices = trainindices
     end
 
+    use_bson = Val(params.use_bson)
+
     if model isa AbstractString
         paramdict[:modelpath] = model
         (model, optimizer, trainlosses, meanlosses, varlosses, past_steps) = loadcp(
-            model, params.modeltype)
+            model, params.modeltype, use_bson)
     else
         optimizer = Flux.ADAM(params.lr)
 
@@ -237,7 +242,7 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                     if (epoch > earlystoppingwaitepochs && lossdiff > 0
                             && lossratio >= earlystoppingthreshold)
                         savecp(model, optimizer, trainlosses, testlosses, meanlosses,
-                               varlosses, steps, logdir, starttimestr)
+                               varlosses, steps, logdir, starttimestr, use_bson)
                         logprint(logger, "Early stopping activated after $steps training "
                                  * "steps ($epoch epochs, $j sequences in current epoch). "
                                  * "Loss increase: $meanloss - $(meanlosses[end - 1]) = "
@@ -261,13 +266,13 @@ function trainingloop!(model::Union{LearningModel, AbstractString}, dbpath::Abst
                         push!(varlosses,  varloss)
                     end
                     savecp(model, optimizer, trainlosses, testlosses, meanlosses,
-                           varlosses, steps, logdir, starttimestr)
+                           varlosses, steps, logdir, starttimestr, use_bson)
                     logprint(logger, "Saved checkpoint after $steps training steps.")
                 end
             end
         end
         savecp(model, optimizer, trainlosses, testlosses, meanlosses,
-               varlosses, steps, logdir, starttimestr)
+               varlosses, steps, logdir, starttimestr, use_bson)
         logprint(logger, "Training finished after $steps training steps and "
                  * "$(round((time() - starttime) / 60, digits=2)) minutes.")
     finally
@@ -322,7 +327,7 @@ end
 # Numbered Vararg so we can make sure we didn't miss one without having to list them all.
 cleanupall(args::Vararg{Any, 3}) = foreach(cleanup, args)
 
-function loadcp(cppath::AbstractString, modeltype::Nothing)
+function loadcp(cppath::AbstractString, modeltype::Nothing, use_bson::Val{true})
     cp = BSON.load(cppath)
     model = togpu(cp[:model]::LearningModel)
 
@@ -330,7 +335,8 @@ function loadcp(cppath::AbstractString, modeltype::Nothing)
     return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
 end
 
-function loadcp(cppath::AbstractString, modeltype::Type{<:LearningModel})
+function loadcp(cppath::AbstractString, modeltype::Type{<:LearningModel},
+                use_bson::Val{true})
     cp = BSON.load(cppath)
     model = togpu(cp[:model]::modeltype)
 
@@ -338,24 +344,57 @@ function loadcp(cppath::AbstractString, modeltype::Type{<:LearningModel})
     return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
 end
 
-function loadother(cp)
-    optimizer::Flux.ADAM = cp[:optimizer]
+function loadcp(cppath::AbstractString, modeltype::Nothing, use_bson::Val{false})
+    cp = load(cppath)
+    model = togpu(cp["model"]::LearningModel)
 
-    trainlosses::Vector{Float32} = cp[:trainlosses]
-    meanlosses::Vector{eltype(trainlosses)} = cp[:meanlosses]
-    varlosses::Vector{eltype(trainlosses)} = cp[:varlosses]
+    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+    return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
+end
 
-    past_steps::UInt64 = cp[:steps]
+function loadcp(cppath::AbstractString, modeltype::Type{<:LearningModel},
+                use_bson::Val{false})
+    cp = load(cppath)
+    model = togpu(cp["model"]::modeltype)
+
+    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+    return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
+end
+
+loadother(cp, use_bson::Val{true})  = loadother(cp, Symbol)
+loadother(cp, use_bson::Val{false}) = loadother(cp, String)
+
+function loadother(cp::AbstractDict, cpkeytype::Type)
+    optimizer::Flux.ADAM = cp[cpkeytype("optimizer")]
+
+    trainlosses::Vector{Float32} = cp[cpkeytype("trainlosses")]
+    meanlosses::Vector{eltype(trainlosses)} = cp[cpkeytype("meanlosses")]
+    varlosses::Vector{eltype(trainlosses)} = cp[cpkeytype("varlosses")]
+
+    past_steps::UInt64 = cp[cpkeytype("steps")]
     return optimizer, trainlosses, meanlosses, varlosses, past_steps
 end
 
 function savecp(model, optimizer, trainlosses, testlosses, meanlosses,
-                varlosses, steps, logdir, starttimestr)
-    bson(joinpath(logdir,
-                  "model-cp_$steps-steps_loss-$(meanlosses[end])_$starttimestr.bson"),
+                varlosses, steps, logdir, starttimestr, use_bson::Val{true})
+    bson(joinpath(logdir, "model-cp_$steps-steps_loss-$(Flux.cpu(meanlosses[end]))_"
+                  * "$starttimestr.bson"),
          model=Flux.cpu(model), optimizer=optimizer, steps=steps,
          trainlosses=Flux.cpu.(trainlosses), testlosses=Flux.cpu.(testlosses),
          meanlosses=Flux.cpu.(meanlosses), varlosses=Flux.cpu.(varlosses))
+end
+
+function savecp(model, optimizer, trainlosses, testlosses, meanlosses,
+                varlosses, steps, logdir, starttimestr, use_bson::Val{false})
+    jldopen(joinpath(logdir, "model-cp_$steps-steps_loss-$(Flux.cpu(meanlosses[end]))_"
+                     * "$starttimestr.jld"), "w") do io
+        addrequire(io, Flux)
+        # TODO Maybe dispatch so we don't always save this.
+        addrequire(io, Transformers)
+        write(io, "model", Flux.cpu(model), "optimizer", optimizer, "steps", steps,
+              "trainlosses", Flux.cpu.(trainlosses), "testlosses", Flux.cpu.(testlosses),
+              "meanlosses", Flux.cpu.(meanlosses), "varlosses", Flux.cpu.(varlosses))
+    end
 end
 
 function test_trainingloop(dbpath::AbstractString="levels_1d_flags_t.jdb")

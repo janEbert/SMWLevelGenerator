@@ -9,6 +9,7 @@ using Random: seed!, shuffle!
 using BSON
 import Flux
 using Flux.Tracker: gradient
+using JLD
 import JSON
 using TensorBoardLogger
 
@@ -32,6 +33,7 @@ Base.@kwdef struct GANTrainingParameters
     d_steps_per_g_step::Integer           = 1
     logevery::Integer                     = 200
     saveevery::Integer                    = 1000
+    use_bson::Bool                        = false
     buffer_size::Integer                  = 3
     dataiter_threads::Integer             = 0
     logdir::AbstractString                = joinpath("exps", newexpdir("gan"))
@@ -87,10 +89,12 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     length(lr) > 1 || (lr = (lr, lr))
     length(betas[1]) > 1 || (betas = (betas, betas))
 
+    use_bson = Val(params.use_bson)
+
     if d_model isa AbstractString
         paramdict[:d_modelpath] = d_model
         (d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
-                d_steps) = load_d_cp(d_model)
+                d_steps) = load_d_cp(d_model, use_bson)
     else
         d_optim = Flux.ADAM(lr[1], betas[1])
 
@@ -107,7 +111,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     if g_model isa AbstractString
         paramdict[:g_modelpath] = g_model
         (g_model, g_optim, g_trainlosses, testfakes, const_noise, past_steps) = load_g_cp(
-                g_model)
+                g_model, use_bson)
         generator_inputsize = g_model.hyperparams[:inputsize]
     else
         g_optim = Flux.ADAM(lr[2], betas[2])
@@ -130,7 +134,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
         if meta_model isa AbstractString
             paramdict[:meta_modelpath] = meta_model
             (meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
-                    meta_varlosses, meta_steps) = load_meta_cp(meta_model)
+                    meta_varlosses, meta_steps) = load_meta_cp(meta_model, use_bson)
         else
             meta_optim = Flux.ADAM(params.meta_lr)
 
@@ -404,13 +408,13 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                     if (epoch > earlystoppingwaitepochs && lossdiff > 0
                             && lossratio >= earlystoppingthreshold)
                         save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake,
-                                  d_testlosses, steps, logdir, starttimestr)
+                                  d_testlosses, steps, logdir, starttimestr, use_bson)
                         save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
-                                  steps, testloss, logdir, starttimestr)
+                                  steps, testloss, logdir, starttimestr, use_bson)
                         if !isnothing(meta_model)
                             save_meta_cp(meta_model, meta_optim, meta_trainlosses,
                                          meta_meanlosses, meta_varlosses, steps,
-                                         logdir, starttimestr)
+                                         logdir, starttimestr, use_bson)
                         end
                         logprint(logger, "Early stopping activated after $steps training "
                                  * "steps ($epoch epochs, $j sequences in current epoch). "
@@ -444,25 +448,25 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                         end
                     end
                     save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake,
-                              d_testlosses, steps, logdir, starttimestr)
+                              d_testlosses, steps, logdir, starttimestr, use_bson)
                     save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
-                              steps, testloss, logdir, starttimestr)
+                              steps, testloss, logdir, starttimestr, use_bson)
                     if !isnothing(meta_model)
                         save_meta_cp(meta_model, meta_optim, meta_trainlosses,
                                      meta_meanlosses, meta_varlosses, steps,
-                                     logdir, starttimestr)
+                                     logdir, starttimestr, use_bson)
                     end
                     logprint(logger, "Saved checkpoints after $steps training steps.")
                 end
             end
         end
         save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake,
-                  d_testlosses, steps, logdir, starttimestr)
+                  d_testlosses, steps, logdir, starttimestr, use_bson)
         save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
-                  steps, testloss, logdir, starttimestr)
+                  steps, testloss, logdir, starttimestr, use_bson)
         if !isnothing(meta_model)
             save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
-                         meta_varlosses, steps, logdir, starttimestr)
+                         meta_varlosses, steps, logdir, starttimestr, use_bson)
         end
         logprint(logger, "Training finished after $steps training steps and "
                  * "$(round((time() - starttime) / 60, digits=2)) minutes.")
@@ -498,64 +502,106 @@ end
 cleanupall(args::Vararg{Any, 3}) = foreach(cleanup, args)
 
 function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
-                   steps, logdir, starttimestr)
-    bson(joinpath(logdir, "discriminator-cp_$steps-steps_loss-$(d_testlosses[end])_"
-                  * "$starttimestr.bson"),
+                   steps, logdir, starttimestr, use_bson::Val{true})
+    bson(joinpath(logdir, "discriminator-cp_$steps-steps_loss-"
+                  * "$(Flux.cpu(d_testlosses[end]))_$starttimestr.bson"),
          d_model=Flux.cpu(d_model), d_optim=d_optim,
          d_trainlosses_real=Flux.cpu.(d_trainlosses_real),
          d_trainlosses_fake=Flux.cpu.(d_trainlosses_fake),
          d_testlosses=Flux.cpu.(d_testlosses), steps=steps)
 end
 
+function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
+                   steps, logdir, starttimestr, use_bson::Val{false})
+    jldopen(joinpath(logdir, "discriminator-cp_$steps-steps_loss-"
+                     * "$(Flux.cpu(d_testlosses[end]))_$starttimestr.jld", "w")) do io
+        addrequire(io, Flux)
+        write(io, "d_model", Flux.cpu(d_model), "d_optim", d_optim,
+              "d_trainlosses_real", Flux.cpu.(d_trainlosses_real),
+              "d_trainlosses_fake", Flux.cpu.(d_trainlosses_fake),
+              "d_testlosses", Flux.cpu.(d_testlosses), "steps", steps)
+    end
+end
+
 function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
-                   steps, testloss, logdir, starttimestr)
-    bson(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(testloss)_"
+                   steps, testloss, logdir, starttimestr, use_bson::Val{true})
+    bson(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(Flux.cpu(testloss))_"
                   * "$starttimestr.bson"),
          g_model=Flux.cpu(g_model), g_optim=g_optim, g_trainlosses=Flux.cpu.(g_trainlosses),
          testfakes=Flux.cpu.(testfakes), const_noise=Flux.cpu(const_noise), steps=steps)
 end
 
-function load_d_cp(cppath::AbstractString)
-    cp = BSON.load(cppath)
-    d_model = togpu(cp[:d_model]::Flux.Chain)
-    d_optim::Flux.ADAM = cp[:d_optim]
+function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
+                   steps, testloss, logdir, starttimestr, use_bson::Val{false})
+    jldopen(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(Flux.cpu(testloss))_"
+                     * "$starttimestr.jld"), "w") do io
+        addrequire(io, Flux)
+        write(io, "g_model", Flux.cpu(g_model), "g_optim", g_optim,
+              "g_trainlosses", Flux.cpu.(g_trainlosses), "testfakes", Flux.cpu.(testfakes),
+              "const_noise", Flux.cpu(const_noise), "steps", steps)
+    end
+end
 
-    d_trainlosses_real::Vector{Float32} = cp[:d_trainlosses_real]
-    d_trainlosses_fake::Vector{eltype(d_trainlosses_real)} = cp[:d_trainlosses_fake]
-    d_testlosses::Vector{eltype(d_trainlosses_real)} = cp[:d_testlosses]
-    steps::UInt64 = cp[:steps]
+function load_d_cp(cppath::AbstractString, use_bson::Val{true})
+    cp = BSON.load(cppath)
+    load_d_cp(cp, Symbol)
+end
+
+function load_d_cp(cppath::AbstractString, use_bson::Val{false})
+    cp = load(cppath)
+    load_d_cp(cp, String)
+end
+
+function load_d_cp(cp::AbstractDict, cpkeytype::Type)
+    d_model = togpu(cp[cpkeytype("d_model")]::Flux.Chain)
+    d_optim::Flux.ADAM = cp[cpkeytype("d_optim")]
+
+    d_trainlosses_real::Vector{Float32} = cp[cpkeytype("d_trainlosses_real")]
+    d_trainlosses_fake::Vector{eltype(d_trainlosses_real)} = cp[
+            cpkeytype("d_trainlosses_fake")]
+    d_testlosses::Vector{eltype(d_trainlosses_real)} = cp[cpkeytype("d_testlosses")]
+    steps::UInt64 = cp[cpkeytype("steps")]
 
     return (d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses, steps)
 end
 
-function load_g_cp(cppath::AbstractString)
+function load_g_cp(cppath::AbstractString, use_bson::Val{true})
     cp = BSON.load(cppath)
-    g_model = togpu(cp[:g_model]::Flux.Chain)
-    g_optim::Flux.ADAM = cp[:g_optim]
+    load_g_cp(cp, Symbol)
+end
 
-    g_trainlosses::Vector{Float32} = cp[:g_trainlosses]
-    testfakes::Vector = cp[:testfakes]
-    const_noise::AbstractArray = togpu(cp[:const_noise])
-    steps::UInt64 = cp[:steps]
+function load_g_cp(cppath::AbstractString, use_bson::Val{false})
+    cp = load(cppath)
+    load_g_cp(cp, String)
+end
+
+function load_g_cp(cp::AbstractDict, cpkeytype::Type)
+    g_model = togpu(cp[cpkeytype("g_model")]::Flux.Chain)
+    g_optim::Flux.ADAM = cp[cpkeytype("g_optim")]
+
+    g_trainlosses::Vector{Float32} = cp[cpkeytype("g_trainlosses")]
+    testfakes::Vector = cp[cpkeytype("testfakes")]
+    const_noise::AbstractArray = togpu(cp[cpkeytype("const_noise")])
+    steps::UInt64 = cp[cpkeytype("steps")]
 
     return (g_model, g_optim, g_trainlosses, testfakes, const_noise, steps)
 end
 
 
 function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
-                      meta_varlosses, steps, logdir, starttimestr)
+                      meta_varlosses, steps, logdir, starttimestr, use_bson::Val{true})
     # TODO Due to having to use a different BSON PR branch, this fails.
     #      When the branch is merged, update the package and remove the try-catch.
     try
-        bson(joinpath(logdir, "meta-cp_$steps-steps_loss-$(meta_trainlosses[end])_"
-                      * "$starttimestr.bson"),
+        bson(joinpath(logdir, "meta-cp_$steps-steps_loss-"
+                      * "$(Flux.cpu(meta_trainlosses[end]))_$starttimestr.bson"),
              meta_model=Flux.cpu(meta_model), meta_optim=meta_optim,
              meta_trainlosses=Flux.cpu.(meta_trainlosses),
              meta_meanlosses=Flux.cpu.(meta_meanlosses),
              meta_varlosses=Flux.cpu.(meta_varlosses), steps=steps)
     catch e
-        bson(joinpath(logdir, "meta-cp_$steps-steps_loss-$(meta_trainlosses[end])_"
-                      * "$starttimestr.bson"),
+        bson(joinpath(logdir, "meta-cp_$steps-steps_loss-"
+                      * "$(Flux.cpu(meta_trainlosses[end]))_$starttimestr.bson"),
              meta_model=Flux.cpu(meta_model), meta_optim=nothing,
              meta_trainlosses=Flux.cpu.(meta_trainlosses),
              meta_meanlosses=Flux.cpu.(meta_meanlosses),
@@ -563,15 +609,38 @@ function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
     end
 end
 
-function load_meta_cp(cppath::AbstractString)
-    cp = BSON.load(cppath)
-    meta_model = togpu(cp[:meta_model]::Flux.Chain)
-    meta_optim::Flux.ADAM = cp[:meta_optim]
+function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
+                      meta_varlosses, steps, logdir, starttimestr, use_bson::Val{false})
+    # TODO Due to having to use a different BSON PR branch, this fails.
+    #      When the branch is merged, update the package and remove the try-catch.
+    jldopen(joinpath(logdir, "meta-cp_$steps-steps_loss-"
+                     * "$(Flux.cpu(meta_trainlosses[end]))_$starttimestr.jld"), "w") do io
+        addrequire(io, Flux)
+        write(io, "meta_model", Flux.cpu(meta_model), "meta_optim", meta_optim,
+              "meta_trainlosses", Flux.cpu.(meta_trainlosses),
+              "meta_meanlosses", Flux.cpu.(meta_meanlosses),
+              "meta_varlosses", Flux.cpu.(meta_varlosses), "steps", steps)
+    end
+end
 
-    meta_trainlosses::Vector{Float32} = cp[:meta_trainlosses]
-    meta_meanlosses::Vector{eltype(meta_trainlosses)} = cp[:meta_meanlosses]
-    meta_varlosses::Vector{eltype(meta_trainlosses)} = cp[:meta_varlosses]
-    meta_steps::UInt64 = cp[:steps]
+function load_meta_cp(cppath::AbstractString, use_bson::Val{true})
+    cp = BSON.load(cppath)
+    load_meta_cp(cp, Symbol)
+end
+
+function load_meta_cp(cppath::AbstractString, use_bson::Val{false})
+    cp = load(cppath)
+    load_meta_cp(cp, String)
+end
+
+function load_meta_cp(cp::AbstractDict, cpkeytype::Type)
+    meta_model = togpu(cp[cpkeytype("meta_model")]::Flux.Chain)
+    meta_optim::Flux.ADAM = cp[cpkeytype("meta_optim")]
+
+    meta_trainlosses::Vector{Float32} = cp[cpkeytype("meta_trainlosses")]
+    meta_meanlosses::Vector{eltype(meta_trainlosses)} = cp[cpkeytype("meta_meanlosses")]
+    meta_varlosses::Vector{eltype(meta_trainlosses)} = cp[cpkeytype("meta_varlosses")]
+    meta_steps::UInt64 = cp[cpkeytype("steps")]
 
     return (meta_model, meta_optim, meta_trainlosses,
             meta_meanlosses, meta_varlosses, meta_steps)
