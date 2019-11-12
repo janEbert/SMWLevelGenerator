@@ -34,7 +34,7 @@ end
 
 """
 Reshape `x` of a size like `(1, 1, N, B)` or `(1, N, B)`, where `N` is the number of
-features and `B` the batch size to a matrix of size `(N, :)`.
+features and `B` the batch size to a matrix of size `(N, B)`.
 """
 struct BatchToMatrix{I<:Integer}
     num_features::I
@@ -44,7 +44,7 @@ end
 
 function manual1dmodel(num_features, imgsize, outputsize, dimensionality=Symbol("1d");
                        p_dropout=0.1f0, kernelsize=(3,),
-                       output_activation=identity)
+                       output_activation=Flux.leakyrelu)
     imgchannels = imgsize[end]
     model = Flux.Chain(
         Flux.Conv(kernelsize, imgchannels => num_features, Flux.relu, pad=2, dilation=2),

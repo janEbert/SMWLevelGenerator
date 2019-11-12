@@ -33,41 +33,47 @@ end
 
 """
     function makehiddenlayers(hiddensize::Integer, num_hiddenlayers::Integer,
-                              skipconnections::Val{false}, p_dropout)
+                              skipconnections::Val{false}, p_dropout, layertype=Flux.LSTM)
     function makehiddenlayers(hiddensize::Integer, num_hiddenlayers::Integer,
-                              skipconnections::Val{true}, p_dropout)
+                              skipconnections::Val{true}, p_dropout, layertype=Flux.LSTM)
 
-Create a sequence of `num_hiddenlayers` `LSTM` layers beginning with an `LSTM`
-with `Dropout`. Then, every other `LSTM`, add another `Dropout` layer.
+Create a sequence of `num_hiddenlayers` layers of the given `layertype` (or a function
+accepting two arguments), beginning with a `layertype` with `Dropout`. Then, every other
+`layertype`, add another `Dropout` layer.
 The `Dropout` layers are not included in `num_hiddenlayers`!
 
 Calling the function with different `num_hiddenlayers` returns a sequence up to and
-including the marker indicating the value of `num_hiddenlayers`:
+including the marker indicating the value of `num_hiddenlayers`
+(with `layertype=Flux.LSTM`):
 ```
 LSTM, Dropout, LSTM, LSTM, Dropout, LSTM, LSTM, Dropout, LSTM, ...
       1        2           3        4           5        6     ...
 ```
 """
 function makehiddenlayers(hiddensize::Integer, num_hiddenlayers::Integer,
-                          #=skipconnections=#::Val{false}, p_dropout)
-    return ((i - 2) % 3 == 0 ? Flux.LSTM(hiddensize, hiddensize) : Flux.Dropout(p_dropout)
+                          #=skipconnections=#::Val{false}, p_dropout,
+                          layertype=Flux.LSTM)
+    return ((i - 2) % 3 == 0 ? layertype(hiddensize, hiddensize) : Flux.Dropout(p_dropout)
             for i in 1:num_hiddenlayers + cld(num_hiddenlayers, 2))
 end
 
 function makehiddenlayers(hiddensize::Integer, num_hiddenlayers::Integer,
-                          #=skipconnections=#::Val{true}, p_dropout)
+                          #=skipconnections=#::Val{true}, p_dropout,
+                          layertype=Flux.LSTM)
     if num_hiddenlayers > 1
         if num_hiddenlayers % 2 == 0
-            skipped_layer = (Flux.LSTM(hiddensize, hiddensize),)
+            skipped_layer = (layertype(hiddensize, hiddensize),)
         else
-            skipped_layer = (Flux.LSTM(hiddensize, hiddensize), Flux.Dropout(p_dropout))
+            skipped_layer = (layertype(hiddensize, hiddensize), Flux.Dropout(p_dropout))
         end
-        return Flux.SkipConnection(Flux.Chain(skipped_layer...,
-                                              makehiddenlayers(hiddensize,
-                                                               num_hiddenlayers - 1)),
-                                   (a, b) -> a + b)
+        return (Flux.SkipConnection(Flux.Chain(skipped_layer...,
+                                               makehiddenlayers(hiddensize,
+                                                                num_hiddenlayers - 1,
+                                                                Val(true), p_dropout,
+                                                                layertype)...),
+                                   (a, b) -> a + b),)
     else
-        return Flux.LSTM(hiddensize, hiddensize)
+        return (layertype(hiddensize, hiddensize),)
     end
 end
 
@@ -77,7 +83,6 @@ function makelstm(hiddensize::Integer, num_hiddenlayers::Integer, inputsize::Int
                   output_activation=Flux.sigmoid)
     hiddenlayers = makehiddenlayers(hiddensize, num_hiddenlayers,
                                     Val(skipconnections), p_dropout)
-    skipconnections && (hiddenlayers = (hiddenlayers,))
     model = Flux.Chain(
         Flux.LSTM(inputsize, hiddensize),
         hiddenlayers...,
