@@ -15,7 +15,7 @@ using ..LevelDeconstructor
 using ..LevelWriter
 
 export predict_hack, predict_vanilla, predict_levels, predict_level
-export generatelevel, writelevel, writelevels
+export generate_reshaped_screen, generatelevel, writelevel, writelevels
 
 const lmpath = joinpath(@__DIR__, "..", "..", "tools",
                                   "lm304ebert21892usix", "Lunar Magic.exe")
@@ -177,9 +177,6 @@ function reshape_first_screen(g_model, first_screen)
     else
         return first_screen
     end
-end
-
-function setnotendedbits(screen::AbstractMatrix)
 end
 
 function build_first_screen(model::LearningModel, gen_first_screen, constantinput)

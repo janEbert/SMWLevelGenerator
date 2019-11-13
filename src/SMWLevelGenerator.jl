@@ -33,7 +33,7 @@ export MTPs, meta_trainingloop!
 
 # Level generation
 export predict_hack, predict_vanilla, predict_levels, predict_level
-export generatelevel, writelevel, writelevels
+export generate_reshaped_screen, generatelevel, writelevel, writelevels
 
 
 include("data/xytables.jl")
