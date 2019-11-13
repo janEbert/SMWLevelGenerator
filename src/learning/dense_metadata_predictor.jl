@@ -49,12 +49,12 @@ function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize,
                     outputsize::Integer, dimensionality; skipconnections::Bool=false,
                     p_dropout=0.1f0, activation=Flux.relu,
                     output_activation=Flux.leakyrelu)
-    imgchannels = imgsize[end]
+    inputsize = prod(imgsize)
     hiddenlayers = makehiddenlayers(hiddensize, num_hiddenlayers, Val(skipconnections),
                                     p_dropout, (x, y) -> Flux.Dense(x, y, activation))
     model = Flux.Chain(
-        BatchToMatrix(prod(imgsize)),
-        Flux.Dense(prod(imgsize), hiddensize, activation),
+        BatchToMatrix(inputsize),
+        Flux.Dense(inputsize, hiddensize, activation),
         hiddenlayers...,
         Flux.Dense(hiddensize, outputsize, output_activation)
     ) |> togpu
