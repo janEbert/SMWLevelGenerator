@@ -36,7 +36,7 @@ end
 
 function buildmodel(num_features, imgsize, generator_inputsize, dimensionality;
                     modeltype=GeneratorModel, normalization=Flux.BatchNorm,
-                    activation=Flux.relu, output_activation=sigmoid, kernelsize=(4, 4))
+                    activation=Flux.relu, output_activation=Flux.sigmoid, kernelsize=(4, 4))
     imgchannels = imgsize[end]
     j = 2 ^ (convert(Int, log2(imgsize[1])) - 3)
     layers = [
@@ -71,7 +71,8 @@ end
 
 function manualmodel(num_features, imgsize, generator_inputsize, dimensionality;
                      modeltype=GeneratorModel, normalization=Flux.BatchNorm,
-                     activation=Flux.relu, output_activation=sigmoid, kernelsize=(4, 4))
+                     activation=Flux.relu, output_activation=Flux.sigmoid,
+                     kernelsize=(4, 4))
     imgchannels = imgsize[end]
     model = Flux.Chain(
         # last dimension (amount of batches) is ignored in these comments

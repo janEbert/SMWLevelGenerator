@@ -19,7 +19,7 @@ export makeloss, dataiteratorparams, calculate_loss, step!
 export makesoftloss, soft_criterion
 export toggle_gpu, should_use_gpu, togpu
 export mae, bce, leakyrelu
-export ConvNoBias, ConvTransposeNoBias
+export BatchToMatrix, MatrixTo3DBatch, MatrixTo2DBatch, ConvNoBias, ConvTransposeNoBias
 
 """
     LearningModel
@@ -203,6 +203,42 @@ bce(y_hat, y) = Flux.binarycrossentropy(y_hat, y; ϵ=1f-12)
 
 leakyrelu(x) = Flux.leakyrelu(x, 0.2f0)
 
+"""
+Reshape `x` of a size like `(a, b, c, B)` or `(a, b, B)`, where `B` is the batch size to a
+matrix of size `(num_features, B)` (`num_features` should be  `a * b * c`).
+"""
+struct BatchToMatrix{I<:Integer}
+    num_features::I
+end
+
+(b::BatchToMatrix)(x) = reshape(x, b.num_features, :)
+
+"""
+Reshape the matrix `x` of size (`N, B`) to `(a, b, c, B)`, where `B` is the batch size.
+`a`, `b` and `c` are given by `outputsize`.
+"""
+struct MatrixTo3DBatch{I<:Integer}
+    outputsize1::I
+    outputsize2::I
+    outputsize3::I
+end
+
+MatrixTo3DBatch(outputsize) = MatrixTo3DBatch(outputsize...)
+
+(b::MatrixTo3DBatch)(x) = reshape(x, b.outputsize1, b.outputsize2, b.outputsize3, :)
+
+"""
+Reshape the matrix `x` of size (`N, B`) to `(a, b, B)`, where `B` is the batch size.
+`a` and `b` are given by `outputsize`.
+"""
+struct MatrixTo2DBatch{I<:Integer}
+    outputsize1::I
+    outputsize2::I
+end
+
+MatrixTo2DBatch(outputsize) = MatrixTo2DBatch(outputsize...)
+
+(b::MatrixTo2DBatch)(x) = reshape(x, b.outputsize1, b.outputsize2, :)
 
 "A convolutional layer without learnable bias."
 function ConvNoBias(k::NTuple{N, Integer}, ch::Pair{<:Integer, <:Integer},

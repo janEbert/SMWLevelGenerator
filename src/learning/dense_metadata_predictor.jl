@@ -7,7 +7,6 @@ using ..InputStatistics
 using ..ModelUtils
 import ..ModelUtils: makeloss
 using ..LSTM: makehiddenlayers
-using ..MetadataPredictor: BatchToMatrix
 
 export DenseMetadataModel
 export densemetapredictor1d, densemetapredictor2d

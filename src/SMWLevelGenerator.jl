@@ -18,6 +18,9 @@ export discriminator1d, discriminator2d, discriminator3dtiles, discriminator3d
 export generator1d, generator2d, generator3dtiles, generator3d
 export wsdiscriminator1d, wsdiscriminator2d, wsdiscriminator3dtiles, wsdiscriminator3d
 export wsgenerator1d, wsgenerator2d, wsgenerator3dtiles, wsgenerator3d
+export densewsdiscriminator1d, densewsdiscriminator2d
+export densewsdiscriminator3dtiles, densewsdiscriminator3d
+export densewsgenerator1d, densewsgenerator2d, densewsgenerator3dtiles, densewsgenerator3d
 # Metadata predictors
 export metapredictor1d, metapredictor2d, metapredictor3dtiles, metapredictor3d
 export densemetapredictor1d, densemetapredictor2d
@@ -64,6 +67,7 @@ include("learning/training_loop.jl")
 
 include("learning/gan.jl")
 include("learning/wasserstein_gan.jl")
+include("learning/dense_wasserstein_gan.jl")
 include("learning/metadata_predictor.jl")
 include("learning/dense_metadata_predictor.jl")
 include("learning/gan_training.jl")
@@ -85,6 +89,7 @@ using .Transformer
 using .RandomPredictor
 using .GAN
 using .WassersteinGAN
+using .DenseWassersteinGAN
 using .MetadataPredictor
 using .DenseMetadataPredictor
 using .TrainingLoop
