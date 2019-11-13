@@ -195,7 +195,7 @@ function build_first_screen(model::LearningModel, gen_first_screen, constantinpu
             return resultmatrix
         else
             result = [vcat(constantinput[1:end - 1], 1, col)
-                      for col in DataIterator.slicedata(gen_first_screen))]
+                      for col in DataIterator.slicedata(gen_first_screen)]
             result[end][constantinputsize] = constantinput[end]
         end
     end
