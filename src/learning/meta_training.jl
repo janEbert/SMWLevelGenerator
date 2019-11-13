@@ -290,8 +290,10 @@ function save_cp(model, optim, trainlosses, meanlosses,
                  varlosses, steps, logdir, starttimestr, use_bson::Val{false})
     # TODO Due to having to use a different BSON PR branch, this fails.
     #      When the branch is merged, update the package and remove the try-catch.
+    # We use this signature so we don't use `mmap`, trading speed for stability.
+    # See https://github.com/JuliaIO/JLD2.jl/issues/55
     jldopen(joinpath(logdir, "meta-cp_$steps-steps_loss-$(trainlosses[end])_"
-                     * "$starttimestr.jld2"), "w") do io
+                     * "$starttimestr.jld2"), true, true, true, IOStream) do io
         # addrequire(io, :Flux)
         write(io, "meta_model", tocpu(model))
         write(io, "meta_optim", tocpu(optim))

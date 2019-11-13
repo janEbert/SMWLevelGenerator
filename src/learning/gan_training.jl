@@ -513,8 +513,11 @@ end
 
 function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
                    steps, logdir, starttimestr, use_bson::Val{false})
+    # We use this signature so we don't use `mmap`, trading speed for stability.
+    # See https://github.com/JuliaIO/JLD2.jl/issues/55
     jldopen(joinpath(logdir, "discriminator-cp_$steps-steps_loss-"
-                     * "$(d_testlosses[end])_$starttimestr.jld2"), "w") do io
+                     * "$(d_testlosses[end])_$starttimestr.jld2"),
+            true, true, true, IOStream) do io
         # addrequire(io, :Flux)
         write(io, "d_model", tocpu(d_model))
         write(io, "d_optim", tocpu(d_optim))
@@ -536,8 +539,10 @@ end
 
 function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
                    steps, testloss, logdir, starttimestr, use_bson::Val{false})
+    # We use this signature so we don't use `mmap`, trading speed for stability.
+    # See https://github.com/JuliaIO/JLD2.jl/issues/55
     jldopen(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(testloss)_"
-                     * "$starttimestr.jld2"), "w") do io
+                     * "$starttimestr.jld2"), true, true, true, IOStream) do io
         # addrequire(io, :Flux)
         write(io, "g_model", tocpu(g_model))
         write(io, "g_optim", tocpu(g_optim))
@@ -619,8 +624,11 @@ function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
                       meta_varlosses, steps, logdir, starttimestr, use_bson::Val{false})
     # TODO Due to having to use a different BSON PR branch, this fails.
     #      When the branch is merged, update the package and remove the try-catch.
+    # We use this signature so we don't use `mmap`, trading speed for stability.
+    # See https://github.com/JuliaIO/JLD2.jl/issues/55
     jldopen(joinpath(logdir, "meta-cp_$steps-steps_loss-"
-                     * "$(meta_trainlosses[end])_$starttimestr.jld2"), "w") do io
+                     * "$(meta_trainlosses[end])_$starttimestr.jld2"),
+            true, true, true, IOStream) do io
         # addrequire(io, :Flux)
         write(io, "meta_model", tocpu(meta_model))
         write(io, "meta_optim", tocpu(meta_optim))
