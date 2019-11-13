@@ -52,15 +52,15 @@ function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize,
     ) |> togpu
     DenseWassersteinGeneratorModel(model, Dict{Symbol, Any}(
         :dimensionality => dimensionality,
+        :inputsize      => generator_inputsize,
 
-        :hiddensize          => hiddensize,
-        :num_hiddenlayers    => num_hiddenlayers,
-        :imgsize             => imgsize,
-        :generator_inputsize => generator_inputsize,
-        :skipconnections     => skipconnections,
-        :p_dropout           => p_dropout,
-        :activation          => activation,
-        :output_activation   => output_activation,
+        :hiddensize        => hiddensize,
+        :num_hiddenlayers  => num_hiddenlayers,
+        :imgsize           => imgsize,
+        :skipconnections   => skipconnections,
+        :p_dropout         => p_dropout,
+        :activation        => activation,
+        :output_activation => output_activation,
     ))
 end
 
