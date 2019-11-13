@@ -223,7 +223,7 @@ struct MatrixTo3DBatch{I<:Integer}
     outputsize3::I
 end
 
-MatrixTo3DBatch(outputsize) = MatrixTo3DBatch(outputsize...)
+MatrixTo3DBatch(outputsize) = MatrixTo3DBatch(promote(outputsize...)...)
 
 (b::MatrixTo3DBatch)(x) = reshape(x, b.outputsize1, b.outputsize2, b.outputsize3, :)
 
@@ -236,7 +236,7 @@ struct MatrixTo2DBatch{I<:Integer}
     outputsize2::I
 end
 
-MatrixTo2DBatch(outputsize) = MatrixTo2DBatch(outputsize...)
+MatrixTo2DBatch(outputsize) = MatrixTo2DBatch(promote(outputsize...)...)
 
 (b::MatrixTo2DBatch)(x) = reshape(x, b.outputsize1, b.outputsize2, :)
 
