@@ -117,21 +117,21 @@ function metapredictor1d(num_features::Integer=32, inputsize=imgsize1d,
                   output_activation=output_activation)
 end
 
-function metapredictor2d(num_features::Integer=64, inputsize=imgsize1d,
+function metapredictor2d(num_features::Integer=64, inputsize=imgsize2d,
                          outputsize=constantinputsize; p_dropout=0.1f0,
                          output_activation=Flux.leakyrelu)
     manualmodel(num_features, inputsize, outputsize, Symbol("2d"),
                 p_dropout=p_dropout, output_activation=output_activation)
 end
 
-function metapredictor3dtiles(num_features::Integer=128, inputsize=imgsize1d,
+function metapredictor3dtiles(num_features::Integer=128, inputsize=imgsize3dtiles,
                               outputsize=constantinputsize; p_dropout=0.1f0,
                               output_activation=Flux.leakyrelu)
     manualmodel(num_features, inputsize, outputsize, Symbol("3dtiles"),
                 p_dropout=p_dropout, output_activation=output_activation)
 end
 
-function metapredictor3d(num_features::Integer=256, inputsize=imgsize1d,
+function metapredictor3d(num_features::Integer=256, inputsize=imgsize3d,
                          outputsize=constantinputsize; p_dropout=0.1f0,
                          output_activation=Flux.leakyrelu)
     manualmodel(num_features, inputsize, outputsize, Symbol("3d"),
