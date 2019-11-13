@@ -34,7 +34,7 @@ end
 
 """
 Reshape `x` of a size like `(1, 1, N, B)` or `(1, N, B)`, where `N` is the number of
-features and `B` the batch size to a matrix of size `(N, B)`.
+layers (or channels) and `B` the batch size to a matrix of size `(N, B)`.
 """
 struct BatchToMatrix{I<:Integer}
     num_features::I

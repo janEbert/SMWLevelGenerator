@@ -7,7 +7,6 @@ using ..InputStatistics
 using ..ModelUtils
 import ..ModelUtils: makeloss
 using ..LSTM: makehiddenlayers
-using ..MetadataPredictor: BatchToMatrix
 
 export DenseMetadataModel
 export densemetapredictor1d, densemetapredictor2d
@@ -35,6 +34,17 @@ function makeloss(model::DenseMetadataModel, criterion)
     end
 end
 
+"""
+Reshape `x` of a size like `(C, R, N, B)` or `(C, N, B)`, where `C` is the number of
+columns, `R` the number of rows, `N` the number of layers (or channels) and `B` the
+batch size to a matrix of size `(num_features, B)`.
+"""
+struct BatchToMatrix{I<:Integer}
+    num_features::I
+end
+
+(b::BatchToMatrix)(x) = reshape(x, b.num_features, :)
+
 function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize,
                     outputsize::Integer, dimensionality; skipconnections::Bool=false,
                     p_dropout=0.1f0, activation=Flux.relu,
@@ -43,8 +53,8 @@ function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize,
     hiddenlayers = makehiddenlayers(hiddensize, num_hiddenlayers, Val(skipconnections),
                                     p_dropout, (x, y) -> Flux.Dense(x, y, activation))
     model = Flux.Chain(
-        BatchToMatrix(imgchannels),
-        Flux.Dense(imgchannels, hiddensize, activation),
+        BatchToMatrix(prod(imgsize)),
+        Flux.Dense(prod(imgsize), hiddensize, activation),
         hiddenlayers...,
         Flux.Dense(hiddensize, outputsize, output_activation)
     ) |> togpu
@@ -64,28 +74,28 @@ end
 
 # TODO try out gelu
 
-function densemetapredictor1d(hiddensize::Integer=32, num_hiddenlayers::Integer=2,
+function densemetapredictor1d(hiddensize::Integer=32, num_hiddenlayers::Integer=1,
                               inputsize=imgsize1d, outputsize=constantinputsize;
                               p_dropout=0.05f0, kwargs...)
     buildmodel(hiddensize, num_hiddenlayers, inputsize, outputsize, Symbol("1d");
                p_dropout=p_dropout, kwargs...)
 end
 
-function densemetapredictor2d(hiddensize::Integer=64, num_hiddenlayers::Integer=2,
+function densemetapredictor2d(hiddensize::Integer=32, num_hiddenlayers::Integer=2,
                               inputsize=imgsize1d, outputsize=constantinputsize;
                               p_dropout=0.1f0, kwargs...)
     buildmodel(hiddensize, num_hiddenlayers, inputsize, outputsize, Symbol("2d");
                p_dropout=p_dropout, kwargs...)
 end
 
-function densemetapredictor3dtiles(hiddensize::Integer=128, num_hiddenlayers::Integer=2,
+function densemetapredictor3dtiles(hiddensize::Integer=64, num_hiddenlayers::Integer=2,
                                    inputsize=imgsize1d, outputsize=constantinputsize;
                                    p_dropout=0.1f0, kwargs...)
     buildmodel(hiddensize, num_hiddenlayers, inputsize, outputsize, Symbol("3dtiles");
                p_dropout=p_dropout, kwargs...)
 end
 
-function densemetapredictor3d(hiddensize::Integer=128, num_hiddenlayers::Integer=3,
+function densemetapredictor3d(hiddensize::Integer=128, num_hiddenlayers::Integer=2,
                               inputsize=imgsize1d, outputsize=constantinputsize;
                               p_dropout=0.1f0, kwargs...)
     buildmodel(hiddensize, num_hiddenlayers, inputsize, outputsize, Symbol("3d");
