@@ -170,9 +170,9 @@ function generate_reshaped_screen(g_model::AbstractGenerator, input=randinput(g_
 end
 
 function reshape_first_screen(g_model, first_screen)
-    if g_model[:dimensionality] === Symbol("1d")
+    if g_model.hyperparams[:dimensionality] === Symbol("1d")
         return vec(first_screen)
-    elseif g_model[:dimensionality] === Symbol("2d")
+    elseif g_model.hyperparams[:dimensionality] === Symbol("2d")
         return reshape(first_screen, size(first_screen)[1:2])
     else
         return first_screen

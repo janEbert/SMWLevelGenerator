@@ -29,6 +29,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractArray)
     # Strip constant input part.
     sequence = [initialinput[eachindex(initialinput)[constantinputsize:end]]]
     Flux.reset!(model)
+    Flux.testmode!(model)
     # While the "sequence has not ended yet" bit is not set...
     while sequence[end][1] != 0 && length(sequence) < LevelStatistics.maxcolshori
         push!(sequence, Flux.cpu(Flux.data(
@@ -37,6 +38,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractArray)
     if sequence[end][1] != 0
         println("Force stopped generation due to maximum level length.")
     end
+    Flux.testmode!(model, false)
     return constantinput, postprocess(sequence, model.hyperparams[:dimensionality])
 end
 
@@ -47,6 +49,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractMatrix)
     sequence = initialinput
     prediction = sequence[constantinputsize:end, :]
     Flux.reset!(model)
+    Flux.testmode!(model)
     # While the "sequence has not ended yet" bit is not set...
     while (prediction[1, end] != 0
            && size(prediction, 2) < LevelStatistics.maxcolshori)
@@ -56,6 +59,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractMatrix)
     if prediction[1, end] != 0
         println("Force stopped generation due to maximum level length.")
     end
+    Flux.testmode!(model, false)
     return constantinput, postprocess(prediction, model.hyperparams[:dimensionality])
 end
 
@@ -73,6 +77,7 @@ function generatesequence(model::LearningModel, initialscreen::AbstractVector{T}
     sequence = [inputpart[eachindex(inputpart)[constantinputsize:end]]
                 for inputpart in initialscreen]
     Flux.reset!(model)
+    Flux.testmode!(model)
     # Give the model the initial inputs, pre-tuning it (and disregard the predictions.)
     model.(initialscreen[1:end - 1])
     while sequence[end][1] != 0 && length(sequence) < LevelStatistics.maxcolshori
@@ -82,6 +87,7 @@ function generatesequence(model::LearningModel, initialscreen::AbstractVector{T}
     if sequence[end][1] != 0
         println("Force stopped generation due to maximum level length.")
     end
+    Flux.testmode!(model, false)
     return constantinput, postprocess(sequence, model.hyperparams[:dimensionality])
 end
 

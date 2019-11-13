@@ -1,5 +1,7 @@
 module ScreenGenerator
 
+import Flux
+
 using ..InputStatistics
 using ..ModelUtils: LearningModel, AbstractGenerator, togpu
 using ..LevelStatistics
@@ -19,14 +21,24 @@ end
 
 Return the generator's output for the given input.
 """
-generatescreen(g_model::AbstractGenerator, input=randinput(g_model)) = g_model(togpu(input))
+function generatescreen(g_model::AbstractGenerator, input=randinput(g_model))
+    Flux.testmode!(g_model)
+    output = g_model(togpu(input))
+    Flux.testmode!(g_model, false)
+    return output
+end
 
 """
     generatemetadata(meta_model::LearningModel, screen)
 
 Return the meta model's output when applied to the given (first) screen.
 """
-generatemetadata(meta_model::LearningModel, screen) = meta_model(screen)
+function generatemetadata(meta_model::LearningModel, screen)
+    Flux.testmode!(meta_model)
+    output = meta_model(screen)
+    Flux.testmode!(meta_model, false)
+    return output
+end
 
 end
 

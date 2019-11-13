@@ -51,7 +51,7 @@ function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize,
     DenseMetadataModel(model, Dict{Symbol, Any}(
         :dimensionality => dimensionality,
 
-        :hiddensize      => hiddensize,
+        :hiddensize        => hiddensize,
         :num_hiddenlayers  => num_hiddenlayers,
         :imgsize           => imgsize,
         :outputsize        => outputsize,
