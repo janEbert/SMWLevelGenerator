@@ -41,7 +41,7 @@ end
 function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize, dimensionality;
                     skipconnections::Bool=false, p_dropout=0.1f0, activation=Flux.relu,
                     output_activation=identity)
-    inputsize = prod(imgsize)
+    inputsize = prod(Int, imgsize)
     hiddenlayers = makehiddenlayers(hiddensize, num_hiddenlayers, Val(skipconnections),
                                     p_dropout, (x, y) -> Flux.Dense(x, y, activation))
     matrixtobatch = dimensionality === Symbol("1d") ? MatrixTo2DBatch : MatrixTo3DBatch
@@ -70,7 +70,7 @@ function densewsdiscriminator1d(hiddensize=32, num_hiddenlayers=3, imgsize=imgsi
     buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("1d"); kwargs...)
 end
 
-function densewsdiscriminator2d(hiddensize=64, num_hiddenlayers=3, imgsize=imgsize2d;
+function densewsdiscriminator2d(hiddensize=64, num_hiddenlayers=4, imgsize=imgsize2d;
                                 kwargs...)
     buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("2d"); kwargs...)
 end

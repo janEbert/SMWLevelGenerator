@@ -47,7 +47,7 @@ function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize,
         BatchToMatrix(generator_inputsize),
         Flux.Dense(generator_inputsize, hiddensize, activation),
         hiddenlayers...,
-        Flux.Dense(hiddensize, prod(imgsize), output_activation),
+        Flux.Dense(hiddensize, prod(Int, imgsize), output_activation),
         matrixtobatch(imgsize)
     ) |> togpu
     DenseWassersteinGeneratorModel(model, Dict{Symbol, Any}(
@@ -70,7 +70,7 @@ function densewsgenerator1d(hiddensize=32, num_hiddenlayers=3, generator_inputsi
                kwargs...)
 end
 
-function densewsgenerator2d(hiddensize=64, num_hiddenlayers=3, generator_inputsize=96,
+function densewsgenerator2d(hiddensize=64, num_hiddenlayers=4, generator_inputsize=96,
                             imgsize=imgsize2d; kwargs...)
     buildmodel(hiddensize, num_hiddenlayers, imgsize, generator_inputsize, Symbol("2d");
                kwargs...)
