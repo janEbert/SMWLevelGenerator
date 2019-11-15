@@ -1,6 +1,16 @@
-\subsubsection{First Screen Generation}
-\label{sec:design-gans}
+\subsection{First Screen Generation}
+\label{sec:first-screen-generation}
 
+% TODO separate this conv part from dense wasserstein model
+% TODO mention GPU clamping
+
+In the following, we will describe implementation details of our GANs,
+which each include a separate discriminator and generator model.
+At first, we will only focus on DCGAN-based models.
+
+First off, as mentioned in section~\ref{sec:julia}, we defined
+convolutional layers without bias which were not included in Flux.jl
+at the time of writing. \\
 Our 1-dimensional GANs automatically adjust their layers to the input
 size. The GANs for training data in 2D and above are implemented with
 manually chosen stride, padding and dilation so the output is the same
@@ -8,31 +18,46 @@ size as the first screen of the level. The input to the discriminators
 of our GANs is the first screen of the level (a vector of 16 elements
 in the 1-dimensional case, a $27 \times 16$ matrix in the
 2-dimensional case and a $27 \times 16 \times l$ cube in the
-3-dimensional case). Unlike our sequence models, neither the
-discriminators nor the generators receive any constant inputs of
-metadata (as the metadata is generated from the GANs' outputs).
+3-dimensional case, where $l$ is the amount of layers). Unlike our
+sequence models, neither the discriminators nor the generators receive
+any constant inputs of metadata (as the metadata is generated from the
+GANs' outputs).
 
 We use the same abstract model class for our GANs that was used for
-the time series prediction models, but extend it with two new classes
-for discriminator and generator models. With this setup, we hope to
-make extending the GAN pipeline with new models as simple as the
-sequence prediction pipeline. Unlike the time series predictors,
-discriminator models do not allow inputs other than those of the form
-$r \times c \times l \times b$ or $c \times l \times b$, where $r$ is
-the amount of rows, $c$ the amount of columns, $l$ the amount of
-layers (channels in image processing) and $b$ the batch size.
-Generator models only take a vector of latent noise of a size
-determined during model creation. This vector is only given as a
-matrix due to batching (the model handles this automatically).
+the sequence prediction models, but extend it with two new classes for
+discriminator and generator models. With this setup, we hope to make
+extending the GAN pipeline with new models as simple as the sequence
+prediction pipeline. Unlike the sequence predictors, discriminator
+models do not allow inputs other than those of the form
+$r \times c \times l \times b$ or $c \times l \times b$ (for the
+1-dimensional case), where $r$ is the amount of rows, $c$ the amount
+of columns, $l$ the amount of layers (channels in image processing)
+and $b$ the batch size. We prodive layers to easily convert from this
+format to a matrix and back (the matrix format is required for fully
+connected layers). Generator models only take a vector of latent noise
+of a size determined during model creation. This vector is only given
+as a matrix due to batching (the model handles this automatically).
 
 The first convolutional layer of the discriminator is not followed by
-a normalization layer. We follow the example of~
-% TODO cite dcgan tut and wsgan
-.
+a normalization layer. We follow the example
+of~\cite{PytorchExamples2019}
+and~\cite{martinarjovskyMartinarjovskyWassersteinGAN2019}. The
+discriminators use the leaky rectified linear unit activation function
+for hidden layers while the generators use the standard rectified
+linear unit activation.
 
-Our GANs have the following parameters for their convenience
+We will now describe the differences of the fully connected GAN to the
+DCGANs. The fully connected GANs automatically convert the inputs from
+the batched form explained above to a matrix and back internally. They
+also do not use batch normalization but instead have a dropout layer
+every second layer starting from the first hidden layer onwards (just
+like for the LSTMs but with fully connected layers instead of LSTM
+layers; see section~\ref{sec:generation-via-prediction} for a more
+detailed description).
+
+Our DCGANs have the following parameters for their convenience
 constructors (these are once again the same for the DCGAN and
-Wasserstein DCGAN, but with different defaults). It should also be
+Wasserstein DCGAN but with different defaults). It should also be
 noted that while kernel size is adjustable, this requires building new
 models as the expected sizes will be different. For the discriminators:
 \begin{itemize}
@@ -41,7 +66,7 @@ models as the expected sizes will be different. For the discriminators:
   powers of two (starting from $2^{0}$ up to $2^{k - 2}$, where $k$ is
   the amount of convolutional layers\footnote{We get $k - 2$ because
     the start counting powers from zero and because the final
-    convolutional layer shrinks the number of features to one.}).
+    convolutional layer shrinks the number of features to one.})
 \item normalization layer after each convolutional layer
 \item activation function after each normalization layer
 \item final activation function
@@ -52,13 +77,18 @@ For the generators:
 \item amount of features in each convolutional layer's kernel; the
   features sizes follow the same rules as the discriminator but in
   reverse (starting form $2^{k - 2}$ and shrinking towards $2^{0}$,
-  where $k$ is the amount of convolutional layers).
+  where $k$ is the amount of convolutional layers)
+\item size of latent noise vector (the input size)
 \item normalization layer after each convolutional layer
 \item activation function after each normalization layer
 \item final activation function
 \item kernel window size
 \end{itemize}
-The input and output sizes are also adjustable for each model.
+Finally, our fully connected GANs have the same parameters as the
+LSTMs in section~\ref{sec:generation-via-prediction} except that the
+final activation function can also be specified. Furthermore, the
+generator accepts the size of the latent noise vector as well. \\
+The input and output sizes are also adjustable for all model types.
 
 After the GANs, the metadata predictor follows in our pipeline. That
 model will be described in the next section.

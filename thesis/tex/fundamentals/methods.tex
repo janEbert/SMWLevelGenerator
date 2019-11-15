@@ -1,29 +1,34 @@
 \subsection{Methods}
+\label{sec:methods}
 
 In this section, we will introduce the primary ideas we apply to
 obtain a level generation pipeline. Before we list the methods, we
-take a look at how to actually achieve our task. By analyzing inputs
-of large dimensionality (the level's layers and metadata), we want to
-generate similar, new levels of large dimensionality (also level
-layers and metadata). This is a very complex problem, requiring
-careful planning and a lot of computational power to train a model
-large or refined enough to capture all the essences we need for a new,
-enjoyable level. A generative adversarial network~(GAN)~\cite{} would~-- with
-the present knowledge in machine learning~-- be exceptionally hard to
-train on a task this large. A lack of proper computational resources
-makes this even harder as training a GAN requires training two full
-models in parallel. While a GAN would be perfect in theory, allowing
-us to learn the dataset without a modified loss function, due to the
-issues with training, we try another approach: Generating only the
-first screen by the GAN and generating the rest of the level using
-time series prediction methods makes training much easier, allowing us
-to get a simpler solution to our problem. Although the results will
-not be as good as with a GAN due to a non-adversarial loss function,
-with some tuning, good results should be achievable. Also, training of
-both, the GAN and the time series prediction model, should be much
-easier than a single, large GAN. To generate the metadata, we use a
-simple image processing model that predicts a level's metadata based
-on its first screen.
+take a look at how to actually achieve our task. In the final
+subsection, we will talk about Julia, the language the system is
+programmed in.
+
+By analyzing inputs of large dimensionality (the level's layers and
+metadata), we want to generate similar, new levels of large
+dimensionality (also level layers and metadata). This is a very
+complex problem, requiring careful planning and a lot of computational
+power to train a model large or refined enough to capture all the
+essences we need for a new, enjoyable level. A generative adversarial
+network~(GAN)~\cite{goodfellowGenerativeAdversarialNetworks2014}
+would~-- with the present knowledge in machine learning~-- be
+exceptionally hard to train on a task with a dimensionality this
+large. A lack of proper computational resources makes this even harder
+as training a GAN requires training two full models in parallel. While
+a GAN would be perfect in theory, allowing us to learn the dataset
+without a modified loss function, due to the issues with training, we
+try another approach: Generating only the first screen by the GAN and
+generating the rest of the level using sequence prediction methods
+makes training much easier, allowing us to get a simpler solution to
+our problem. Although the results will not be as good as with a GAN
+due to a non-adversarial loss function, with some tuning, good results
+should be achievable. Also, training of both, the GAN and the sequence
+prediction model, should be much easier than a single, large GAN. To
+generate the metadata, we use a simple image processing model that
+predicts a level's metadata based on its first screen.
 
 The methods will not be listed in pipeline-sequential ordering (the
 order in which they will be applied to obtain a generated level) but
@@ -40,12 +45,12 @@ the generative model and input to the sequence predictor.
 \subsubsection{Sequence Prediction}
 
 Tasked with completing an unfinished sequence, we turn our head to
-time series prediction models. The models we are using are also called
+sequence prediction models. The models we are using are also called
 sequence-to-sequence models. We will closely orient ourselves on
 natural language processing techniques, specifically natural language
 generation. The models we evaluate are long short-term memory
 (LSTM)~\cite{hochreiterLongShorttermMemory1997} stacks (with a
-fully-connected layer at the end) and transformer-based models. More
+fully connected layer at the end) and transformer-based models. More
 specifically, the LSTM stacks are based on
 \emph{char-rnns}~\cite{andrejKarpathyCharrnn2019} and the
 transformer-based models are
@@ -54,17 +59,17 @@ a baseline, we implement a non-learning random model that simply
 outputs sequences of either 1 or 0 based on a user-supplied chance
 $p \in [0, 1]$.
 
+The reason we use techniques from natural language processing is that
+levels share many similarities with natural language: References to
+both prior and future objects, long-term dependencies and some amount
+of redundant information.
+
 A long short-term memory cell's specialty is a recurrent memory that
 ``remembers'' values of a sequence, depending on connection weights.
 Due to this behaviour, it is well suited for both non-linear and
 long-term dependencies in Mario levels as both can be captured from
 any prior, relevant sequence element (for example, a keyhole at the
 beginning of the level implies a key later and the other way around).
-
-An LSTM cell is defined by the following formulae (reproduced from~\cite{hochreiterLongShorttermMemory1997}):
-\begin{align*}
-  y
-\end{align*}
 
 Transformer-based architectures rely on a combination of attention
 functions with multiple ``heads'' with dense networks. These networks
@@ -80,29 +85,119 @@ GPT-2 architecture~\cite{radfordLanguageModelsAre}, transformers'
 capabilities in natural language generation tasks have been shown.
 While those models used an amount of parameters that could not
 possibly be trained with our available resources, we hope that a
-smaller, trainable model may still be marginally larger than an LSTM
-with the same training time.
-
-% TODO viel zu erklären hier
+smaller, with our resources trainable model may still be marginally
+larger than an LSTM with the same training time.
 
 \subsubsection{Generative Methods}
 
-For our only actual generator, we supply two models: a standard deep
+For our only actual generator, we supply three models: a standard deep
 convolutional generative adversarial network
-(DCGAN)~\cite{radfordUnsupervisedRepresentationLearning2016} and a
-Wasserstein GAN (also based on the DCGAN). Both of these models are
-specially fitted with stride, padding and dilation values to obtain
-the correct screen size ($27 \times 16 \times ch$, where $ch$ is the
-number of channels or layers).
+(DCGAN)~\cite{radfordUnsupervisedRepresentationLearning2016} and two
+Wasserstein GANs; one also based on the DCGAN, another based on
+fully connected layers. Both of these models are specially fitted with
+stride, padding and dilation values to obtain the correct screen size
+($27 \times 16 \times ch$, where $ch$ is the number of channels or
+layers).
 % TODO
 
 \subsubsection{Image Processing}
+\label{sec:image-processing}
 
-Similar to the generative models, we also use a deep convolutional
-network with stride, padding and dilation values fitted towards the
-correct screen size.
+Similar to the generative models, we also use both a deep
+convolutional network with stride, padding and dilation values fitted
+towards the correct screen size and a model consisting of
+fully connected layers.
 % TODO
 
+\subsubsection{Julia}
+\label{sec:julia}
+
+Our source code is written in
+Julia~\cite{bezansonJuliaFreshApproach2017}. Julia is a programming
+language whose version 1.0 was released in August 2018. It presents
+itself as combining the performance of C, the productivity of Python
+and the generality of Lisp. With this combination, we were able to
+quickly assemble a very performant, high-level data processing and
+low-level machine learning pipeline. It enabled us to~-- for
+example~-- change our array types as desired, enabling incremental
+optimization from standard arrays to GPU arrays to sparse arrays to
+sparse GPU arrays. While starting with version 1.1.0, we updated our
+code to now work with versions 1.2.0 (the latest stable release) and
+1.3.0-rc4 (the latest release candidate for the upcoming version).
+Running on a 1.3-version enables multi-threading for the data iterator
+which may improve training speed by a large magnitude. Our recommended
+version to run the code is therefore 1.3.0-rc4 (once 1.3.0 is released
+as stable, that should be used instead as we expect no syntax or
+functionality changes).
+
+While Julia brought great advantages with it, some disadvantages were
+issues and bugs in packages and the general immaturity of the
+ecosystem (an example concerning array primitives for sparse arrays on
+the GPU is given below). \\
+We also encountered several issues with model checkpoints. We first
+switched from an unmerged pull request branch of
+BSON.jl~\cite{JuliaIOBSONJl2019,SavingArrayLength} (which contains an
+issue only later addressed in the master branch) to the HDF5-based
+JLD.jl~\cite{JuliaIOJLDJl2019}, then to the more unstable
+JLD2.jl~\cite{JuliaIOJLD2Jl2019} due to not being able to save
+functions in JLD.jl. With JLD2.jl, there were still errors which led
+us to also check out an unmerged pull request for this
+package~\cite{MaybeFixTypename}. Finally, we settled with JLD2.jl for
+our model checkpoints as the most stable package. While the files are
+generally larger than those of BSON.jl, we are sure the stability is
+worth it. In the end, we support saving to either BSON.jl or JLD2.jl
+with JLD2.jl as the default.
+
+Let us now list the rest of the packages most important for our
+preprocessing and training pipeline. While this list does not cover
+all packages used, we hope to give an overview of what the ecosystem
+made or will make possible, why these packages were important for us
+and what issues we still had to solve manually.
+
+For the databases containing our training data, we used
+JuliaDB.jl~\cite{JuliaComputingJuliaDBJl2019} as it supports parallel
+and out-of-core processing of the database. While these features have
+not been used yet, they should future-proof our program for cluster
+computing and databases that do not fit into memory on a host PC.
+Smaller statistics (especially pre-computed ones that we load to
+reduce startup time) were saved as CSV files which
+CSV.jl~\cite{JuliaDataCSVJl2019} was a great fit for.
+
+For our machine learning purposes, we used
+Flux.jl~\cite{FluxMLFluxJl2019}. While Flux.jl is one of the most
+mature deep learning frameworks in Julia, it still missed some basic
+functionality. For example, we had to define our own convolutional
+layer without bias as it had not been included at the time of writing.
+With Zygote.jl~\cite{FluxMLZygoteJl2019}, a framework supporting
+source-to-source automatic differentiation that is to be included in
+Flux.jl, we hope to gain a large speed boost in the future with
+compiled derivatives as they will not have to be tracked at runtime.
+\\
+Due to Flux.jl's GPU support enabled by
+CuArrays.jl~\cite{JuliaGPUCuArraysJl2019}, we were able to achieve
+great performance even while writing specialized loss functions. We
+were sadly not able to support the CUDA library for sparse arrays,
+cuSPARSE~\cite{CuSPARSE}; due to the CuArrays.jl package not
+supporting all the features necessary for us (for example simple
+primitives like array slicing) for cuSPARSE arrays, we had to
+uncomment the few lines pertaining to sparse CUDA arrays at the
+moment. These issues were not in the scope of this thesis but will be
+addressed at a later point, surely granting another large speedup to
+any GPU-run training pipeline that uses sparse matrices (the training
+pipline is explained in section~\ref{sec:training-pipeline}). Another,
+more low-level GPU package,
+CUDAnative.jl~\cite{JuliaGPUCUDAnativeJl2019}, allowed us to write our
+own specialized CUDA kernels with ease. This enabled faster clamping
+of the parameters of our Wasserstein GANs. \\
+The Transformers.jl~\cite{peterChengchingwenTransformersJl2019}
+package was essential in getting the GPT-2 transformer model to run.
+While the model is not included in the package as of the writing of
+this thesis, the given building blocks were a large help. Finally,
+TensorBoardLogger.jl~\cite{vicentiniPhilipVincTensorBoardLoggerJl2019}
+enabled a great tool for monitoring training progress:
+TensorBoard~\cite{TensorBoard}.
+
+% TODO
 
 %%% Local Variables:
 %%% mode: latex

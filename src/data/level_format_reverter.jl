@@ -5,23 +5,31 @@ using SparseArrays: SparseMatrixCSC
 using ..DataCompressor: unsparse
 using ..LevelBuilder: flagdict
 using ..LevelFormatter
-using ..LevelStatistics: uniquevanillatiles
+using ..LevelStatistics: uniquevanillatiles, screenrowshori
 using ..SecondaryLevelStats
 using ..Sprites
 
 export from1d, from2d, from3d
 
-# Do not use this to try and construct a level.
 function from1d(data::AbstractVector,
                 ::Union{AbstractString,
-                             AbstractChar}=dimensionality_defaultflags[Symbol("1d")])
-    round.(UInt16, data)
+                        AbstractChar}=dimensionality_defaultflags[Symbol("1d")],
+                keep::UInt16=0x100, empty::UInt16=0x025)
+    level = Matrix{UInt16}(undef, screenrowshori, length(data))
+    row = round.(UInt16, data)
+    keep_rowindices = row .== 1
+    level[firstindex(level, 1):end - 3, :] .= empty
+    # Ground row of level 0x105.
+    level[end - 2, keep_rowindices]   .= keep
+    level[end - 2, .~keep_rowindices] .= empty
+    level[end - 1:end, :] .= empty
+    return level
 end
 
 function from2d(data::AbstractMatrix,
                 ::Union{AbstractString,
                         AbstractChar}=dimensionality_defaultflags[Symbol("2d")],
-                keep::UInt16=0x100, empty::UInt16=0x025,)
+                keep::UInt16=0x100, empty::UInt16=0x025)
     level = round.(UInt16, data)
     keepindices = level .== 1
     level[keepindices]   .= keep

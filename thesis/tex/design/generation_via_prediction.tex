@@ -1,4 +1,5 @@
 \subsection{Generation via Prediction}
+\label{sec:generation-via-prediction}
 
 We now focus on implementation details and design decisions regarding
 our sequence prediction models. In the following explanations, we will
@@ -64,18 +65,18 @@ Our transformer creation functions take the following parameters:
 \begin{itemize}
 \item number of attention heads
 \item hidden size of each attention head
-\item hidden size of each fully-connected layer
+\item hidden size of each fully connected layer
 \item amount of transformer blocks
 \item final activation function of each block
 \item probability of dropout after attention layers and after each
   block
-\item probability of dropout after fully-connected layers
+\item probability of dropout after fully connected layers
 \item final activation function
 \end{itemize}
 The random model has a single parameter~-- its activation chance. \\
 The input and output sizes are also adjustable for each model.
 
-Having described the implementation details for our time series
+Having described the implementation details for our sequence
 prediction models, we will now do the same for our GANs.
 
 %%% Local Variables:

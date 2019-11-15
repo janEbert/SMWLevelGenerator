@@ -1,9 +1,45 @@
-\subsubsection{Predicting Metadata}
+\subsection{Predicting Metadata}
 
 This section lists implementation details for the final type of model
-in this thesis: the metadata predictor. This model receives the same
-inputs as the discriminators, described in
-section~\ref{sec:design-gans}.
+in this thesis: the metadata predictor. As mentioned in
+section~\ref{sec:image-processing}, just like for GANs, there are
+convolutional and fully connected models. These models receive the
+same inputs as the discriminators described in
+section~\ref{sec:first-screen-generation}. Similarly, the MLP-based
+model correctly reshapes its inputs. \\
+The convolutional metadata predictors were all manually created due to
+the mix of convolutional and pooling layers. We use maximal pooling
+layers, each followed by a dropout layer, throughout the network but
+opt for average pooling as the last pooling operation before the fully
+connected output layer.
+
+Our models give as output the constant part of the inputs supplied to
+the sequence predictors. Additionally, they output the bit which
+indicates whether the level ends at this screen (also an input to the
+sequence predictor; explained in
+section~\ref{sec:generation-via-prediction}).
+
+The convolutional metadata predictors have the following parameters:
+\begin{itemize}
+\item starting amount of features in each convolutional layer (these
+  are multiplied by powers of two, first increasing, then decreasing.
+  Due the models being hand-crafted, there is no clear formula; we
+  therefore suggest a curious reader to take a look at the source
+  code.)
+\item probability of dropout
+\item final activation function
+\item kernel window size
+\end{itemize}
+The parameters of the MLP-based metadata prediction models are the
+same as those for the MLP-based discriminators in
+section~\ref{sec:first-screen-generation}.
+As for all models, both the input and output size may be adjusted as well.
+
+We have now not only described our methods in theory but also laid
+them out practically, showing which options a casual user has and how
+they affect the models internally. Next, we will combine the methods
+to get our level generation pipeline.
+
 
 %%% Local Variables:
 %%% mode: latex

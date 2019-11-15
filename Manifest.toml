@@ -205,14 +205,6 @@ git-tree-sha1 = "e4d8b2947fb7d855ba84d6ce8481c8351563fec9"
 uuid = "497a8b3b-efae-58df-a0af-a86822472b78"
 version = "0.9.13"
 
-[[EchoStateNetworks]]
-deps = ["LinearAlgebra", "Random"]
-git-tree-sha1 = "b9796ae50f594cf4ed78b05520d76657795be9ad"
-repo-rev = "6a8c3a7c64fd60a213124bf4e1d2fc405840534a"
-repo-url = "https://github.com/peakbook/EchoStateNetworks.jl"
-uuid = "70c7bd9f-a953-56a3-8d23-4cd9b6517657"
-version = "0.0.0"
-
 [[FFTW]]
 deps = ["AbstractFFTs", "BinaryProvider", "Conda", "Libdl", "LinearAlgebra", "Reexport", "Test"]
 git-tree-sha1 = "6c5b420da0b8c12098048561b8d58f81adea506f"

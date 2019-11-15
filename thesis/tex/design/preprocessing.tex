@@ -12,10 +12,11 @@ assuming we are able to compactly store eight entries per byte
 (usually you need one byte per entry but as we have binary values, we
 can store one value in one bit). With approximately 17\,000 levels, we
 would then need
-$3.75 MB * 17\,000 \approx 63.75 \cdot 10^{3} MB = 63.75 GB$ (GB are
-gigabytes) of storage at maximum. While data is cheap and our number
-is the absolute maximum amount of storage we may need, we would like
-our data to be more compact for both efficiency and portability.
+$3.75\text{ MB} * 17\,000 \approx 63.75 \cdot 10^{3}\text{ MB} =
+63.75\text{ GB}$ (GB are gigabytes) of storage at maximum. While data
+is cheap and this calculated number is the absolute maximum amount of
+storage we may need, we would like our data to be more compact for
+both efficiency and portability.
 
 Even the data containing only layers of all tiles is so large that
 keeping the full database in 8 gigabytes of memory is not
@@ -40,8 +41,7 @@ have to iterate over our whole sparse array but only over the
 non-zeros when computing a matrix-matrix-multiplication, for example.
 Also, CUDA supports sparse arrays via the cuSPARSE library, enabling
 GPU-powered sparse array computations as well (this sadly has not
-worked out yet; we will explain why later).
-% TODO have we explained this yet?
+worked out yet, as we explained in section~\ref{sec:julia}).
 Julia does not support sparse arrays above two dimensions, so we
 needed to write our own custom storage for 3-dimensional sparse
 arrays. While we managed to greatly reduce storage space this way, it
@@ -55,6 +55,13 @@ All in all, we now support four different compression levels with two
 possible extensions based on compact bit arrays where each value fits
 into one bit. The final size of the 3-dimensional database containing
 all layers is roughly 430~MB if the highest compression level is used.
+For sharing purposes, this data can be heavily compressed due to
+recurring values, resulting in a 28~MB file when compressed with the
+combination of \texttt{tar} and \texttt{gzip}. A
+\texttt{7zip}-compressed file consumes about 16~MB of
+storage\footnote{No special settings for \texttt{tar}, but the
+  following command line options for 7zip: \texttt{-t7z -mx9 -m0=lzma2
+    -mmt2 -md1024m}}.
 \medskip
 
 Before we explain further, we should note the following: We create a
@@ -122,8 +129,8 @@ only 3D data needs extra implementations):
 We also provide specific model creation functions for each of these
 dimensionalities, giving the user simple access to the correct model
 for each task. We will discuss this in detail in
-sections~\ref{sec:generation_via_prediction}
-and~\ref{sec:first_screen_generation}.
+sections~\ref{sec:generation-via-prediction}
+and~\ref{sec:first-screen-generation}.
 
 In this thesis, we work with data in column form. This means that our
 models read levels column per column from the left to right. We
@@ -147,10 +154,10 @@ This is a comprehensive list of all of them:
   are seen.
 \item We omit a lot of metadata. (We suggest the omitted data is not
   related to level generation. As they are already parsed, including
-  the omitted data is simply a matter of uncommenting a few lines of
-  code, adjusting model inputs and database generation.)
-\item Test levels and unfinished not contained in the original game
-  are contained in the dataset.
+  the omitted data is only a matter of uncommenting and adding a few
+  lines of code, adjusting model inputs and database generation.)
+\item Test levels or unfinished levels~-- unless contained in the
+  original game~-- are in the dataset.
 \item Any data that is out of bounds is ignored (for example, sprites
   may ``fall down'' from a position above level bounds; we ignore
   those).
@@ -171,12 +178,16 @@ This is a comprehensive list of all of them:
 \item Expanded levels (as designated by Lunar Magic) are excluded.
 \item If the database contains a single sprite, we exclude all levels
   without a sprite header.
-\item Our GAN does not generate the metadata in addition to the first
-  screen (which would be more correct due to correlations in the
-  network).
+  % TODO other section for these?
+\item Our sequence prediction models do not train on their own
+  generated data which may improve results (this could be done with a
+  multitude of different steps into the future).
+\item Our GAN does not generate the level's metadata in addition to
+  its first screen (which would be more correct due to correlations in
+  the network).
 \end{itemize}
 
-We will now explain our time series prediction methods in detail.
+We will now explain our sequence prediction methods in detail.
 
 %%% Local Variables:
 %%% mode: latex

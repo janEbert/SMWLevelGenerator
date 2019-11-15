@@ -1,0 +1,52 @@
+\subsection{Level Generation}
+\label{sec:level-generation}
+
+With the GAN outputs and the following metadata, the sequence
+predictors have all the information they would get from a ``real''
+level. Applying the models in sequence is one step; then we need to
+reverse the whole preprocessing pipeline, converting our abstract
+representation back to the correct formats that Lunar Magic can write
+into the ROM. In this section, we will step through this pipeline one
+by one.
+
+% TODO reference to figure of pipeline (should be somewhere previous)
+We start with random input of the correct size for our generator,
+apply it and get our first screen. At this point, we could also apply
+our discriminator and retry generating the first screen if the emitted
+value is too low. We have not implemented this feature. \\
+The first screen is then fed into the metadata predictor, giving us
+the generated level's metadata. This constant input is then combined
+with the level in the correct specification, depending on whether the
+sequence predictor accepts columns or singular tiles, and all but the
+last sequence elements have their ``sequence has not ended yet''-bit
+set to 1. \\
+The data is now in the same format as a preprocessed real level and we
+apply the sequence prediction model sequentially until we either find
+that the ``sequence has not ended yet''-bit is 0  or until the maximum
+level length is obtained. This complete output is then postprocessed:
+
+As we skipped some metadata when preparing our data, we need to fill
+these with default values. For all unknown data, we chose either the
+defaults of level 261, the first level Lunar Magic presents to the
+user, or give ``empty'' values if possible. Before we give an example,
+remember that Lunar Magic dumps sprite data in a ``.sp'' file
+containing the sprite header and then data of individual sprites in
+the level until a designator for the ending is encountered. If our
+model does not generate sprites, we don't write back the sprites in
+level 261 but instead set the sprite header to that of level 261 but
+do not give any sprites themselves. While the sprite header is
+required, sprites are not.
+
+Note that during all of this, the user does not have to worry about
+dimensionality in any way; all of this is handled automatically if the
+model was supplied the correct parameters (such as its
+dimensionality). We even allow writing back 1-dimensional outputs by
+hardcoding the default row the generated output should be placed in
+and by filling the rest of the level with empty tiles.
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../../SMWLevelGenerator"
+%%% End:
+
