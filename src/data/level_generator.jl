@@ -254,18 +254,14 @@ function writescreen(g_model::AbstractGenerator; input=randinput(g_model),
                      write_rom=nothing, number=0x105)
     first_screen = generate_reshaped_screen(g_model)
     from_method = get_from_method(g_model)
-    try
-        first_screen = from_method(first_screen,
-                                   dimensionality_defaultflags[
-                                       g_model.hyperparams[:dimensionality]])
-    catch e
-        e isa InexactError || rethrow()
+    if Symbol(get(g_model.hyperparams, :output_activation, Flux.sigmoid)) === :tanh
+        # Normalize: (-1, 1) -> (0, 1)
         first_screen .+= 1
         first_screen ./= 2
-        first_screen = from_method(first_screen,
-                                   dimensionality_defaultflags[
-                                       g_model.hyperparams[:dimensionality]])
     end
+    first_screen = from_method(first_screen,
+                               dimensionality_defaultflags[
+                                   g_model.hyperparams[:dimensionality]])
     first_screen = deconstructlevel(first_screen)
     writemap(first_screen, "Level" * string(number, base=16, pad=3))
     lmwrite(write_rom, number)
