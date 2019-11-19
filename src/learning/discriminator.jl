@@ -4,7 +4,6 @@ import Flux
 
 using ....InputStatistics
 using ....ModelUtils
-import ....ModelUtils: makeloss
 
 export DiscriminatorModel
 export discriminator1d, discriminator2d, discriminator3dtiles, discriminator3d
@@ -19,20 +18,6 @@ end
 Flux.@treelike DiscriminatorModel
 
 (model::DiscriminatorModel)(input) = model.model(input)
-
-"""
-Return a 2-argument loss function applying the discriminator to the batch of input images
-`x` and return the loss of the predictions in relation to whether the images were real
-(`y[i] == 1`).
-"""
-function makeloss(model::DiscriminatorModel, criterion)
-    function loss(x, y)
-        # Discriminator loss
-        y_hat = vec(model(x))
-        l = sum(criterion.(y_hat, y))
-        return l
-    end
-end
 
 function powers(n, b=2)
     res = []

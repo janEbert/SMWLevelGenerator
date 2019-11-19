@@ -6,8 +6,9 @@ import Flux
 
 using ....InputStatistics
 using ....ModelUtils
-import ....ModelUtils: makeloss
+import ....ModelUtils: makeloss, step!
 using ....LSTM: makehiddenlayers
+using ....WassersteinGAN.WassersteinDiscriminator: wsmakeloss, wsstep!
 
 export DenseWassersteinDiscriminatorModel
 export densewsdiscriminator1d, densewsdiscriminator2d
@@ -29,13 +30,14 @@ Return a 2-argument loss function applying the discriminator to the batch of inp
 `x` and return the loss of the predictions in relation to whether the images were real
 (`y[i] == 1`).
 """
-function makeloss(model::DenseWassersteinDiscriminatorModel, ::Any)
-    function loss(x, ::Any)
-        # Discriminator loss
-        y_hat = model(x)
-        l = mean(y_hat)
-        return l
-    end
+makeloss(model::DenseWassersteinDiscriminatorModel, ::Any) = wsmakeloss(model)
+
+function step!(d_model::DenseWassersteinDiscriminatorModel, d_params, d_optim, d_loss,
+               real_batch, real_target, g_model, fake_target,
+               generator_inputsize, curr_batch_size)
+    wsstep!(d_model, d_params, d_optim, d_loss,
+            real_batch, real_target, g_model, fake_target,
+            generator_inputsize, curr_batch_size)
 end
 
 function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize, dimensionality;

@@ -3,10 +3,12 @@ module WassersteinGenerator
 using Statistics: mean
 
 import Flux
+using Flux.Tracker: gradient
+#using Zygote
 
 using ....InputStatistics
 using ....ModelUtils
-import ....ModelUtils: makeloss
+import ....ModelUtils: makeloss, step!
 using ....GAN.Generator: buildmodel, manualmodel
 
 export WassersteinGeneratorModel
@@ -25,7 +27,14 @@ Flux.@treelike WassersteinGeneratorModel
 Return a 2-argument loss function applying the generator to the random input `x` and return
 the loss in relation to the discriminator's loss.
 """
-function makeloss(g_model::WassersteinGeneratorModel, d_model, ::Any)
+makeloss(g_model::WassersteinGeneratorModel, d_model, ::Any) = wsmakeloss(g_model, d_model)
+
+function step!(g_model::WassersteinGeneratorModel, g_params, g_optim, g_loss,
+               real_target, curr_batch_size)
+    wsstep!(g_model, g_params, g_optim, g_loss, real_target, curr_batch_size)
+end
+
+function wsmakeloss(g_model::AbstractGenerator, d_model)
     function loss(x, ::Any)
         # Generator loss
         fakes = g_model(x)
@@ -34,6 +43,20 @@ function makeloss(g_model::WassersteinGeneratorModel, d_model, ::Any)
         l = mean(y_hat)
         return l
     end
+end
+
+function wsstep!(g_model::AbstractGenerator, g_params, g_optim, g_loss,
+                 real_target, curr_batch_size)
+    noise_batch = makenoisebatch(g_model, curr_batch_size)
+
+    # Use real labels for modified loss function
+    g_l = calculate_loss(g_model, g_loss, noise_batch, real_target)
+
+    grads = gradient(() -> -g_l, g_params)
+
+    # Update
+    Flux.Optimise.update!(g_optim, g_params, grads)
+    return g_l
 end
 
 function wsgenerator1d(num_features=16, generator_inputsize=32, imgsize=imgsize1d; kwargs...)

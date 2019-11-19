@@ -6,8 +6,9 @@ import Flux
 
 using ....InputStatistics
 using ....ModelUtils
-import ....ModelUtils: makeloss
+import ....ModelUtils: makeloss, step!
 using ....LSTM: makehiddenlayers
+using ....WassersteinGAN.WassersteinGenerator: wsmakeloss, wsstep!
 
 export DenseWassersteinGeneratorModel
 export densewsgenerator1d, densewsgenerator2d, densewsgenerator3dtiles, densewsgenerator3d
@@ -26,14 +27,12 @@ Return a 2-argument loss function applying the generator to the random input `x`
 the loss in relation to the discriminator's loss.
 """
 function makeloss(g_model::DenseWassersteinGeneratorModel, d_model, ::Any)
-    function loss(x, ::Any)
-        # Generator loss
-        fakes = g_model(x)
-        y_hat = d_model(fakes)
-        # The paper says `mean` but the code has nothing (implying `sum` for us)
-        l = mean(y_hat)
-        return l
-    end
+    wsmakeloss(g_model, d_model)
+end
+
+function step!(g_model::DenseWassersteinGeneratorModel, g_params, g_optim, g_loss,
+               real_target, curr_batch_size)
+    wsstep!(g_model, g_params, g_optim, g_loss, real_target, curr_batch_size)
 end
 
 function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize,

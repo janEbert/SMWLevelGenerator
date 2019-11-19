@@ -16,7 +16,7 @@ import ..LevelFormatter
 
 export LearningModel, AbstractDiscriminator, AbstractGenerator
 export makeloss, dataiteratorparams, calculate_loss, step!
-export makesoftloss, soft_criterion
+export makesoftloss, soft_criterion, makenoisebatch
 export toggle_gpu, should_use_gpu, togpu
 export mae, bce, leakyrelu
 export BatchToMatrix, MatrixTo3DBatch, MatrixTo2DBatch, ConvNoBias, ConvTransposeNoBias
@@ -160,6 +160,89 @@ function soft_criterion(#=model=#::Any, y_hat, y, criterion)
         end
     end
     return total
+end
+
+
+# Standard GAN discriminator loss.
+"""
+Return a 2-argument loss function applying the discriminator to the batch of input images
+`x` and return the loss of the predictions in relation to whether the images were real
+(`y[i] == 1`).
+"""
+function makeloss(model::AbstractDiscriminator, criterion)
+    function loss(x, y)
+        # Discriminator loss
+        y_hat = vec(model(x))
+        l = sum(criterion.(y_hat, y))
+        return l
+    end
+end
+
+function calculate_loss(::AbstractDiscriminator, loss, input, target)
+    loss(input, target)
+end
+
+# Standard GAN discriminator training step.
+function step!(d_model::AbstractDiscriminator, d_params, d_optim, d_loss,
+               real_batch, real_target, g_model, fake_target, curr_batch_size)
+    # Train on real batch
+    d_l_real = calculate_loss(d_model, d_loss, real_batch, real_target)
+
+    # Train on fake batch
+    noise_batch = makenoisebatch(g_model, curr_batch_size)
+    fake_batch = g_model(noise_batch)
+
+    d_l_fake = calculate_loss(d_model, d_loss, fake_batch, fake_target)
+
+    grads = gradient(() -> d_l_real + d_l_fake, d_params)
+
+    # Update
+    Flux.Optimise.update!(d_optim, d_params, grads)
+    return d_l_real, d_l_fake
+end
+
+
+# Standard GAN generator loss.
+"""
+Return a 2-argument loss function applying the generator to the random input `x` and return
+the loss in relation to the discriminator's loss.
+"""
+function makeloss(g_model::AbstractGenerator, d_model, criterion)
+    function loss(x, y)
+        # Generator loss
+        fakes = g_model(x)
+        y_hat = d_model(fakes)
+        l = sum(criterion.(y_hat, y))
+        return l
+    end
+end
+
+function calculate_loss(::AbstractGenerator, loss, input, target)
+    loss(input, target)
+end
+
+# Standard GAN generator training step.
+function step!(g_model::AbstractGenerator, g_params, g_optim, g_loss,
+               real_target, curr_batch_size)
+    noise_batch = makenoisebatch(g_model, curr_batch_size)
+
+    # Use real labels for modified loss function
+    g_l = calculate_loss(g_model, g_loss, noise_batch, real_target)
+
+    grads = gradient(() -> g_l, g_params)
+
+    # Update
+    Flux.Optimise.update!(g_optim, g_params, grads)
+    return g_l
+end
+
+function makenoisebatch(g_model, curr_batch_size)
+    generator_inputsize = g_model.hyperparams[:inputsize]
+    if g_model.hyperparams[:dimensionality] === Symbol("1d")
+        noise_batch = togpu(randn(1, generator_inputsize, curr_batch_size))
+    else
+        noise_batch = togpu(randn(1, 1, generator_inputsize, curr_batch_size))
+    end
 end
 
 

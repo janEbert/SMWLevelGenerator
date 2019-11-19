@@ -2,10 +2,12 @@
 module MetadataPredictor
 
 import Flux
+using Flux.Tracker: gradient
+#using Zygote
 
 using ..InputStatistics
 using ..ModelUtils
-import ..ModelUtils: makeloss
+import ..ModelUtils: makeloss, step!
 
 export MetadataModel
 export metapredictor1d, metapredictor2d, metapredictor3dtiles, metapredictor3d
@@ -23,13 +25,28 @@ Flux.@treelike MetadataModel
 Return a 2-argument loss function applying the metadata predictor to the batch of input
 images `x` and return the loss of the predictions in relation to the actual data.
 """
-function makeloss(model::MetadataModel, criterion)
+makeloss(model::MetadataModel, criterion) = metamakeloss(model, criterion)
+
+function step!(model::MetadataModel, meta_params, meta_optim, meta_loss,
+               real_batch, meta_batch)
+    metastep!(model, meta_params, meta_optim, meta_loss, real_batch, meta_batch)
+end
+
+function metamakeloss(model::LearningModel, criterion)
     function loss(x, y)
         y_hat = model(x)
         @inbounds l = sum(@views criterion(vec(y_hat[:, i]), vec(y[:, i]))
                           for i in axes(y_hat, 2))
         return l
     end
+end
+
+function metastep!(model::MetadataModel, meta_params, meta_optim, meta_loss,
+                   real_batch, meta_batch)
+    l = calculate_loss(model, meta_loss, real_batch, meta_batch)
+    grads = gradient(() -> l, meta_params)
+    Flux.Optimise.update!(meta_optim, meta_params, grads)
+    return l
 end
 
 function manual1dmodel(num_features, imgsize, outputsize, dimensionality=Symbol("1d");

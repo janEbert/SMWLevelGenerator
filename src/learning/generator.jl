@@ -4,7 +4,6 @@ import Flux
 
 using ....InputStatistics
 using ....ModelUtils
-import ....ModelUtils: makeloss
 
 export GeneratorModel
 export generator1d, generator2d, generator3dtiles, generator3d
@@ -19,20 +18,6 @@ end
 Flux.@treelike GeneratorModel
 
 (model::GeneratorModel)(input) = model.model(input)
-
-"""
-Return a 2-argument loss function applying the generator to the random input `x` and return
-the loss in relation to the discriminator's loss.
-"""
-function makeloss(g_model::GeneratorModel, d_model, criterion)
-    function loss(x, y)
-        # Generator loss
-        fakes = g_model(x)
-        y_hat = d_model(fakes)
-        l = sum(criterion.(y_hat, y))
-        return l
-    end
-end
 
 function buildmodel(num_features, imgsize, generator_inputsize, dimensionality;
                     modeltype=GeneratorModel, normalization=Flux.BatchNorm,

@@ -275,68 +275,23 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
                 # Discriminator
 
-                # Clamp weights
-                if use_wasserstein_loss
-                    for p in d_params
-                        clamp!(p.data, -0.01f0, 0.01f0)
-                    end
-                end
-
-                # Train on real batch
-                d_l_real = d_loss(real_batch, real_target)
-                d_l = Flux.data(d_l_real)
-                push!(d_trainlosses_real, d_l)
-                @tblog tblogger d_loss_real=d_l
-
-                # Train on fake batch
-                if g_model.hyperparams[:dimensionality] === Symbol("1d")
-                    noise_batch = togpu(randn(1, generator_inputsize, curr_batch_size))
-                else
-                    noise_batch = togpu(randn(1, 1, generator_inputsize, curr_batch_size))
-                end
-                fake_batch = g_model(noise_batch)
-
-                d_l_fake = d_loss(fake_batch, fake_target)
-                d_l += Flux.data(d_l_fake)
-                push!(d_trainlosses_fake, Flux.data(d_l_fake))
-                @tblog tblogger d_loss_fake=Flux.data(d_l_fake) log_step_increment=0
-
-                # TODO remove this parameter and implement step! like for other models
-                if use_wasserstein_loss
-                    grads = gradient(() -> d_l_fake - d_l_real, d_params)
-                else
-                    grads = gradient(() -> d_l_real + d_l_fake, d_params)
-                end
-
-                # Update
-                Flux.Optimise.update!(d_optim, d_params, grads)
-
+                d_training_step!(d_model, d_params, d_optim, d_loss,
+                                 real_batch, real_target, g_model, fake_target,
+                                 generator_inputsize, curr_batch_size,
+                                 d_trainlosses_real, d_trainlosses_fake, tblogger)
 
+
                 if steps % d_steps_per_g_step == 0 && (steps > d_warmup_steps || steps == 0)
                     # Generator
-                    # Use real labels for modified loss function
-                    g_l = g_loss(noise_batch, real_target)
-                    push!(g_trainlosses, Flux.data(g_l))
-                    @tblog tblogger g_loss=Flux.data(g_l) log_step_increment=0
-                    if use_wasserstein_loss
-                        grads = gradient(() -> -g_l, g_params)
-                    else
-                        grads = gradient(() -> g_l, g_params)
-                    end
-
-                    # Update
-                    Flux.Optimise.update!(g_optim, g_params, grads)
+                    g_training_step!(g_model, g_params, g_optim, g_loss,
+                                     real_target, curr_batch_size, g_trainlosses, tblogger)
                 end
 
 
                 # Metadata predictor
                 if !isnothing(meta_model) && (overfit_on_batch || j > length(testindices))
-                    l = meta_loss(real_batch, meta_batch)
-                    push!(meta_trainlosses, Flux.data(l))
-                    @tblog tblogger meta_predictor_loss=Flux.data(l) log_step_increment=0
-                    grads = gradient(() -> -l, meta_params)
-
-                    Flux.Optimise.update!(meta_optim, meta_params, grads)
+                    meta_training_step!(meta_model, meta_params, meta_optim, meta_loss,
+                                        real_batch, meta_batch, meta_trainlosses, tblogger)
                 end
 
 
@@ -477,6 +432,39 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
             d_testlosses, g_trainlosses, testfakes, db, trainindices, const_noise)
 end
 
+
+function d_training_step!(d_model, d_params, d_optim, d_loss,
+                          real_batch, real_target, g_model, fake_target, curr_batch_size,
+                          d_trainlosses_real, d_trainlosses_fake, tblogger)
+    d_l_real, d_l_fake = map(Flux.data,
+                             step!(d_model, d_params, d_optim, d_loss,
+                                   real_batch, real_target, g_model, fake_target,
+                                   curr_batch_size))
+
+    push!(d_trainlosses_real, d_l_real)
+    @tblog tblogger d_loss_real=d_l_real
+    push!(d_trainlosses_fake, d_l_fake)
+    @tblog tblogger d_loss_fake=d_l_fake log_step_increment=0
+
+    return d_l_real, d_l_fake
+end
+
+function g_training_step!(g_model, g_params, g_optim, g_loss, real_target, curr_batch_size,
+                          g_trainlosses, tblogger)
+    g_l = Flux.data(step!(g_model, g_params, g_optim, g_loss, real_target, curr_batch_size))
+    push!(g_trainlosses, g_l)
+    @tblog tblogger g_loss=g_l log_step_increment=0
+    return g_l
+end
+
+function meta_training_step!(meta_model, meta_params, meta_optim, meta_loss,
+                             real_batch, meta_batch, meta_trainlosses, tblogger)
+    l = Flux.data(step!(meta_model, meta_params, meta_optim, meta_loss,
+                        real_batch, meta_batch))
+    push!(meta_trainlosses, l)
+    @tblog tblogger trainloss=l log_step_increment=0
+    return l
+end
 
 function testmodel(d_model, d_loss, fake_batch, const_fake_target)
     Flux.testmode!(d_model)

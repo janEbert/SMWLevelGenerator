@@ -5,8 +5,9 @@ import Flux
 
 using ..InputStatistics
 using ..ModelUtils
-import ..ModelUtils: makeloss
+import ..ModelUtils: makeloss, step!
 using ..LSTM: makehiddenlayers
+using ..MetadataPredictor: metamakeloss, metastep!
 
 export DenseMetadataModel
 export densemetapredictor1d, densemetapredictor2d
@@ -25,13 +26,11 @@ Flux.@treelike DenseMetadataModel
 Return a 2-argument loss function applying the metadata predictor to the batch of input
 images `x` and return the loss of the predictions in relation to the actual data.
 """
-function makeloss(model::DenseMetadataModel, criterion)
-    function loss(x, y)
-        y_hat = model(x)
-        @inbounds l = sum(@views criterion(vec(y_hat[:, i]), vec(y[:, i]))
-                          for i in axes(y_hat, 2))
-        return l
-    end
+makeloss(model::DenseMetadataModel, criterion) = metamakeloss(model, criterion)
+
+function step!(model::DenseMetadataModel, meta_params, meta_optim, meta_loss,
+               real_batch, meta_batch)
+    metastep!(model, meta_params, meta_optim, meta_loss, real_batch, meta_batch)
 end
 
 function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize,
