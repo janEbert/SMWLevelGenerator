@@ -28,7 +28,6 @@ Base.@kwdef struct GANTrainingParameters
     lr::Float64                           = 0.0002
     betas::Tuple{Float64, Float64}        = (0.5, 0.999)
     batch_size::Integer                   = 32
-    use_wasserstein_loss::Bool            = true
     d_warmup_steps::Integer               = 0
     d_steps_per_g_step::Integer           = 1
     logevery::Integer                     = 200
@@ -154,7 +153,6 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
     epochs               = params.epochs
     batch_size           = params.batch_size
-    use_wasserstein_loss = params.use_wasserstein_loss
     d_warmup_steps       = params.d_warmup_steps
     d_steps_per_g_step   = params.d_steps_per_g_step
     logdir               = params.logdir
