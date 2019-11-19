@@ -62,12 +62,13 @@ function wsstep!(d_model::AbstractDiscriminator, d_params, d_optim, d_loss,
     fake_batch = g_model(noise_batch)
 
     d_l_fake = calculate_loss(d_model, d_loss, fake_batch, fake_target)
+    d_l = d_l_fake - d_l_real
 
-    grads = gradient(() -> d_l_fake - d_l_real, d_params)
+    grads = gradient(() -> d_l, d_params)
 
     # Update
     Flux.Optimise.update!(d_optim, d_params, grads)
-    return d_l_real, d_l_fake
+    return d_l, d_l_real, d_l_fake
 end
 
 function wsdiscriminator1d(num_features=16, imgsize=imgsize1d; kwargs...)

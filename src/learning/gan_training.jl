@@ -30,6 +30,7 @@ Base.@kwdef struct GANTrainingParameters
     batch_size::Integer                   = 32
     d_warmup_steps::Integer               = 0
     d_steps_per_g_step::Integer           = 1
+    const_noise_batch_size::Integer       = 16
     logevery::Integer                     = 200
     saveevery::Integer                    = 1000
     use_bson::Bool                        = false
@@ -118,9 +119,11 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
         g_trainlosses = eltype(d_trainlosses_real)[]
         if g_model.hyperparams[:dimensionality] === Symbol("1d")
-            const_noise = togpu(randn(1, generator_inputsize, 16))
+            const_noise = togpu(randn(1, generator_inputsize,
+                                      params.const_noise_batch_size))
         else
-            const_noise = togpu(randn(1, 1, generator_inputsize, 16))
+            const_noise = togpu(randn(1, 1, generator_inputsize,
+                                      params.const_noise_batch_size))
         end
 
         past_steps = d_steps
@@ -273,16 +276,17 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
                 # Discriminator
 
-                d_training_step!(d_model, d_params, d_optim, d_loss,
-                                 real_batch, real_target, g_model, fake_target,
-                                 generator_inputsize, curr_batch_size,
-                                 d_trainlosses_real, d_trainlosses_fake, tblogger)
+                d_l = d_training_step!(d_model, d_params, d_optim, d_loss,
+                                       real_batch, real_target, g_model,
+                                       fake_target, curr_batch_size,
+                                       d_trainlosses_real,
+                                       d_trainlosses_fake, tblogger)[1]
 
 
                 if steps % d_steps_per_g_step == 0 && (steps > d_warmup_steps || steps == 0)
                     # Generator
-                    g_training_step!(g_model, g_params, g_optim, g_loss,
-                                     real_target, curr_batch_size, g_trainlosses, tblogger)
+                    g_l = g_training_step!(g_model, g_params, g_optim, g_loss, real_target,
+                                           curr_batch_size, g_trainlosses, tblogger)
                 end
 
 
@@ -308,7 +312,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                         max_d_testlossdigits = ndigits(trunc(Int, max_d_testloss)) + 5
                     end
                     if g_l > max_g_loss
-                        max_g_loss = Flux.data(g_l)
+                        max_g_loss = g_l
                         max_g_lossdigits = ndigits(trunc(Int, max_g_loss)) + 5
                     end
                     push!(d_testlosses, testloss)
@@ -346,8 +350,8 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                              * "$(lpad(@sprintf("%.4f", testloss), max_d_testlossdigits)) "
                              * "test, $(lpad(@sprintf("%.4f", d_l), max_d_lossdigits)) "
                              * "train; generator loss: "
-                             * "$(lpad(@sprintf("%.4f", Flux.data(g_l)), max_g_lossdigits))"
-                             * "; mean time per step: "
+                             * "$(lpad(@sprintf("%.4f", g_l), max_g_lossdigits)); "
+                             * "mean time per step: "
                              * "$(@sprintf("%.3f", timediff / steps)) s; "
                              * "total time: $(@sprintf("%.2f", timediff / 60)) min.")
                     if !isnothing(meta_model)
@@ -434,17 +438,17 @@ end
 function d_training_step!(d_model, d_params, d_optim, d_loss,
                           real_batch, real_target, g_model, fake_target, curr_batch_size,
                           d_trainlosses_real, d_trainlosses_fake, tblogger)
-    d_l_real, d_l_fake = map(Flux.data,
-                             step!(d_model, d_params, d_optim, d_loss,
-                                   real_batch, real_target, g_model, fake_target,
-                                   curr_batch_size))
+    d_l, d_l_real, d_l_fake = map(Flux.data,
+                                  step!(d_model, d_params, d_optim, d_loss,
+                                        real_batch, real_target, g_model, fake_target,
+                                        curr_batch_size))
 
     push!(d_trainlosses_real, d_l_real)
     @tblog tblogger d_loss_real=d_l_real
     push!(d_trainlosses_fake, d_l_fake)
     @tblog tblogger d_loss_fake=d_l_fake log_step_increment=0
 
-    return d_l_real, d_l_fake
+    return d_l, d_l_real, d_l_fake
 end
 
 function g_training_step!(g_model, g_params, g_optim, g_loss, real_target, curr_batch_size,
@@ -466,7 +470,7 @@ end
 
 function testmodel(d_model, d_loss, fake_batch, const_fake_target)
     Flux.testmode!(d_model)
-    d_l = Flux.data(d_loss(fake_batch, const_fake_target))
+    d_l = Flux.data(calculate_loss(d_model, d_loss, fake_batch, const_fake_target))
     Flux.testmode!(d_model, false)
     return d_l
 end
@@ -477,7 +481,7 @@ function testmodel(meta_model, testiter, testindices, batch_size, meta_loss)
 
     for i in 1:cld(length(testindices), batch_size)
         real_batch, meta_batch = map(togpu, take!(testiter))
-        l = Flux.data(meta_loss(real_batch, meta_batch))
+        l = Flux.data(calculate_loss(meta_model, meta_loss, real_batch, meta_batch))
         push!(testlosses, l)
     end
     Flux.testmode!(meta_model, false)

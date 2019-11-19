@@ -163,7 +163,6 @@ function meta_trainingloop!(model::Union{LearningModel, AbstractString},
 
                 training_step!(model, parameters, optim, trainiter, loss,
                                trainlosses, tblogger)
-
                 steps += 1
 
                 if logevery != 0 && steps % logevery == 0
@@ -261,7 +260,7 @@ function testmodel(model, testiter, testindices, batch_size, loss)
 
     for i in 1:cld(length(testindices), batch_size)
         real_batch, meta_batch = map(togpu, take!(testiter))
-        l = Flux.data(loss(real_batch, meta_batch))
+        l = Flux.data(calculate_loss(model, loss, real_batch, meta_batch))
         push!(testlosses, l)
     end
     Flux.testmode!(model, false)

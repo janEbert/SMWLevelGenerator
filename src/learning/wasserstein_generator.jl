@@ -51,8 +51,9 @@ function wsstep!(g_model::AbstractGenerator, g_params, g_optim, g_loss,
 
     # Use real labels for modified loss function
     g_l = calculate_loss(g_model, g_loss, noise_batch, real_target)
+    g_l = -g_l
 
-    grads = gradient(() -> -g_l, g_params)
+    grads = gradient(() -> g_l, g_params)
 
     # Update
     Flux.Optimise.update!(g_optim, g_params, grads)
