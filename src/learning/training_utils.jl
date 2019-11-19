@@ -75,6 +75,14 @@ function tocpu(optim::Flux.ADAM)
     return Flux.ADAM(optim.eta, optim.beta, cpu_states)
 end
 
+function tocpu(optim::Flux.RMSProp)
+    cpu_acc = IdDict()
+    for (k, accval) in optim.acc
+        cpu_acc[tocpu(k)] = tocpu(accval)
+    end
+    return Flux.RMSProp(optim.eta, optim.rho, cpu_acc)
+end
+
 """
     maketarget(batch, is_joined_padded::Val{Bool}, is_matrix::Val{Bool})
 
