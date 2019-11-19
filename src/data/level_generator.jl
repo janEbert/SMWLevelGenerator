@@ -15,7 +15,7 @@ using ..LevelDeconstructor
 using ..LevelWriter
 
 export predict_hack, predict_vanilla, predict_levels, predict_level
-export generate_reshaped_screen, generatelevel, writelevel, writelevels
+export generate_reshaped_screen, generatelevel, writescreen, writelevel, writelevels
 
 const lmpath = joinpath(@__DIR__, "..", "..", "tools",
                                   "lm304ebert21892usix", "Lunar Magic.exe")
@@ -29,13 +29,17 @@ const vanilladbids_2d_t = 0x2b0a:0x2bf4
 # TODO Take `reverse_rows` into account!
 # TODO and `each_tile`
 
-function setup_generation(modelpath::AbstractString, dbpath::AbstractString)
-    cp = BSON.load(modelpath)
-    model = togpu(cp[:model])
-    db = DataIterator.loaddb(dbpath)
+function get_from_method(model::LearningModel)
     dimensionality = model.hyperparams[:dimensionality]
     from_method = getfield(LevelFormatReverter,
                            Symbol("from" * String(dimensionality)[1:2]))
+end
+
+function setup_prediction(modelpath::AbstractString, dbpath::AbstractString)
+    cp = BSON.load(modelpath)
+    model = togpu(cp[:model])
+    db = DataIterator.loaddb(dbpath)
+    from_method = get_from_method(model)
     return model, db, from_method
 end
 
@@ -51,7 +55,7 @@ function predict_vanilla(modelpath::AbstractString,
                          dbpath::AbstractString="levels_3d_flags_tesx.jdb",
                          indices=vanilladbids_2d_t; first_screen=true,
                          write_rom::Union{AbstractString, Nothing}=nothing)
-    model, db, from_method = setup_generation(modelpath, dbpath)
+    model, db, from_method = setup_prediction(modelpath, dbpath)
     # Create in parallel, write to ROM sequentially.
     for row in filter(r -> r.id in indices, db)
         sequence, constantinput = predict_from_row(model, row, from_method, first_screen)
@@ -76,7 +80,7 @@ function predict_levels(amount, modelpath::AbstractString,
                         dbpath::AbstractString="levels_3d_flags_tesx.jdb";
                         first_screen=true, seed=nothing,
                         write_rom::Union{AbstractString, Nothing}=nothing)
-    model, db, from_method = setup_generation(modelpath, dbpath)
+    model, db, from_method = setup_prediction(modelpath, dbpath)
     indices = collect(one(UInt):convert(UInt, length(db)))
     if !isnothing(seed)
         shuffle!(MersenneTwister(seed), indices)
@@ -106,7 +110,7 @@ function predict_level(modelpath::AbstractString,
                        dbpath::AbstractString="levels_3d_flags_tesx.jdb",
                        dbid::UInt64=UInt64(SequenceGenerator.level105dbid_3d_tesx);
                        first_screen=true, write_rom=nothing)
-    model, db, from_method = setup_generation(modelpath, dbpath)
+    model, db, from_method = setup_prediction(modelpath, dbpath)
     sequence, constantinput = predict_from_id(model, db, dbid, from_method, first_screen)
     writeback(sequence, constantinput)
     lmwrite(write_rom, constantinput.number)
@@ -244,14 +248,35 @@ function generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
         return level, constantinput
     end
 end
+
+
+function writescreen(g_model::AbstractGenerator; input=randinput(g_model),
+                     write_rom=nothing, number=0x105)
+    first_screen = generate_reshaped_screen(g_model)
+    from_method = get_from_method(g_model)
+    try
+        first_screen = from_method(first_screen,
+                                   dimensionality_defaultflags[
+                                       g_model.hyperparams[:dimensionality]])
+    catch e
+        e isa InexactError || rethrow()
+        first_screen .+= 1
+        first_screen ./= 2
+        first_screen = from_method(first_screen,
+                                   dimensionality_defaultflags[
+                                       g_model.hyperparams[:dimensionality]])
+    end
+    first_screen = deconstructlevel(first_screen)
+    writemap(first_screen, "Level" * string(number, base=16, pad=3))
+    lmwrite(write_rom, number)
+end
 
 function writelevel(predictor::LearningModel, g_model::AbstractGenerator,
                     meta_model::LearningModel; first_screen=true, input=randinput(g_model),
                     write_rom=nothing)
     level, constantinput = generatelevel(predictor, g_model, meta_model,
                                          first_screen=first_screen, input=input)
-    from_method = getfield(LevelFormatReverter,
-                           Symbol("from" * String(dimensionality)[1:2]))
+    from_method = get_from_method(predictor)
     level, constantinput = deconstructall(level, constantinput, from_method)
 
     writeback(level, constantinput)

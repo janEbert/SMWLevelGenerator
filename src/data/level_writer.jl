@@ -1,6 +1,6 @@
 module LevelWriter
 
-export writeback
+export writeback, writemap
 
 function find_free_name(name, prefix="", suffix=".map")
     !ispath(prefix * name * suffix) && return name

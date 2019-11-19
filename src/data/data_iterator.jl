@@ -380,23 +380,23 @@ function construct_empty_result(data::AbstractVector{<:AbstractSparseMatrix},
 end
 
 """
-    normalize!(sequence, mean, variance)
+    normalize!(sequence, mean, covariance)
 
-Normalize the given sequence using the given mean and variance of its underlying
-distribution to mean 0 and variance 1.
+Normalize the given sequence using the given mean and covariance of its underlying
+distribution to mean 0 and covariance 1.
 If `mean` is `nothing`, the mean is not normalized. This is useful to keep sparsity in data.
 """
-function normalize!(sequence, mean, variance)
-    invvariance = inv(variance)
+function normalize!(sequence, mean, covariance)
+    invcovariance = inv(covariance)
     if isnothing(mean)
-        sequence .*= invvariance
+        sequence .*= invcovariance
     else
-        sequence .= (sequence .- mean) .* invvariance
+        sequence .= (sequence .- mean) .* invcovariance
     end
 end
 
-function normalize!(sequence::AbstractVector{<:AbstractArray}, mean, variance)
-    normalize!.(sequence, mean, variance)
+function normalize!(sequence::AbstractVector{<:AbstractArray}, mean, covariance)
+    normalize!.(sequence, mean, covariance)
 end
 
 

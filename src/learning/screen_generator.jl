@@ -23,7 +23,7 @@ Return the generator's output for the given input.
 """
 function generatescreen(g_model::AbstractGenerator, input=randinput(g_model))
     Flux.testmode!(g_model)
-    output = g_model(togpu(input))
+    output = Flux.cpu(Flux.data(g_model(togpu(input))))
     Flux.testmode!(g_model, false)
     return output
 end
@@ -35,7 +35,7 @@ Return the meta model's output when applied to the given (first) screen.
 """
 function generatemetadata(meta_model::LearningModel, screen)
     Flux.testmode!(meta_model)
-    output = meta_model(screen)
+    output = Flux.cpu(Flux.data(meta_model(togpu(screen))))
     Flux.testmode!(meta_model, false)
     return output
 end
