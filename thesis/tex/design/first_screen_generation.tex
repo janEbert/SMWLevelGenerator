@@ -42,9 +42,10 @@ The first convolutional layer of the discriminator is not followed by
 a normalization layer. We follow the example
 of~\cite{PytorchExamples2019}
 and~\cite{martinarjovskyMartinarjovskyWassersteinGAN2019}. The
-discriminators use the leaky rectified linear unit activation function
-for hidden layers while the generators use the standard rectified
-linear unit activation.
+discriminators use the leaky rectified linear unit activation
+function~\cite{RectifierNeuralNetworks2019} for hidden layers while
+the generators use the standard rectified linear unit
+activation~\cite{RectifierNeuralNetworks2019}.
 
 We will now describe the differences of the fully connected GAN to the
 DCGANs. The fully connected GANs automatically convert the inputs from

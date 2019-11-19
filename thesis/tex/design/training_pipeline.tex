@@ -1,9 +1,76 @@
 \subsection{Training Pipeline}
 \label{sec:training-pipeline}
 
-Our training pipeline
-%TODO MEGA VIEL
+Our training pipeline for each type of model consists of two major
+parts: the data iterator which reads and preprocesses our data and the
+actual training loop acting on the data we obtain from the iterator. \\
+Let us first focus on the data iterators and after that on our
+individual training loops.
 
+\subsubsection{Data Iterators}
+
+Since the data iterator is responsible for shaping our data to the
+form expected by the model, we still need to apply some more
+preprocessing to the already preprocessed data contained in the
+database. As this may be a large bottleneck, we focused on optimizing
+data iteration (on any 1.3-version and above of Julia, this bottleneck
+can mostly be avoided by simply using enough data iterator threads).
+As we explained in section~\ref{sec:preprocessing}, our data is stored
+differently if using the highest compression level. We also explained
+that storing our 3-dimensional data in ``columnar'' layers (sliced
+along the second dimension) is more performant. With the columnar
+format, we can simply concatenate the individual matrices and obtain
+our level in a cache-efficient way. \\
+All data iterators use thread-safe channels which the user can take
+values out of without having to worry about race conditions and
+synchronicity.
+
+We do not normalize our data in any way. Normalizing the mean would
+mean losing the sparsity patterns which improve computational
+efficiency by a large margin. We decided against normalizing the
+covariance due to the differences in the way we shape our data for
+each model and the subsequent influences on unrelated results. First
+off, we cannot calculate the covariance of the unmodified dataset due
+to the differences in sequence lengths. While we could easily compute
+the covariance of our dataset by padding all sequences to the same
+length, using this result to normalize data for \emph{all} models
+would affect~-- for example~-- sequence models that allow sequences of
+different lengths in an undesired way. This is because we normalize
+their input data based on data that is nonexistent in their view (the
+padded zeros).
+
+With the added randomness of the order the data iterator threads
+output their data (due to operating system scheduling and other
+factors~-- this randomness is not affected by a random number generator
+seed), we cannot guarantee reproducible results if using threads.
+While we could adjust the iterators to synchronize so results are
+perfectly reproducible, we decided to not implement this feature as we
+assume this would largely hinder efficiency. In the future, an option
+to enable perfect reproducibility would be a good improvement. \\
+To minimize overhead, we keep each thread running in an endless loop,
+meaning the user needs to keep track of how many training examples
+they need for each epoch. In an earlier implementation, an iterable
+data iterator was used but we decided this minor convenience was not
+worth having to start multiple threads on each training and test
+epoch.
+
+The data iterator for first screen data works similar to the other but
+has fewer options as we do not need to iterate over the first screen
+but supply it as a whole. With this, we do not need to handle possibly
+iterating over each tile and~-- with that option activated~-- in which
+direction to iterate (each ``columnar'' slice from top to bottom or
+bottom to top). We also have not found the need to worry about padding
+and supporting different inputs for different models (as of yet).
+Obviously, we still need to support the different dimensionalities of
+data. \\
+This data iterator also supplies a tuple of values for simplicity: the
+first screen and the constant input of each level. This enables us to
+reuse the iterator for both GAN and metadata predictor training.
+
+\subsubsection{Training Loops}
+
+
+% TODO MEGA VIEL
 
 %%% Local Variables:
 %%% mode: latex

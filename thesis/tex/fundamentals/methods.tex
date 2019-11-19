@@ -43,6 +43,27 @@ the generative model and input to the sequence predictor.
 % TODO picture of pipeline here or maybe at end of section
 
 \subsubsection{Sequence Prediction}
+\label{sec:sequence-prediction}
+
+The function describing our sequence prediction task in the
+3-dimensional case is
+\begin{equation*}
+  f: \mathbb{R}^{(k + 1 + r \cdot l) \times c} \to \mathbb{R}^{(1 + r \cdot l) \times c},\ c \in \mathbb{N}^{+},
+\end{equation*}
+where $k$ is the size of a constant input of metadata (explained in
+section~\ref{sec:generation-via-prediction}), $r$ is the amount of
+rows in the given level, $l$ is the amount of layers in the given
+level and $c$ is the amount of columns in the input (this is
+variable). The added 1 in the first matrix dimensionality is a bit
+determining whether that column is \emph{not} the last column of the
+level. To simplify the above, the input is the level, where each
+column is concatenated with a constant vector of metadata and a 1
+except for the last column which has a 0 at that place. The output
+should be the input (except the constant part of each column) from the
+second column onwards with a vector of zeros at the end if the level
+has ended or the predicted next column of the level otherwise.
+Simplifying even further, given an incomplete level as input, we wish
+to predict the next column for each column in the input.
 
 Tasked with completing an unfinished sequence, we turn our head to
 sequence prediction models. The models we are using are also called
@@ -72,16 +93,18 @@ any prior, relevant sequence element (for example, a keyhole at the
 beginning of the level implies a key later and the other way around).
 
 Transformer-based architectures rely on a combination of attention
-functions with multiple ``heads'' with dense networks. These networks
-improve upon the LSTM with parallelizability which~-- with the
-required computational power for increasingly large neural networks~--
-is a very important factor. Unlike LSTMs, transformers do not keep a
-hidden state; they analyze the whole input at once. Due to not having
-to keep a state, transformers can analyze multiple different inputs at
+functions with multiple ``heads'' and dense networks. These networks
+improve upon the LSTM with parallelizability which~-- with the required
+computational power for increasingly large neural networks~-- is a very
+important factor. Unlike LSTMs, transformers do not keep a hidden
+state; they analyze the whole input at once, masking future sequence
+elements appropriately if desired (as we do). Due to not having to
+keep a state, transformers can analyze multiple different inputs at
 once, non-sequentially. This enables the parallelizability which in
 turn enables faster training enabling larger models. With these
-advantages, transformers should be better suited to the task. With the
-GPT-2 architecture~\cite{radfordLanguageModelsAre}, transformers'
+advantages, we assume that transformers should be better suited to the
+task due to its high dimensionality. With the GPT-2
+architecture~\cite{radfordLanguageModelsAre}, transformers'
 capabilities in natural language generation tasks have been shown.
 While those models used an amount of parameters that could not
 possibly be trained with our available resources, we hope that a
@@ -90,24 +113,84 @@ larger than an LSTM with the same training time.
 
 \subsubsection{Generative Methods}
 
-For our only actual generator, we supply three models: a standard deep
-convolutional generative adversarial network
+The underlying problem in the 3-dimensional domain we are trying to
+solve with our generative models is the following:
+\begin{equation*}
+  g: \mathbb{R}^{n} \to \mathbb{R}^{27 \times 16 \times l},
+\end{equation*}
+where $n$ is the size of a latent vector of noise our model expects
+and $l$ is the amount of layers the generated level will contain.
+
+For our only actual generator in our pipeline, we supply three models:
+a standard deep convolutional generative adversarial network
 (DCGAN)~\cite{radfordUnsupervisedRepresentationLearning2016} and two
-Wasserstein GANs; one also based on the DCGAN, another based on
-fully connected layers. Both of these models are specially fitted with
-stride, padding and dilation values to obtain the correct screen size
-($27 \times 16 \times ch$, where $ch$ is the number of channels or
-layers).
-% TODO
+Wasserstein GANs; one also based on the DCGAN, another based on fully
+connected layers (we will also call these models
+MLP-based~\cite{MultilayerPerceptron2019}). Both of these models are
+specially fitted with stride, padding and dilation values to obtain
+the correct screen size ($27 \times 16 \times l$, where $l$ is the number of
+channels or layers).
+
+We decided on using GANs as our generative models due to prior
+experience and as we imagined their generative capabilities to be
+above autoencoders. Whether this is true should be investigated, for
+example by adding and testing autoencoder models as well which was
+sadly not feasible for us due to time constraints. \\
+Another factor in our decision was the hope that the adversarial
+objective GANs rely on will improve both the quality and the size of
+the space of generated levels as our models will be less prone to
+generalization and not have the issues associated with
+likelihood-based methods that most autoencoders share as well (unlike
+adversarial autoencoders~\cite{makhzaniAdversarialAutoencoders2016}
+which solve these, making them a great fit for future experiments). \\
+Finally, the reason we employ both convolutional and MLP-based GANs is
+primarily due to empirical reasons. While convolutions may suit the
+edges in Super Mario World levels, maybe enough levels employ either
+too small or not enough edges to make the convolutions worthwhile.
 
 \subsubsection{Image Processing}
 \label{sec:image-processing}
 
+Our image processing models, or metadata predictors, learn the
+following function in the 3-dimensional case:
+\begin{equation*}
+  m: \mathbb{R}^{27 \times 16 \times l} \to \mathbb{R}^{k + 1},
+\end{equation*}
+where $k$ is the size of the constant input (briefly introduced in the
+section on sequence prediction models on
+page~\pageref{sec:sequence-prediction} and further explained in
+section~\ref{sec:preprocessing}) and $l$ is the amount of layers. The
+additional dimension is the bit determining whether the level does not
+end here (also described in the sections we just mentioned).
+
 Similar to the generative models, we also use both a deep
 convolutional network with stride, padding and dilation values fitted
-towards the correct screen size and a model consisting of
-fully connected layers.
-% TODO
+towards the correct screen size and a model consisting of fully
+connected layers. Our reasoning for implementing both models was the
+same as for the GANs, described above.
+
+Even though implementing a generative model for both first screen and
+metadata generation would have been the best solution, we decided to
+go the direction of simplicity and decorrelate these two tasks just
+like we did with the sequence prediction models. This has a couple of
+reasons: For one, the added metadata vector would complicate purely
+convolutional GANs. Another reason is that this greatly expands the
+space of input data from data in the set 0 to 1 (or interval from 0 to
+1 inclusively, depending on if we normalize the data) to real numbers
+in the interval from 0 to 512 inclusively (assuming our currently
+supplied metadata; more information in
+section~\ref{sec:preprocessing}). \\
+While we are certain that this influences our generative results
+negatively, we hope that decoupling these two tasks yields us an
+easier time during training. As GAN training is already notoriously
+hard, we estimated that opting for a GAN that implements both tasks
+would make training even harder. This estimate may be wrong as the
+metadata could also help as more correlation in the data may be found.
+
+In the end, while both approaches should be experimented with, this
+excercise will be left to subsequent work. The image processing model
+may be removed in favor of a GAN-only approach if that proves to be
+the better choice.
 
 \subsubsection{Julia}
 \label{sec:julia}
@@ -118,35 +201,37 @@ language whose version 1.0 was released in August 2018. It presents
 itself as combining the performance of C, the productivity of Python
 and the generality of Lisp. With this combination, we were able to
 quickly assemble a very performant, high-level data processing and
-low-level machine learning pipeline. It enabled us to~-- for
-example~-- change our array types as desired, enabling incremental
-optimization from standard arrays to GPU arrays to sparse arrays to
-sparse GPU arrays. While starting with version 1.1.0, we updated our
-code to now work with versions 1.2.0 (the latest stable release) and
-1.3.0-rc4 (the latest release candidate for the upcoming version).
-Running on a 1.3-version enables multi-threading for the data iterator
+low-level machine learning pipeline. It enabled us to~-- for example~--
+change our array types as desired, enabling incremental optimization
+from standard arrays to GPU arrays to sparse arrays to sparse GPU
+arrays. While starting with version 1.1.0, we updated our code to now
+work with versions 1.2.0 (the latest stable release) and 1.3.0-rc5
+(the latest release candidate for the upcoming version). Running on a
+1.3-version or above enables multi-threading for the data iterator
 which may improve training speed by a large magnitude. Our recommended
-version to run the code is therefore 1.3.0-rc4 (once 1.3.0 is released
+version to run the code is therefore 1.3.0-rc5 (once 1.3.0 is released
 as stable, that should be used instead as we expect no syntax or
 functionality changes).
 
 While Julia brought great advantages with it, some disadvantages were
 issues and bugs in packages and the general immaturity of the
 ecosystem (an example concerning array primitives for sparse arrays on
-the GPU is given below). \\
+the GPU is given below). Another issue were long compilation times
+which are to be addressed soon. \\
 We also encountered several issues with model checkpoints. We first
 switched from an unmerged pull request branch of
-BSON.jl~\cite{JuliaIOBSONJl2019,SavingArrayLength} (which contains an
-issue only later addressed in the master branch) to the HDF5-based
-JLD.jl~\cite{JuliaIOJLDJl2019}, then to the more unstable
-JLD2.jl~\cite{JuliaIOJLD2Jl2019} due to not being able to save
-functions in JLD.jl. With JLD2.jl, there were still errors which led
-us to also check out an unmerged pull request for this
-package~\cite{MaybeFixTypename}. Finally, we settled with JLD2.jl for
-our model checkpoints as the most stable package. While the files are
-generally larger than those of BSON.jl, we are sure the stability is
-worth it. In the end, we support saving to either BSON.jl or JLD2.jl
-with JLD2.jl as the default.
+\mbox{BSON.jl}~\cite{JuliaIOBSONJl2019,SavingArrayLength} (which
+contains an issue only later addressed in the master branch) to the
+HDF5-based \mbox{JLD.jl}~\cite{JuliaIOJLDJl2019}, then to the more
+unstable \mbox{JLD2.jl}~\cite{JuliaIOJLD2Jl2019} due to not being able
+to save functions in \mbox{JLD.jl}. With \mbox{JLD2.jl}, there were
+still errors which led us to also check out an unmerged pull request
+for this package~\cite{MaybeFixTypename}. Finally, we settled with
+\mbox{JLD2.jl} for our model checkpoints as the most stable package.
+While the files are generally larger than those of \mbox{BSON.jl}, we
+are sure the stability is worth it. In the end, we support saving to
+either \mbox{BSON.jl} or \mbox{JLD2.jl} with \mbox{JLD2.jl} as the
+default.
 
 Let us now list the rest of the packages most important for our
 preprocessing and training pipeline. While this list does not cover
@@ -155,49 +240,49 @@ made or will make possible, why these packages were important for us
 and what issues we still had to solve manually.
 
 For the databases containing our training data, we used
-JuliaDB.jl~\cite{JuliaComputingJuliaDBJl2019} as it supports parallel
-and out-of-core processing of the database. While these features have
-not been used yet, they should future-proof our program for cluster
-computing and databases that do not fit into memory on a host PC.
-Smaller statistics (especially pre-computed ones that we load to
-reduce startup time) were saved as CSV files which
-CSV.jl~\cite{JuliaDataCSVJl2019} was a great fit for.
+\mbox{JuliaDB.jl}~\cite{JuliaComputingJuliaDBJl2019} as it supports
+parallel and out-of-core processing of the database. While these
+features have not been used yet, they should future-proof our program
+for cluster computing and databases that do not fit into memory on a
+host PC. Smaller statistics (especially pre-computed ones that we load
+to reduce startup time) were saved as CSV files which
+\mbox{CSV.jl}~\cite{JuliaDataCSVJl2019} was a great fit for.
 
-For our machine learning purposes, we used
-Flux.jl~\cite{FluxMLFluxJl2019}. While Flux.jl is one of the most
-mature deep learning frameworks in Julia, it still missed some basic
-functionality. For example, we had to define our own convolutional
-layer without bias as it had not been included at the time of writing.
-With Zygote.jl~\cite{FluxMLZygoteJl2019}, a framework supporting
-source-to-source automatic differentiation that is to be included in
-Flux.jl, we hope to gain a large speed boost in the future with
-compiled derivatives as they will not have to be tracked at runtime.
+For our machine learning needs, we used
+\mbox{Flux.jl}~\cite{FluxMLFluxJl2019}. While \mbox{Flux.jl} is one of
+the most mature deep learning frameworks in Julia, it still missed
+some basic functionality. For example, we had to define our own
+convolutional layer without bias as it had not been included at the
+time of writing. With \mbox{Zygote.jl}~\cite{FluxMLZygoteJl2019}, a
+framework supporting source-to-source automatic differentiation that
+is to be included in \mbox{Flux.jl}, we hope to gain a large speed
+boost in the future with compiled derivatives as they will not have to
+be tracked at runtime.
 \\
-Due to Flux.jl's GPU support enabled by
-CuArrays.jl~\cite{JuliaGPUCuArraysJl2019}, we were able to achieve
-great performance even while writing specialized loss functions. We
-were sadly not able to support the CUDA library for sparse arrays,
-cuSPARSE~\cite{CuSPARSE}; due to the CuArrays.jl package not
-supporting all the features necessary for us (for example simple
-primitives like array slicing) for cuSPARSE arrays, we had to
-uncomment the few lines pertaining to sparse CUDA arrays at the
+Due to \mbox{Flux.jl}'s GPU support enabled by
+\mbox{CuArrays.jl}~\cite{JuliaGPUCuArraysJl2019}, we were able to
+achieve great performance even while writing specialized loss
+functions. We were sadly not able to support the CUDA library for
+sparse arrays, cuSPARSE~\cite{CuSPARSE}; due to the \mbox{CuArrays.jl}
+package not supporting all the features necessary for us (for example
+simple primitives like array slicing) for cuSPARSE arrays, we had to
+comment out the few lines pertaining to sparse CUDA arrays at the
 moment. These issues were not in the scope of this thesis but will be
 addressed at a later point, surely granting another large speedup to
 any GPU-run training pipeline that uses sparse matrices (the training
 pipline is explained in section~\ref{sec:training-pipeline}). Another,
 more low-level GPU package,
-CUDAnative.jl~\cite{JuliaGPUCUDAnativeJl2019}, allowed us to write our
-own specialized CUDA kernels with ease. This enabled faster clamping
-of the parameters of our Wasserstein GANs. \\
-The Transformers.jl~\cite{peterChengchingwenTransformersJl2019}
+\mbox{CUDAnative.jl}~\cite{JuliaGPUCUDAnativeJl2019}, allowed us to
+write our own CUDA kernels with ease. This enabled faster clamping of
+the parameters of our Wasserstein GANs. \\
+The \mbox{Transformers.jl}~\cite{peterChengchingwenTransformersJl2019}
 package was essential in getting the GPT-2 transformer model to run.
 While the model is not included in the package as of the writing of
-this thesis, the given building blocks were a large help. Finally,
-TensorBoardLogger.jl~\cite{vicentiniPhilipVincTensorBoardLoggerJl2019}
+this thesis, the given building blocks were a large help. \\
+Finally,
+\mbox{TensorBoardLogger.jl}~\cite{vicentiniPhilipVincTensorBoardLoggerJl2019}
 enabled a great tool for monitoring training progress:
 TensorBoard~\cite{TensorBoard}.
-
-% TODO
 
 %%% Local Variables:
 %%% mode: latex

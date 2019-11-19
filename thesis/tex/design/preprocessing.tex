@@ -64,6 +64,21 @@ storage\footnote{No special settings for \texttt{tar}, but the
     -mmt2 -md1024m}}.
 \medskip
 
+While compression is great to share data, we are also interested in
+speed. The usage of sparse arrays already nets us an increase in
+calculations involving them. When not highly compressed, we store
+3-dimensional data sliced along the second dimension, so by each layer
+from left to right instead of from ``front to back''. To better
+explain, remember that we \emph{do} store layers ``front to back'' for
+the highest compression level; most layers of object types are empty
+but most columns (slices from left to right) in the level are
+not. % TODO figure
+As a result, highly compressed data is stored in a way making it more
+costly to bring it back together as caching suffers a lot when we need
+each layer column by column (we would need to iterate over all layers
+to get their first columns which we concatenate to obtain our first
+input. This process has to be repeated for all columns).
+
 Before we explain further, we should note the following: We create a
 database for each ``type'' of training data, meaning models can
 operate on well separated databases (which obviously comes at a cost
@@ -116,10 +131,10 @@ For 3-dimensional data it is necessary to provide some information for
 each of these combinations so that~-- as mentioned above~-- both data
 loaders and models can properly handle different input sizes. \\
 This information is the object types the data was created with and the
-input size for sequence prediction models and GANs (these could be
-calculated automatically). Our system is easily extensible to support
-any desired types; we only implemented the following (as mentioned,
-only 3D data needs extra implementations):
+input size for sequence prediction models and GANs (the input sizes
+will be calculated automatically in the future). Our system is easily
+extensible to support any desired types; we only implemented the
+following (as mentioned, only 3D data needs extra implementations):
 \begin{description}
 \item[1d] any 1-dimensional data
 \item[2d] any 2-dimensional data
