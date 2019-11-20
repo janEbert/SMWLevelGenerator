@@ -280,7 +280,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                                        real_batch, real_target, g_model,
                                        fake_target, curr_batch_size,
                                        d_trainlosses_real,
-                                       d_trainlosses_fake, tblogger)[1]
+                                       d_trainlosses_fake, tblogger)
 
 
                 if steps % d_steps_per_g_step == 0 && (steps > d_warmup_steps || steps == 0)
@@ -448,7 +448,7 @@ function d_training_step!(d_model, d_params, d_optim, d_loss,
     push!(d_trainlosses_fake, d_l_fake)
     @tblog tblogger d_loss_fake=d_l_fake log_step_increment=0
 
-    return d_l, d_l_real, d_l_fake
+    return d_l
 end
 
 function g_training_step!(g_model, g_params, g_optim, g_loss, real_target, curr_batch_size,
