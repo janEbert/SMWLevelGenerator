@@ -26,7 +26,10 @@ Base.@kwdef struct GANTrainingParameters
     epochs::Integer = 10
 
     lr::Float64                           = 0.0002
+    optimizer::Type                       = Flux.ADAM
     betas::Tuple{Float64, Float64}        = (0.5, 0.999)
+    optimizer_args::Tuple                 = ()
+    optimizer_kwargs::NamedTuple          = NamedTuple()
     batch_size::Integer                   = 32
     d_warmup_steps::Integer               = 0
     d_steps_per_g_step::Integer           = 1
@@ -84,10 +87,35 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     end
     shuffle!(trainindices)
 
-    lr    = params.lr
-    betas = params.betas
+    optimtype = params.optimizer
+    if Base.isiterable(optimtype) && length(optimtype) > 1
+        d_optimtype, g_optimtype = optimtype
+    else
+        d_optimtype, g_optimtype = (optimtype, optimtype)
+    end
+    lr = params.lr
     length(lr) > 1 || (lr = (lr, lr))
-    length(betas[1]) > 1 || (betas = (betas, betas))
+
+    if params.optimizer === Flux.ADAM
+        betas = params.betas
+        length(betas[1]) > 1 || (betas = (betas, betas))
+        delete!(paramdict, :optimizer_args)
+        delete!(paramdict, :optimizer_kwargs)
+    else
+        optim_args   = params.optimizer_args
+        length(optim_args) > 1 || (optim_args = (optim_args, optim_args))
+
+        optim_kwargs = params.optimizer_kwargs
+        if length(optim_kwargs) <= 1
+            optim_kwargs = (optim_kwargs, optim_kwargs)
+        end
+
+        delete!(paramdict, :betas)
+        # Cannot serialize empty NamedTuple, so substitute it with a normal one.
+        if isempty(paramdict[:optimizer_kwargs])
+            paramdict[:optimizer_kwargs] = ()
+        end
+    end
 
     use_bson = Val(params.use_bson)
 
@@ -96,7 +124,11 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
         (d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_testlosses,
                 d_steps) = load_d_cp(d_model, use_bson)
     else
-        d_optim = Flux.ADAM(lr[1], betas[1])
+        if d_optimtype === Flux.ADAM
+            d_optim = d_optimtype(lr[1], betas[1])
+        else
+            d_optim = d_optimtype(lr[1], optim_args[1]...; optim_kwargs[1]...)
+        end
 
         d_trainlosses_real = Float32[]
         d_trainlosses_fake = eltype(d_trainlosses_real)[]
@@ -114,7 +146,11 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 g_model, use_bson)
         generator_inputsize = g_model.hyperparams[:inputsize]
     else
-        g_optim = Flux.ADAM(lr[2], betas[2])
+        if g_optimtype === Flux.ADAM
+            g_optim = g_optimtype(lr[2], betas[2])
+        else
+            g_optim = g_optimtype(lr[2], optim_args[2]...; optim_kwargs[2]...)
+        end
         generator_inputsize = g_model.hyperparams[:inputsize]
 
         g_trainlosses = eltype(d_trainlosses_real)[]
@@ -555,7 +591,7 @@ end
 
 function load_d_cp(cp::AbstractDict, cpkeytype::Type)
     d_model = togpu(cp[cpkeytype("d_model")]::Flux.Chain)
-    d_optim::Flux.ADAM = cp[cpkeytype("d_optim")]
+    d_optim = cp[cpkeytype("d_optim")]
 
     d_trainlosses_real::Vector{Float32} = cp[cpkeytype("d_trainlosses_real")]
     d_trainlosses_fake::Vector{eltype(d_trainlosses_real)} = cp[
@@ -578,7 +614,7 @@ end
 
 function load_g_cp(cp::AbstractDict, cpkeytype::Type)
     g_model = togpu(cp[cpkeytype("g_model")]::Flux.Chain)
-    g_optim::Flux.ADAM = cp[cpkeytype("g_optim")]
+    g_optim = cp[cpkeytype("g_optim")]
 
     g_trainlosses::Vector{Float32} = cp[cpkeytype("g_trainlosses")]
     testfakes::Vector = cp[cpkeytype("testfakes")]
