@@ -49,10 +49,7 @@ end
 
 function wsstep!(d_model::AbstractDiscriminator, d_params, d_optim, d_loss,
                  real_batch, real_target, g_model, fake_target, curr_batch_size)
-    # Clamp weights
-    for p in d_params
-        clamp!(p.data, -0.01f0, 0.01f0)
-    end
+    # Code clamps weights here
 
     # Train on real batch
     d_l_real = calculate_loss(d_model, d_loss, real_batch, real_target)
@@ -68,6 +65,13 @@ function wsstep!(d_model::AbstractDiscriminator, d_params, d_optim, d_loss,
 
     # Update
     Flux.Optimise.update!(d_optim, d_params, grads)
+
+    # Paper clamps weights here
+    # Clamp weights
+    for p in d_params
+        clamp!(p.data, -0.01f0, 0.01f0)
+    end
+
     return d_l, d_l_real, d_l_fake
 end
 
