@@ -199,7 +199,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
     end
     # Free `paramdict`
     paramdict = nothing
-    log_io = open(joinpath(logdir, params.logfile), "w")
+    log_io = open(joinpath(logdir, params.logfile), "a")
 
     @fastmath try
         logger = SimpleLogger(log_io)
