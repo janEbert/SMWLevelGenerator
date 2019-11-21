@@ -64,6 +64,11 @@ function predict_vanilla(modelpath::AbstractString,
     end
 end
 
+function predict_vanilla(model::LearningModel, db::IndexedTable,
+                         indices=vanilladbids_2d_t; first_screen=true,
+                         write_rom::Union{AbstractString, Nothing}=nothing)
+end
+
 """
     predict_levels(amount, modelpath, dbpath="levels_3d_flags_tesx.jdb";
                    first_screen=true, seed=nothing, write_rom=nothing)
@@ -164,11 +169,11 @@ end
 
 
 """
-    generate_reshaped_screen(g_model::AbstractGenerator, input=randinput(g_model))
+    generate_reshaped_screen(g_model::AbstractGenerator, input=randinputs(g_model))
 
 Return the output of the given generator applied to the given input.
 """
-function generate_reshaped_screen(g_model::AbstractGenerator, input=randinput(g_model))
+function generate_reshaped_screen(g_model::AbstractGenerator, input=randinputs(g_model))
     first_screen = generatescreen(g_model, input)
     reshape_first_screen(g_model, first_screen)
 end
@@ -219,7 +224,7 @@ end
 """
     generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
                   meta_model::LearningModel; first_screen=true,
-                  input=randinput(g_model), return_intermediate=false)
+                  input=randinputs(g_model), return_intermediate=false)
 
 Return the output of the given level predictor, generator and metadata predictor models
 applied sequentially (order: `g_model`, `meta_model`, `predictor`) to the given input.
@@ -232,7 +237,7 @@ results (in the order listed above).
 """
 function generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
                        meta_model::LearningModel; first_screen=true,
-                       input=randinput(g_model), return_intermediate=false)
+                       input=randinputs(g_model), return_intermediate=false)
     gen_first_screen = generatescreen(g_model, input)
     constantinput = generatemetadata(meta_model, gen_first_screen)
     gen_first_screen = reshape_first_screen(g_model, gen_first_screen)
@@ -250,8 +255,8 @@ function generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
 end
 
 
-function writescreen(g_model::AbstractGenerator; input=randinput(g_model),
-                     write_rom=nothing, number=0x105)
+function writescreen(g_model::AbstractGenerator; input=randinputs(g_model),
+                     write_rom=nothing, number::UInt16=0x105)
     first_screen = generate_reshaped_screen(g_model)
     from_method = get_from_method(g_model)
     if Symbol(get(g_model.hyperparams, :output_activation, Flux.sigmoid)) === :tanh
@@ -268,7 +273,7 @@ function writescreen(g_model::AbstractGenerator; input=randinput(g_model),
 end
 
 function writelevel(predictor::LearningModel, g_model::AbstractGenerator,
-                    meta_model::LearningModel; first_screen=true, input=randinput(g_model),
+                    meta_model::LearningModel; first_screen=true, input=randinputs(g_model),
                     write_rom=nothing)
     level, constantinput = generatelevel(predictor, g_model, meta_model,
                                          first_screen=first_screen, input=input)
@@ -282,16 +287,16 @@ end
 
 """
     writelevels(predictor::LearningModel, g_model::AbstractGenerator,
-                meta_model::LearningModel, inputs=randinput(g_model, 512),
+                meta_model::LearningModel, inputs=randinputs(g_model, 512),
                 first_screen=true; write_rom=nothing)
 
 Generate levels from the given inputs. `inputs` can also be an integer – the amount of
 levels to generate.
 """
 function writelevels(predictor::LearningModel, g_model::AbstractGenerator,
-                     meta_model::LearningModel; inputs=randinput(g_model, 512),
+                     meta_model::LearningModel; inputs=randinputs(g_model, 512),
                      first_screen=true, write_rom=nothing)
-    inputs isa Number && (inputs = randinput(g_model, inputs))
+    inputs isa Number && (inputs = randinputs(g_model, inputs))
     for input in inputs
         writelevel(predictor, g_model, meta_model,
                    first_screen=first_screen, input=input, write_rom=write_rom)
@@ -308,7 +313,11 @@ function lmwrite(write_rom, number)
     levelnumber = string(number, base=16)
     @assert isfile(lmpath) ("cannot find Lunar Magic in the given path. Please download it "
                             * "(see setup scripts) and/or change the given path.")
-    run(`wine $lmpath -ReconstructLevel $write_rom $levelnumber`)
+    @static if Sys.iswindows()
+        run(`$lmpath -ReconstructLevel $write_rom $levelnumber`)
+    else
+        run(`wine $lmpath -ReconstructLevel $write_rom $levelnumber`)
+    end
 end
 
 end # module

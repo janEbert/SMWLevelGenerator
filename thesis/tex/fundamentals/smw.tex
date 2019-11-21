@@ -45,18 +45,20 @@ database suitable for feeding into a machine learning model.
 At the time of writing, Super Mario World is almost 30 years old. Due
 to both its age and success, it has been able to gain a large
 following of people not only interested in playing the game but also
-extending it. As with many other~-- especially retro~-- games, there
-is a read-only memory (ROM) hacking scene around Super Mario World. In
+extending it. As with many other~-- especially retro~-- games, there is
+a read-only memory (ROM) hacking scene around Super Mario World. In
 this thesis, ``ROM'' will refer to the digital form of the Super Mario
 World ROM cartridge that would usually be inserted into the Super
 Nintendo Entertainment System; like the data that is burned onto a CD.
 A lot of tools have been created to manipulate Super Mario World; even
 in ways that the original creators hadn't programmed. People are able
 to create their own levels and share them with the masses by uploading
-a patch file that has to be applied to the original game ROM\footnote{Usually
-the American version; CRC32 checksum \texttt{a31bead4}.}, thereby
-avoiding copyright infringement as sharing the ROM, Nintendo's
-protected property, is illegal.
+a patch file that has to be applied to the original game
+ROM\footnote{Usually the American version; CRC32 checksum
+  \texttt{a31bead4}.}, thereby avoiding copyright infringement as
+sharing the ROM, Nintendo's protected property, is illegal. The
+program we use for applying patches is \emph{Floating
+  IPS}~\cite{alcaroAlcaroFlips2019,FloatingIPSFlips}, or \emph{Flips}.
 
 Due to the refined tooling available, users do not need to program in
 65C816 assembly\footnote{The Super Nintendo Entertainment System's 16
@@ -90,8 +92,8 @@ that programmed custom behaviour was out of the scope of this work,
 requiring both parsing the binary 65C816 assembly code and then
 understanding its every behaviour. So we used the ``vanilla'' tag to
 exclude hacks using behaviour not in the original game (also called
-the ``vanilla'' game; we will use these terms interchangeably). Also,
-to assert some form of quality in the dataset, only hacks with a
+the ``vanilla'' game; we will use these terms interchangeably). 
+Also, to assert some form of quality in the dataset, only hacks with a
 rating greater than or equal to 3.0 were downloaded (our rating is the
 mean of all individual ratings, ranging from 1.0 to 5.0 and including
 \emph{None} for no individual ratings). Sadly, some hacks are
@@ -105,6 +107,12 @@ models usually train on in 2019 (with data points in the millions,
 even approaching billions), it may be enough for our models to get a
 grasp on what makes a level enjoyable.
 
+Sadly, the ``vanilla'' tag is user-assigned, meaning users may label
+hacks with some non-vanilla behaviour as ``vanilla'' while others may
+forget to assign the label at all, leaving us with both unclean and
+less data than we would hope for. We include scripts to check for some
+non-vanilla behaviour and remove levels implementing those from our
+dataset. \\
 Finally, as mentioned, hacks operate on the real ROM as patches. Most
 of the levels of the original ROM are usually untouched and remain the
 same even after applying the patch. As we dump all levels contained in

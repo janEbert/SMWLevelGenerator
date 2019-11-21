@@ -46,7 +46,7 @@ the generative model and input to the sequence predictor.
 \label{sec:sequence-prediction}
 
 The function describing our sequence prediction task in the
-3-dimensional case is
+3-dimensional case for per-column prediction is
 \begin{equation*}
   f: \mathbb{R}^{(k + 1 + r \cdot l) \times c} \to \mathbb{R}^{(1 + r \cdot l) \times c},\ c \in \mathbb{N}^{+},
 \end{equation*}
@@ -70,15 +70,15 @@ sequence prediction models. The models we are using are also called
 sequence-to-sequence models. We will closely orient ourselves on
 natural language processing techniques, specifically natural language
 generation. The models we evaluate are long short-term memory
-(LSTM)~\cite{hochreiterLongShorttermMemory1997} stacks (with a
-fully connected layer at the end) and transformer-based models. More
+(LSTM)~\cite{hochreiterLongShorttermMemory1997} stacks (with a fully
+connected layer at the end) and transformer-based models. More
 specifically, the LSTM stacks are based on
 \emph{char-rnns}~\cite{andrejKarpathyCharrnn2019} and the
 transformer-based models are
-\emph{GPT-2}~\cite{radfordLanguageModelsAre,OpenaiGpt22019} models. As
-a baseline, we implement a non-learning random model that simply
-outputs sequences of either 1 or 0 based on a user-supplied chance
-$p \in [0, 1]$.
+\emph{GPT-2}~\cite{radfordLanguageModelsAre,OpenaiGpt22019,HuggingfaceTransformers2019}
+models. As a baseline, we implement a non-learning random model that
+simply outputs sequences of either 1 or 0 based on a user-supplied
+chance $p \in [0, 1]$.
 
 The reason we use techniques from natural language processing is that
 levels share many similarities with natural language: References to

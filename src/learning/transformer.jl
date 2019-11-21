@@ -201,8 +201,8 @@ function GPT2Predictor(inputsize::Integer, outputsize::Integer, num_heads::Integ
                        attnhiddensize::Integer, ffhiddensize::Integer, num_layers::Integer,
                        maxinputsize::Integer; activation=Flux.gelu,
                        p_dropout_ff=0.1f0, p_dropout_attn=0.1f0,
-                       output_activation=identity)
-    GPT2Predictor(
+                       output_activation=identity, init_std=0.02)
+    model = GPT2Predictor(
         Transformers.PositionEmbedding(inputsize, maxinputsize; trainable=true),
         GPT2(
             inputsize, num_heads, attnhiddensize, ffhiddensize, num_layers;
@@ -210,6 +210,7 @@ function GPT2Predictor(inputsize::Integer, outputsize::Integer, num_heads::Integ
         ),
         Transformers.Positionwise(Flux.Dense(inputsize, outputsize, output_activation))
     )
+    init_weights!(model, init_std)
 end
 
 function (gpt::GPT2Predictor)(input, mask=nothing;
@@ -219,7 +220,53 @@ function (gpt::GPT2Predictor)(input, mask=nothing;
     return gpt.output(output)
 end
 
-# TODO correctly initialize layers
+
+init_weights!(layer::GPT2Predictor, std=0.02)       = init_field_weights!(layer, std)
+init_weights!(layer::GPT2, std=0.02)                = init_field_weights!(layer, std)
+init_weights!(layer::GPT2Block, std=0.02)           = init_field_weights!(layer, std)
+init_weights!(layer::Transformers.Basic.PwFFN, std) = init_field_weights!(layer, std)
+
+function init_weights!(layer::Transformers.Basic.MultiheadAttention, std)
+    init_field_weights!(layer, std)
+end
+
+function init_weights!(layer::Transformers.PositionEmbedding, std)
+    layer.embedding.data .= randn(size(layer.embedding)) .* std
+end
+
+function init_weights!(layer::Transformers.Positionwise, std)
+    for childlayer in layer.models
+        init_weights!(childlayer, std)
+    end
+    return layer
+end
+
+function init_weights!(layer::Transformers.Stack, std)
+    for childlayer in layer.models
+        init_weights!(childlayer, std)
+    end
+    return layer
+end
+
+function init_weights!(layer::Flux.Dense, std)
+    layer.W.data .= randn(size(layer.W)) .* std
+    layer.b.data .= 0
+    return layer
+end
+
+# Already initialized with bias zero and weights one.
+# TODO Actually can't remember...
+init_weights!(layer::Flux.LayerNorm, ::Any) = layer
+
+init_weights!(layer::Any, ::Any) = layer
+
+function init_field_weights!(layer, std)
+    for field in propertynames(layer)
+        init_weights!(getproperty(layer, field), std)
+    end
+    return layer
+end
+
 
 # Original parameters:
 # embed = Embed(768, vocab_size)
@@ -230,12 +277,12 @@ function maketransformer(num_heads::Integer, attnhiddensize::Integer,
                          ffhiddensize::Integer, num_layers::Integer,
                          inputsize::Integer, outputsize::Integer, dimensionality::Symbol;
                          activation=Flux.gelu, p_dropout_ff=0.1f0, p_dropout_attn=0.1f0,
-                         output_activation=Flux.sigmoid)
+                         output_activation=Flux.sigmoid, init_std=0.02)
     model = GPT2Predictor(
         inputsize, outputsize, num_heads, attnhiddensize, ffhiddensize, num_layers,
         convert(Int, maxcolshori);
         activation=activation, p_dropout_ff=p_dropout_ff, p_dropout_attn=p_dropout_attn,
-        output_activation=output_activation
+        output_activation=output_activation, init_std=init_std
     ) |> togpu
     TransformerModel(model, Dict{Symbol, Any}(
         :dimensionality => dimensionality,

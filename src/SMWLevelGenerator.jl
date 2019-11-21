@@ -32,6 +32,7 @@ export GTPs, gan_trainingloop!
 export MTPs, meta_trainingloop!
 
 # Level generation
+export randinputs
 export predict_hack, predict_vanilla, predict_levels, predict_level
 export generate_reshaped_screen, generatelevel, writelevel, writelevels
 
@@ -95,6 +96,7 @@ using .DenseMetadataPredictor
 using .TrainingLoop
 using .GANTraining
 using .MetaTraining
+using .ScreenGenerator
 using .LevelGenerator
 
 end # module

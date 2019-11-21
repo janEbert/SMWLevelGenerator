@@ -1,0 +1,55 @@
+\subsection{Setup}
+
+With our code living in a Git~\cite{Git} repository, we want to
+achieve~-- aside from the obvious version control advantages~-- an
+easily reproducible but also portable environment (by which we mean no
+large binary files). We provide several individual scripts for the
+whole setup pipeline of our environment, including the following:
+\begin{itemize}
+\item downloading the required tools (optionally also additional ones)
+\item downloading the properly filtered hacks (as we established in
+  section~\ref{sec:hacks}, these are in patch form)
+\item decompressing them to properly named directories (supporting
+  either \texttt{tar} or \texttt{7z} as desired)
+\item applying the patches to the original ROM
+\item dumping all levels in each ROM
+\end{itemize}
+Allof these are combined in a single convenience script
+the user can execute in order to obtain their own enviroment. We
+specify a default directory structure our source code is based on so
+no paths have to be changed if using the convenience script.
+
+Some time after our download of the over 300 hacks, SMW Central
+implemented protection against too many requests in a certain time
+frame. Even though we have set a generous wait time limit between
+downloads, we understand that troubling the servers over and over for
+the same files may not be desired. Due to this, we supply scripts that
+fetch the files (tools and hacks) from their original source, SMW
+Central, and scripts that download the files collected in a custom
+location provided by us (the convenience setup script exists in both
+versions).
+
+While we mentioned portability, the scripts above are currently only
+implemented in shell script\footnote{Bash compatibility, aiming for
+  POSIX.}. For cross-platform support, these will be implemented in
+Julia as well at a later time, eliminating another dependency. \\
+For people either not interested in a manual setup or without access
+to a shell script interpreter, we provide downloads for pre-computed
+databases in the dimensions we support out of the box (listed in
+section~\ref{sec:preprocessing}). If, on the other hand, the levels
+are available, generating those databases is done in a single function
+call.
+
+Several other scripts allow further processing of the data, including:
+\begin{itemize}
+\item summarizing statistics of the hacks (like authors, rating, ...)
+\item removing duplicate levels based on their CRC32 checksums
+\item removing levels with non-vanilla behaviour
+\end{itemize}
+These have already been implemented in Julia.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../../SMWLevelGenerator"
+%%% End:
+

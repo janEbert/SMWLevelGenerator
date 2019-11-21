@@ -4,8 +4,8 @@
 Our training pipeline for each type of model consists of two major
 parts: the data iterator which reads and preprocesses our data and the
 actual training loop acting on the data we obtain from the iterator. \\
-Let us first focus on the data iterators and after that on our
-individual training loops.
+Let us first focus on the data iterators and after that on the
+training loops.
 
 \subsubsection{Data Iterators}
 
@@ -68,9 +68,44 @@ first screen and the constant input of each level. This enables us to
 reuse the iterator for both GAN and metadata predictor training.
 
 \subsubsection{Training Loops}
+\label{sec:training-loops}
 
+Our training loops for all model types follow the same schematic:
+\begin{enumerate}
+\item Initialize parameters, data iterators, loggers, optionally load
+  model, ...
+\item Store parameters
+\item Initial test
+\item Loop over all epochs:
+  \begin{enumerate}
+    \item Train model(s)
+    \item Periodically test model and check for early stopping
+    \item Periodically save model checkpoint
+  \end{enumerate}
+\item Save model checkpoint
+\item Clean up resources
+\end{enumerate}
 
-% TODO MEGA VIEL
+All training loops accept either a model or the path to a model
+checkpoint, correctly initializing everything from the checkpoint and
+starting training from the exact point it left off (although this may
+not always be the exact point due to the randomness in threaded data
+iterators; we skip as many steps as are saved in the checkpoint). The
+parameters that are the same over all training loops contain values
+like the number of epochs, early stopping-related values, which
+checkpointing method to use (as discussed in section~\ref{sec:julia},
+we support saving as BSON or JLD2), after how many training steps to
+log and save the model, the amount of data iterator threads, the
+random seed and others. \\
+The parameters are collectively combined with parameters stored in the
+model (an optional specification of our abstract model interface) and
+saved in a JSON file to combine both human readability and parsing.
+
+We already mentioned in section~\ref{sec:generation-via-prediction}
+that our sequence prediction models implement a ``soft'' loss
+function; these are also selected as a training parameter. \\
+Due to the iterator allowing it, the GAN training loop allows training
+both a GAN and a metadata predictor at the same time.
 
 %%% Local Variables:
 %%% mode: latex

@@ -14,22 +14,25 @@ times, we must not become naïve towards bad actors, either.
 However, this thesis is not about misuse and fear of the future. We
 are more interested in usage of AI for fun, artistic purposes and in
 the end, this project will provide a research perspective into
-combining natural language processing metods with non-language
-generation. We present \emph{SMWLevelGenerator}, a pipeline to train
-models capable of generating \emph{Super Mario
-World}\footnote{\url{https://en.wikipedia.org/wiki/Super_Mario_World}}
-(SMW) levels from scratch.
+combining different fields of machine learning, namely natural
+language processing, generative methods and image processing. With a
+combination of techniques used in these three, we try to generate most
+of our level by prediction, avoiding the problems usually faced during
+training of generative adversarial networks. \\
+We present \emph{SMWLevelGenerator}, a pipeline to train models
+capable of generating Super Mario World~\cite{SuperMarioWorld2019}
+levels from scratch.
 
 While game level generation is not a particularly new field of
-research, Super Mario World provides a more complex world than any
-related work has attempted to generate. Also, this work uses both more
-and more recent models, focusing especially on the \emph{Transformer}
-architecture~\cite{vaswaniAttentionAllYou2017}, originally introduced
-as a encoder-decoder model for neural translation tasks. Due to its
-functional similarity to the \emph{Long Short Term Memory}
-architecture and its faster training time, we believe it is a good fit
-for more challenging generation tasks such as provided by Super Mario
-World.
+research, Super Mario World provides a more complex environment than
+any related work has attempted to generate for. Also, this work uses
+both more and more recent models, focusing especially on the
+transformer architecture~\cite{vaswaniAttentionAllYou2017}, originally
+introduced as a encoder-decoder model for neural translation tasks.
+Due to its functional similarity to the long short term memory
+architecture~\cite{hochreiterLongShorttermMemory1997} and its faster
+training time, we believe it is a good fit for more challenging
+generation tasks such as provided by Super Mario World.
 
 %%% Local Variables:
 %%% mode: latex

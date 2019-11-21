@@ -311,7 +311,6 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
 
 
                 # Discriminator
-
                 d_l = d_training_step!(d_model, d_params, d_optim, d_loss,
                                        real_batch, real_target, g_model,
                                        fake_target, curr_batch_size,
@@ -319,19 +318,18 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                                        d_trainlosses_fake, tblogger)
 
 
+                # Generator
                 if steps % d_steps_per_g_step == 0 && (steps > d_warmup_steps || steps == 0)
-                    # Generator
                     g_l = g_training_step!(g_model, g_params, g_optim, g_loss, real_target,
                                            curr_batch_size, g_trainlosses, tblogger)
                 end
-
 
+
                 # Metadata predictor
                 if !isnothing(meta_model) && (overfit_on_batch || j > length(testindices))
                     meta_training_step!(meta_model, meta_params, meta_optim, meta_loss,
                                         real_batch, meta_batch, meta_trainlosses, tblogger)
                 end
-
 
                 steps += 1
 

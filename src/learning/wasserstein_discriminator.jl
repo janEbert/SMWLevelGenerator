@@ -68,34 +68,44 @@ function wsstep!(d_model::AbstractDiscriminator, d_params, d_optim, d_loss,
 
     # Paper clamps weights here
     # Clamp weights
+    clamp_value = d_model.hyperparams[:clamp_value]
     for p in d_params
-        clamp!(p.data, -0.01f0, 0.01f0)
+        clamp!(p.data, -clamp_value, clamp_value)
     end
 
     return d_l, d_l_real, d_l_fake
 end
 
-function wsdiscriminator1d(num_features=16, imgsize=imgsize1d; kwargs...)
-    buildmodel(num_features, imgsize, Symbol("1d"); modeltype=WassersteinDiscriminatorModel,
-               output_activation=identity, kernelsize=(4,), first_stride=2, kwargs...)
+function wsdiscriminator1d(num_features=16, imgsize=imgsize1d;
+                           clamp_value=0.01f0, kwargs...)
+    model = buildmodel(num_features, imgsize, Symbol("1d");
+                       modeltype=WassersteinDiscriminatorModel, output_activation=identity,
+                       kernelsize=(4,), first_stride=2, kwargs...)
+    model.hyperparams[:clamp_value] = clamp_value
 end
 
-function wsdiscriminator2d(num_features=64, imgsize=imgsize2d; kwargs...)
+function wsdiscriminator2d(num_features=64, imgsize=imgsize2d;
+                           clamp_value=0.01f0, kwargs...)
     manualmodel(num_features, imgsize, Symbol("2d");
                 modeltype=WassersteinDiscriminatorModel, output_activation=identity,
                 kwargs...)
+    model.hyperparams[:clamp_value] = clamp_value
 end
 
-function wsdiscriminator3dtiles(num_features=128, imgsize=imgsize3dtiles; kwargs...)
+function wsdiscriminator3dtiles(num_features=128, imgsize=imgsize3dtiles;
+                                clamp_value=0.01f0, kwargs...)
     manualmodel(num_features, imgsize, Symbol("3dtiles");
                 modeltype=WassersteinDiscriminatorModel, output_activation=identity,
                 kwargs...)
+    model.hyperparams[:clamp_value] = clamp_value
 end
 
-function wsdiscriminator3d(num_features=256, imgsize=imgsize3d; kwargs...)
+function wsdiscriminator3d(num_features=256, imgsize=imgsize3d;
+                           clamp_value=0.01f0, kwargs...)
     manualmodel(num_features, imgsize, Symbol("3d");
                 modeltype=WassersteinDiscriminatorModel, output_activation=identity,
                 kwargs...)
+    model.hyperparams[:clamp_value] = clamp_value
 end
 
 end # module

@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Apply each hack patch in a path to a ROM creating a new ROM each time.
 # Will also delete bad or duplicate patches.

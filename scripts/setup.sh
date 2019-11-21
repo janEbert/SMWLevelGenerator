@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Setup the environment, that is get all the necessary tools and hacks
 # and generate all the levels contained in the hacks.

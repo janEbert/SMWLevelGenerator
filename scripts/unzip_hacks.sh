@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Unzip all hacks in the given directory to the other given directory.
 

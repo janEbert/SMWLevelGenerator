@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Dump the levels contained in the ROMs contained in the
 # given directory.

@@ -1,10 +1,10 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Download and extract the toolchain consisting of a custom-built
 # Lunar Magic and Floating IPS.
 
 # Required tools
-required_tools_dl="https://drive.google.com/uc?export=download&id=1Xa93mzV--rX0S-0X7euB3fmrJRrkCUv6"
+required_tools_dl="https://drive.google.com/uc?export=download&id=1WSsvEhWEZiIMc7W0kVZW3Z4m7_Qc0Ess"
 lunar_magic="lm304ebert21892usix.zip"
 flips="floating.zip"
 required_tools="$lunar_magic\n$flips"

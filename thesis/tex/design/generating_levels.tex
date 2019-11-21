@@ -37,6 +37,15 @@ level 261 but instead set the sprite header to that of level 261 but
 do not give any sprites themselves. While the sprite header is
 required, sprites are not.
 
+Generation functions include generating a single level or multiple
+levels. A function to generate a whole hack of levels (meaning 512
+different levels, each with a different number) is planned. We also
+implement model-specific generation functions. For the sequence
+prediction model, functions may generate levels like the above
+functions or based on predicting on the original game's levels. The
+GANs may also generate only the first screen for a level
+independently.
+
 Note that during all of this, the user does not have to worry about
 dimensionality in any way; all of this is handled automatically if the
 model was supplied the correct parameters (such as its

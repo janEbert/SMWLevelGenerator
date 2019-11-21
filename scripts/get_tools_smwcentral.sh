@@ -1,10 +1,12 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Download and extract the toolchain consisting of a custom-built
 # Lunar Magic and Floating IPS.
 
 # Required tools
-lunar_magic_dl="https://fusoya.eludevisibility.org/lm/download/lm304ebert21892usix.zip"
+# This was the original link; it has been taken down.
+# lunar_magic_dl="https://fusoya.eludevisibility.org/lm/download/lm304ebert21892usix.zip"
+lunar_magic_dl="https://drive.google.com/uc?export=download&id=1WSsvEhWEZiIMc7W0kVZW3Z4m7_Qc0Ess"
 lunar_magic="lm304ebert21892usix.zip"
 flips_dl="https://dl.smwcentral.net/11474/floating.zip"
 flips="floating.zip"

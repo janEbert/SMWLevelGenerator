@@ -226,6 +226,7 @@ This video is from the 2017 Roguelike Celebration: https://roguelike.club/event2
   volume = {9597},
   isbn = {978-3-319-31203-3 978-3-319-31204-0},
   url = {http://link.springer.com/10.1007/978-3-319-31204-0_36},
+  doi = {10.1007/978-3-319-31204-0_36},
   abstract = {This paper introduces an evolutionary method for generating levels for adventure games, combining speed, guaranteed solvability of levels and authorial control. For this purpose, a new graph-based two-phase level encoding scheme is developed. This method encodes the structure of the level as well as its contents into two abstraction layers: the higher level defines an abstract representation of the game level and the distribution of its content among different inter-connected game zones. The lower level describes the content of each game zone as a set of graphs containing rooms, doors, monsters, keys and treasure chests. Using this representation, game worlds are encoded as individuals in an evolutionary algorithm and evolved according to an evaluation function meant to approximate the entertainment provided by the game level. The algorithm is implemented into a design tool that can be used by game designers to specify several constraints of the worlds to be generated. This tool could be used to facilitate the design of game levels, for example to make professional-level content production possible for non-experts.},
   booktitle = {Applications of {{Evolutionary Computation}}},
   publisher = {{Springer International Publishing}},
@@ -234,8 +235,7 @@ This video is from the 2017 Roguelike Celebration: https://roguelike.club/event2
   pages = {558-573},
   author = {Font, Jose M. and Izquierdo, Roberto and Manrique, Daniel and Togelius, Julian},
   editor = {Squillero, Giovanni and Burelli, Paolo},
-  file = {/home/jan/Zotero/storage/5YDKDE2A/Font et al. - 2016 - Constrained Level Generation Through Grammar-Based.pdf},
-  doi = {10.1007/978-3-319-31204-0_36}
+  file = {/home/jan/Zotero/storage/5YDKDE2A/Font et al. - 2016 - Constrained Level Generation Through Grammar-Based.pdf}
 }
 
 @inproceedings{khalifaGeneralVideoGame2016,
@@ -738,6 +738,115 @@ This activation function was first introduced to a dynamical network by Hahnlose
   keywords = {Computer Science - Machine Learning},
   author = {Makhzani, Alireza and Shlens, Jonathon and Jaitly, Navdeep and Goodfellow, Ian and Frey, Brendan},
   file = {/home/jan/Zotero/storage/V6DUNNTT/Makhzani et al. - 2016 - Adversarial Autoencoders.pdf;/home/jan/Zotero/storage/4KD4SAT3/1511.html}
+}
+
+@article{yuSeqGANSequenceGenerative2017,
+  archivePrefix = {arXiv},
+  eprinttype = {arxiv},
+  eprint = {1609.05473},
+  primaryClass = {cs},
+  title = {{{SeqGAN}}: {{Sequence Generative Adversarial Nets}} with {{Policy Gradient}}},
+  url = {http://arxiv.org/abs/1609.05473},
+  shorttitle = {{{SeqGAN}}},
+  abstract = {As a new way of training generative models, Generative Adversarial Nets (GAN) that uses a discriminative model to guide the training of the generative model has enjoyed considerable success in generating real-valued data. However, it has limitations when the goal is for generating sequences of discrete tokens. A major reason lies in that the discrete outputs from the generative model make it difficult to pass the gradient update from the discriminative model to the generative model. Also, the discriminative model can only assess a complete sequence, while for a partially generated sequence, it is non-trivial to balance its current score and the future one once the entire sequence has been generated. In this paper, we propose a sequence generation framework, called SeqGAN, to solve the problems. Modeling the data generator as a stochastic policy in reinforcement learning (RL), SeqGAN bypasses the generator differentiation problem by directly performing gradient policy update. The RL reward signal comes from the GAN discriminator judged on a complete sequence, and is passed back to the intermediate state-action steps using Monte Carlo search. Extensive experiments on synthetic data and real-world tasks demonstrate significant improvements over strong baselines.},
+  urldate = {2019-11-20},
+  date = {2017-08-25},
+  keywords = {Computer Science - Machine Learning,Computer Science - Artificial Intelligence},
+  author = {Yu, Lantao and Zhang, Weinan and Wang, Jun and Yu, Yong},
+  file = {/home/jan/Zotero/storage/J5FXEVWS/Yu et al. - 2017 - SeqGAN Sequence Generative Adversarial Nets with .pdf;/home/jan/Zotero/storage/C2EXY3H7/1609.html}
+}
+
+@online{Git,
+  title = {Git},
+  url = {https://git-scm.com/},
+  urldate = {2019-11-21},
+  file = {/home/jan/Zotero/storage/UPDTUV4A/git-scm.com.html}
+}
+
+@software{alcaroAlcaroFlips2019,
+  title = {Alcaro/{{Flips}}},
+  url = {https://github.com/Alcaro/Flips},
+  abstract = {Floating IPS is a patcher for IPS and BPS files. Contribute to Alcaro/Flips development by creating an account on GitHub.},
+  urldate = {2019-11-21},
+  date = {2019-11-18T18:05:49Z},
+  keywords = {bps,patcher},
+  author = {Alcaro},
+  origdate = {2016-01-17T17:11:19Z}
+}
+
+@online{FloatingIPSFlips,
+  title = {Floating {{IPS}} ({{Flips}}) v1.31 - {{Tools}} - {{SMW Central}}},
+  url = {https://www.smwcentral.net/?p=section&a=details&id=11474},
+  urldate = {2019-11-21},
+  file = {/home/jan/Zotero/storage/ULI27T8T/www.smwcentral.net.html}
+}
+
+@article{nairRectifiedLinearUnits,
+  langid = {english},
+  title = {Rectified {{Linear Units Improve Restricted Boltzmann Machines}}},
+  abstract = {Restricted Boltzmann machines were developed using binary stochastic hidden units. These can be generalized by replacing each binary unit by an infinite number of copies that all have the same weights but have progressively more negative biases. The learning and inference rules for these “Stepped Sigmoid Units” are unchanged. They can be approximated efficiently by noisy, rectified linear units. Compared with binary units, these units learn features that are better for object recognition on the NORB dataset and face verification on the Labeled Faces in the Wild dataset. Unlike binary units, rectified linear units preserve information about relative intensities as information travels through multiple layers of feature detectors.},
+  pages = {8},
+  author = {Nair, Vinod and Hinton, Geoffrey E},
+  file = {/home/jan/Zotero/storage/PIVWP99D/Nair and Hinton - Rectified Linear Units Improve Restricted Boltzman.pdf}
+}
+
+@article{maasRectifierNonlinearitiesImprove,
+  langid = {english},
+  title = {Rectifier {{Nonlinearities Improve Neural Network Acoustic Models}}},
+  abstract = {Deep neural network acoustic models produce substantial gains in large vocabulary continuous speech recognition systems. Emerging work with rectified linear (ReL) hidden units demonstrates additional gains in final system performance relative to more commonly used sigmoidal nonlinearities. In this work, we explore the use of deep rectifier networks as acoustic models for the 300 hour Switchboard conversational speech recognition task. Using simple training procedures without pretraining, networks with rectifier nonlinearities produce 2\% absolute reductions in word error rates over their sigmoidal counterparts. We analyze hidden layer representations to quantify differences in how ReL units encode inputs as compared to sigmoidal units. Finally, we evaluate a variant of the ReL unit with a gradient more amenable to optimization in an attempt to further improve deep rectifier networks.},
+  pages = {6},
+  author = {Maas, Andrew L and Hannun, Awni Y and Ng, Andrew Y},
+  file = {/home/jan/Zotero/storage/RI5JXTJU/Maas et al. - Rectiﬁer Nonlinearities Improve Neural Network Aco.pdf}
+}
+
+@article{heDeepResidualLearning2015,
+  archivePrefix = {arXiv},
+  eprinttype = {arxiv},
+  eprint = {1512.03385},
+  primaryClass = {cs},
+  title = {Deep {{Residual Learning}} for {{Image Recognition}}},
+  url = {http://arxiv.org/abs/1512.03385},
+  abstract = {Deeper neural networks are more difficult to train. We present a residual learning framework to ease the training of networks that are substantially deeper than those used previously. We explicitly reformulate the layers as learning residual functions with reference to the layer inputs, instead of learning unreferenced functions. We provide comprehensive empirical evidence showing that these residual networks are easier to optimize, and can gain accuracy from considerably increased depth. On the ImageNet dataset we evaluate residual nets with a depth of up to 152 layers---8x deeper than VGG nets but still having lower complexity. An ensemble of these residual nets achieves 3.57\% error on the ImageNet test set. This result won the 1st place on the ILSVRC 2015 classification task. We also present analysis on CIFAR-10 with 100 and 1000 layers. The depth of representations is of central importance for many visual recognition tasks. Solely due to our extremely deep representations, we obtain a 28\% relative improvement on the COCO object detection dataset. Deep residual nets are foundations of our submissions to ILSVRC \& COCO 2015 competitions, where we also won the 1st places on the tasks of ImageNet detection, ImageNet localization, COCO detection, and COCO segmentation.},
+  urldate = {2019-11-21},
+  date = {2015-12-10},
+  keywords = {Computer Science - Computer Vision and Pattern Recognition},
+  author = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  file = {/home/jan/Zotero/storage/NGEYTIXH/He et al. - 2015 - Deep Residual Learning for Image Recognition.pdf;/home/jan/Zotero/storage/RU9YD6W2/1512.html}
+}
+
+@article{liAdversarialDiscreteSequence,
+  langid = {english},
+  title = {Adversarial {{Discrete Sequence Generation}} without {{Explicit Neural Networks}} as {{Discriminators}}},
+  abstract = {This paper presents a novel approach to train GANs for discrete sequence generation without resorting to an explicit neural network as the discriminator. We show that when an alternative mini-max optimization procedure is performed for the value function where a closed form solution for the discriminator exists in the maximization step, it is equivalent to directly optimizing the Jensen-Shannon divergence (JSD) between the generator’s distribution and the empirical distribution over the training data without sampling from the generator, thus optimizing the JSD becomes computationally tractable to train the generator that generates sequences of discrete data. Extensive experiments on synthetic data and real-world tasks demonstrate significant improvements over existing methods to train GANs that generate discrete sequences.},
+  pages = {10},
+  author = {Li, Zhongliang and Xia, Tian and Lou, Xingyu and Xu, Kaihe and Wang, Shaojun and Xiao, Jing},
+  file = {/home/jan/Zotero/storage/6IIEWCH2/Li et al. - Adversarial Discrete Sequence Generation without E.pdf}
+}
+
+@software{HuggingfaceTransformers2019,
+  title = {Huggingface/Transformers},
+  url = {https://github.com/huggingface/transformers},
+  abstract = {🤗 Transformers: State-of-the-art Natural Language Processing for TensorFlow 2.0 and PyTorch.},
+  organization = {{Hugging Face}},
+  urldate = {2019-11-21},
+  date = {2019-11-21T22:19:34Z},
+  keywords = {bert,gpt,language-model,language-models,natural-language-generation,natural-language-processing,natural-language-understanding,nlp,pytorch,pytorch-transformers,tensorflow,transformer-xl,xlm,xlnet},
+  origdate = {2018-10-29T13:56:00Z}
+}
+
+@article{hendrycksGaussianErrorLinear2018,
+  archivePrefix = {arXiv},
+  eprinttype = {arxiv},
+  eprint = {1606.08415},
+  primaryClass = {cs},
+  title = {Gaussian {{Error Linear Units}} ({{GELUs}})},
+  url = {http://arxiv.org/abs/1606.08415},
+  abstract = {We propose the Gaussian Error Linear Unit (GELU), a high-performing neural network activation function. The GELU nonlinearity is the expected transformation of a stochastic regularizer which randomly applies the identity or zero map to a neuron's input. The GELU nonlinearity weights inputs by their magnitude, rather than gates inputs by their sign as in ReLUs. We perform an empirical evaluation of the GELU nonlinearity against the ReLU and ELU activations and find performance improvements across all considered computer vision, natural language processing, and speech tasks.},
+  urldate = {2019-11-21},
+  date = {2018-11-11},
+  keywords = {Computer Science - Machine Learning},
+  author = {Hendrycks, Dan and Gimpel, Kevin},
+  file = {/home/jan/Zotero/storage/E33LWVCL/Hendrycks and Gimpel - 2018 - Gaussian Error Linear Units (GELUs).pdf;/home/jan/Zotero/storage/FVYBAYBH/1606.html}
 }
 
 

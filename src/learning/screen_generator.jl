@@ -6,9 +6,9 @@ using ..InputStatistics
 using ..ModelUtils: LearningModel, AbstractGenerator, togpu
 using ..LevelStatistics
 
-export generatescreen, generatemetadata, randinput
+export generatescreen, generatemetadata, randinputs
 
-function randinput(g_model::AbstractGenerator, amount=1)
+function randinputs(g_model::AbstractGenerator, amount=1)
     if g_model.hyperparams[:dimensionality] === Symbol("1d")
         togpu(rand(1, g_model.hyperparams[:inputsize], amount))
     else
@@ -17,11 +17,11 @@ function randinput(g_model::AbstractGenerator, amount=1)
 end
 
 """
-    generatescreen(g_model::AbstractGenerator, input=randinput(g_model))
+    generatescreen(g_model::AbstractGenerator, input=randinputs(g_model))
 
 Return the generator's output for the given input.
 """
-function generatescreen(g_model::AbstractGenerator, input=randinput(g_model))
+function generatescreen(g_model::AbstractGenerator, input=randinputs(g_model))
     Flux.testmode!(g_model)
     output = Flux.cpu(Flux.data(g_model(togpu(input))))
     Flux.testmode!(g_model, false)

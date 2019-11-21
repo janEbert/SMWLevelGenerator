@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # Download a ton of SMW hacks. To not overload the SMW Central website,
 # a 30 sec timeout is awaited after each download.

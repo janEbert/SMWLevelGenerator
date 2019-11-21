@@ -1,5 +1,49 @@
 \section{Discussion}
 
+The experiments once again showed how well neural networks generalize.
+In our case, this generalization was a bit too much and we should look
+for ways to further de-regularize.
+
+\subsection{Related Work}
+
+
+
+\subsection{Future Work}
+
+While the experiments have shown that our approach to generating
+levels via sequence prediction have not worked out yet, we have many
+suggestions and possible solutions that ought to be tried out in the
+future. We also have several improvements planned for the project
+which are out of the scope of this thesis. \\
+As is usual in deep learning, for all our models, tuning the
+hyperparameters further may lead to surprising results. While we do
+not believe~-- looking at the experimens and our prior discussion
+above~-- that only changing hyperparameters will lead to a good level
+generator, with deep learning you never know if the combined changes
+over many parameters may suddenly lead to a good result. \\
+We also believe the training pipeline in general would benefit from
+further features such as learning rate regulation (especially for
+warmup).
+
+In terms of the sequence prediction models, first off, we should try
+training on generated data that goes back some amount steps into the
+past instead of only on % TODO ref
+``perfectly'' predicted data~-- the actual, ground thruth data. This
+would allow minimizing errors for future predictions. As we saw, we
+cannot rely on the model to predict the next column perfectly, meaning
+an error for each predicted column will accumulate and result in worse
+and worse predictions.
+
+We could try implementing more loss functions akin to the ``soft''
+loss we introduced in section~\ref{sec:generation-via-prediction} as
+well. Another promising improvement would be implementing adversarial
+sequence
+generators~\cite{yuSeqGANSequenceGenerative2017,liAdversarialDiscreteSequence}
+which we had initially foregone due to considerations regarding the
+high dimensionality of our data. With those, the GANs and~-- possibly~--
+the metadata predictor become redundant, leading us to a single model
+capable of generating complete levels from scratch.
+
 
 %%% Local Variables:
 %%% mode: latex

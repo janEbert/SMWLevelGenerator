@@ -33,30 +33,46 @@ As mentioned, this list is easily extensible if desired as our
 foundation contains and parses all relevant information.
 
 To support many different models, we implement an abstract model class
-that requires extending only a few methods for new models (if the
-provided defaults are not already correct). One of these methods
-solves the problem of the desired input for the model. Our data
-iterator will automatically shape the input correctly for each model.
-The currently supported input types are vectors of vectors and
-matrices. Single, long vectors containing the whole sequence are
-implemented but some questions about how their data is ordered must be
-answered individually (for example, is the constant input provided
-only once or for each column like for the other input types).
+(also called the ``model interface'') that requires extending only a
+few methods for new models (if the provided defaults are not already
+correct). One of these methods solves the problem of the desired input
+for the model. Our data iterator will automatically shape the input
+correctly for each model. The currently supported input types are
+vectors of vectors and matrices. Single, long vectors containing the
+whole sequence are implemented but some questions about how their data
+is ordered must be answered individually (for example, is the constant
+input provided only once or for each column like for the other input
+types).
 
-We will now list our the configuration options for our sequence
-prediction models. As already mentioned, we provide convenience
-functions for model creation for each training data dimensionality. As
-these are only for convenience, they have some
-limitations\footnote{Obviously, any unlisted parameters can be changed
-  manually by modifying the source code as well. This also goes for
-  the models in the following sections.}.
+We implement a second loss function, the ``soft'' loss, that assigns a
+lower penalty (or none) to sequence elements that were predicted
+incorrectly if the prior two sequence elements were the same. With
+this, we hope to de-regularize our models so they are less heavily
+influenced by sudden changes in the level. The user may choose to use
+either one during training (see section~\ref{sec:training-loops}).
+
+By default, our LSTMs use the rectified linear unit activation
+function~\cite{nairRectifiedLinearUnits,RectifierNeuralNetworks2019}
+for hidden layers. Leaning on the original
+implementation~\cite{OpenaiGpt22019}, we use the Gaussian error linear
+unit activation function~\cite{hendrycksGaussianErrorLinear2018} for
+the transformers.
+
+We will now list the configuration options for our sequence prediction
+models. As already mentioned, we provide convenience functions for
+model creation for each training data dimensionality. As these are
+only for convenience, they have some limitations\footnote{Obviously,
+  any unlisted parameters can be changed manually by modifying the
+  source code as well. This also goes for the models in the following
+  sections.}.
 
 LSTMs are built with the following parameters:
 \begin{itemize}
 \item amount of hidden layers
 \item amount of hidden neurons per hidden layer
-\item optional skip connections from each hidden layer directly to the
-  final activation function
+\item optional skip (or ``shortcut'')
+  connections~\cite{heDeepResidualLearning2015} from each hidden layer
+  directly to the final activation function
 \item probability of dropout between every two hidden layers starting
   after the first one
 \item final activation function
