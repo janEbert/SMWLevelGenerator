@@ -6,8 +6,8 @@ our sequence prediction models. In the following explanations, we will
 assume the level is read column per column. The only difference when
 reading per tile is the input size. While each of our models may have
 different input preferences for a sequence (vector of vectors, matrix,
-...), we will focus our explanation on sequence elements as these all
-follow the same principles. Each sequence element is a vector
+\dots), we will focus our explanation on sequence elements as these
+all follow the same principles. Each sequence element is a vector
 consisting of
 \begin{itemize}
 \item a constant input part containing metadata,
@@ -56,7 +56,13 @@ function~\cite{nairRectifiedLinearUnits,RectifierNeuralNetworks2019}
 for hidden layers. Leaning on the original
 implementation~\cite{OpenaiGpt22019}, we use the Gaussian error linear
 unit activation function~\cite{hendrycksGaussianErrorLinear2018} for
-the transformers.
+the transformers. \\
+It is important to note that our sequence prediction models do not
+train on their own generated data which may improve results (this
+could be done with a multitude of different steps into the future).
+This is a large simplification heavily influencing any prediction
+results on predicted data. As all the errors for each prediction will
+accumulate, results will suffer accordingly.
 
 We will now list the configuration options for our sequence prediction
 models. As already mentioned, we provide convenience functions for

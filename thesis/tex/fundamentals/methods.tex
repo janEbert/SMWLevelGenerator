@@ -75,7 +75,7 @@ connected layer at the end) and transformer-based models. More
 specifically, the LSTM stacks are based on
 \emph{char-rnns}~\cite{andrejKarpathyCharrnn2019} and the
 transformer-based models are
-\emph{GPT-2}~\cite{radfordLanguageModelsAre,OpenaiGpt22019,HuggingfaceTransformers2019}
+\emph{GPT-2}~\cite{radfordLanguageModelsAre,OpenaiGpt22019}
 models. As a baseline, we implement a non-learning random model that
 simply outputs sequences of either 1 or 0 based on a user-supplied
 chance $p \in [0, 1]$.
@@ -169,17 +169,19 @@ towards the correct screen size and a model consisting of fully
 connected layers. Our reasoning for implementing both models was the
 same as for the GANs, described above.
 
-Even though implementing a generative model for both first screen and
-metadata generation would have been the best solution, we decided to
-go the direction of simplicity and decorrelate these two tasks just
-like we did with the sequence prediction models. This has a couple of
-reasons: For one, the added metadata vector would complicate purely
-convolutional GANs. Another reason is that this greatly expands the
-space of input data from data in the set 0 to 1 (or interval from 0 to
-1 inclusively, depending on if we normalize the data) to real numbers
-in the interval from 0 to 512 inclusively (assuming our currently
-supplied metadata; more information in
-section~\ref{sec:preprocessing}). \\
+Our GAN does not generate the level's metadata in addition to its
+first screen (which we assume would be more correct due to
+correlations in the network). Even though implementing a generative
+model for both first screen and metadata generation would have been
+the best solution, we decided to go the direction of simplicity and
+decorrelate these two tasks just like we did with the sequence
+prediction models. This has a couple of reasons: For one, the added
+metadata vector would complicate purely convolutional GANs. Another
+reason is that this greatly expands the space of input data from data
+in the set 0 to 1 (or interval from 0 to 1 inclusively, depending on
+if we normalize the data) to real numbers in the interval from 0 to
+512 inclusively (assuming our currently supplied metadata; more
+information in section~\ref{sec:preprocessing}). \\
 While we are certain that this influences our generative results
 negatively, we hope that decoupling these two tasks yields us an
 easier time during training. As GAN training is already notoriously
@@ -213,76 +215,20 @@ version to run the code is therefore 1.3.0-rc5 (once 1.3.0 is released
 as stable, that should be used instead as we expect no syntax or
 functionality changes).
 
+Thanks to community packages, we were able to easily implement
+functions accelerated by CUDA~\cite{CUDAToolkit2013} and
+cuDNN~\cite{NVIDIACuDNN2014}. \\
 While Julia brought great advantages with it, some disadvantages were
 issues and bugs in packages and the general immaturity of the
 ecosystem (an example concerning array primitives for sparse arrays on
-the GPU is given below). Another issue were long compilation times
-which are to be addressed soon. \\
-We also encountered several issues with model checkpoints. We first
-switched from an unmerged pull request branch of
-\mbox{BSON.jl}~\cite{JuliaIOBSONJl2019,SavingArrayLength} (which
-contains an issue only later addressed in the master branch) to the
-HDF5-based \mbox{JLD.jl}~\cite{JuliaIOJLDJl2019}, then to the more
-unstable \mbox{JLD2.jl}~\cite{JuliaIOJLD2Jl2019} due to not being able
-to save functions in \mbox{JLD.jl}. With \mbox{JLD2.jl}, there were
-still errors which led us to also check out an unmerged pull request
-for this package~\cite{MaybeFixTypename}. Finally, we settled with
-\mbox{JLD2.jl} for our model checkpoints as the most stable package.
-While the files are generally larger than those of \mbox{BSON.jl}, we
-are sure the stability is worth it. In the end, we support saving to
-either \mbox{BSON.jl} or \mbox{JLD2.jl} with \mbox{JLD2.jl} as the
-default.
+the GPU is given in section~\ref{sec:packages}). Another issue were
+long compilation times which are to be addressed soon. \\
+We list the most important packages for our pipeline with
+explanations, advantages and disadvantages in
+section~\ref{sec:packages}.
 
-Let us now list the rest of the packages most important for our
-preprocessing and training pipeline. While this list does not cover
-all packages used, we hope to give an overview of what the ecosystem
-made or will make possible, why these packages were important for us
-and what issues we still had to solve manually.
-
-For the databases containing our training data, we used
-\mbox{JuliaDB.jl}~\cite{JuliaComputingJuliaDBJl2019} as it supports
-parallel and out-of-core processing of the database. While these
-features have not been used yet, they should future-proof our program
-for cluster computing and databases that do not fit into memory on a
-host PC. Smaller statistics (especially pre-computed ones that we load
-to reduce startup time) were saved as CSV files which
-\mbox{CSV.jl}~\cite{JuliaDataCSVJl2019} was a great fit for.
-
-For our machine learning needs, we used
-\mbox{Flux.jl}~\cite{FluxMLFluxJl2019}. While \mbox{Flux.jl} is one of
-the most mature deep learning frameworks in Julia, it still missed
-some basic functionality. For example, we had to define our own
-convolutional layer without bias as it had not been included at the
-time of writing. With \mbox{Zygote.jl}~\cite{FluxMLZygoteJl2019}, a
-framework supporting source-to-source automatic differentiation that
-is to be included in \mbox{Flux.jl}, we hope to gain a large speed
-boost in the future with compiled derivatives as they will not have to
-be tracked at runtime.
-\\
-Due to \mbox{Flux.jl}'s GPU support enabled by
-\mbox{CuArrays.jl}~\cite{JuliaGPUCuArraysJl2019}, we were able to
-achieve great performance even while writing specialized loss
-functions. We were sadly not able to support the CUDA library for
-sparse arrays, cuSPARSE~\cite{CuSPARSE}; due to the \mbox{CuArrays.jl}
-package not supporting all the features necessary for us (for example
-simple primitives like array slicing) for cuSPARSE arrays, we had to
-comment out the few lines pertaining to sparse CUDA arrays at the
-moment. These issues were not in the scope of this thesis but will be
-addressed at a later point, surely granting another large speedup to
-any GPU-run training pipeline that uses sparse matrices (the training
-pipline is explained in section~\ref{sec:training-pipeline}). Another,
-more low-level GPU package,
-\mbox{CUDAnative.jl}~\cite{JuliaGPUCUDAnativeJl2019}, allowed us to
-write our own CUDA kernels with ease. This enabled faster clamping of
-the parameters of our Wasserstein GANs. \\
-The \mbox{Transformers.jl}~\cite{peterChengchingwenTransformersJl2019}
-package was essential in getting the GPT-2 transformer model to run.
-While the model is not included in the package as of the writing of
-this thesis, the given building blocks were a large help. \\
-Finally,
-\mbox{TensorBoardLogger.jl}~\cite{vicentiniPhilipVincTensorBoardLoggerJl2019}
-enabled a great tool for monitoring training progress:
-TensorBoard~\cite{TensorBoard}.
+Next, let us take the theoretical knowledge we introduced in this
+section and make it practical in the next one.
 
 %%% Local Variables:
 %%% mode: latex

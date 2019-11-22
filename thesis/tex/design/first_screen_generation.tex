@@ -1,7 +1,6 @@
 \subsection{First Screen Generation}
 \label{sec:first-screen-generation}
 
-% TODO separate this conv part from dense wasserstein model
 % TODO mention GPU clamping
 
 In the following, we will describe implementation details of our GANs,
@@ -56,6 +55,10 @@ every second layer starting from the first hidden layer onwards (just
 like for the LSTMs but with fully connected layers instead of LSTM
 layers; see section~\ref{sec:generation-via-prediction} for a more
 detailed description).
+
+An improvement we implemented common to all Wasserstein GANs is the
+usage of custom CUDA GPU kernels to greatly speed up clamping of the
+parameters of the discriminators.
 
 Our DCGANs have the following parameters for their convenience
 constructors (these are once again the same for the DCGAN and

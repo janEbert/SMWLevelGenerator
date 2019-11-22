@@ -1,14 +1,20 @@
 \section{Discussion}
 
-The experiments once again showed how well neural networks generalize.
+The experiments once again show how well neural networks generalize.
 In our case, this generalization was a bit too much and we should look
 for ways to further de-regularize.
+
+Due to most of the work relying on the sequence prediction models,
+these are the weakest link of our pipeline. What we found out is that
+the models were not able to memorize the data but instead minimized
+error by heavily generalizing. While we tried giving the models more
+layers, this resulted in much higher and not decreasing loss.
 
 \subsection{Related Work}
 
 
 
-\subsection{Future Work}
+\subsection{Future Improvements}
 
 While the experiments have shown that our approach to generating
 levels via sequence prediction have not worked out yet, we have many
@@ -27,12 +33,13 @@ warmup).
 
 In terms of the sequence prediction models, first off, we should try
 training on generated data that goes back some amount steps into the
-past instead of only on % TODO ref
-``perfectly'' predicted data~-- the actual, ground thruth data. This
-would allow minimizing errors for future predictions. As we saw, we
-cannot rely on the model to predict the next column perfectly, meaning
-an error for each predicted column will accumulate and result in worse
-and worse predictions.
+past instead of only on ``perfectly'' predicted data~-- the actual,
+ground thruth data (we mentioned this in
+section~\ref{sec:generation-via-prediction}). This would allow
+minimizing errors for future predictions. As we see, we cannot rely on
+the model to predict the next column perfectly, meaning an error for
+each predicted column will accumulate and result in worse and worse
+predictions.
 
 We could try implementing more loss functions akin to the ``soft''
 loss we introduced in section~\ref{sec:generation-via-prediction} as

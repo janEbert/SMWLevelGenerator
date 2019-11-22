@@ -21,7 +21,10 @@ of our level by prediction, avoiding the problems usually faced during
 training of generative adversarial networks. \\
 We present \emph{SMWLevelGenerator}, a pipeline to train models
 capable of generating Super Mario World~\cite{SuperMarioWorld2019}
-levels from scratch.
+levels from scratch. This pipeline is not supposed to end up as an
+abandoned research project. We encourage readers to become users and
+try out the provided functionality, maybe even extending the pipeline
+with new models.
 
 While game level generation is not a particularly new field of
 research, Super Mario World provides a more complex environment than
@@ -33,6 +36,51 @@ Due to its functional similarity to the long short term memory
 architecture~\cite{hochreiterLongShorttermMemory1997} and its faster
 training time, we believe it is a good fit for more challenging
 generation tasks such as provided by Super Mario World.
+
+\subsection{Games and Optimization Problems}
+
+Humans have been playing games for a variety of reasons including
+entertainment, sozialization and education for over thousands of
+years~\cite{HistoryGames2019}. They are an integral part to both human
+culture, society and problem specific understanding. In modern,
+recent, times, games and their theory have had an impact on other
+fields of research as well. John Nash
+proved~\cite{NashEquilibrium2019} that finite games with multiple
+players have an optimal strategy, the Nash equilibrium. It is now an
+essential part of economics and politics as
+well~\cite{NashEquilibrium2019}; most problems with strategic
+interaction between several agents can theoretically be solved so that
+every agent gets the maximum reward based on every other agent's
+optimal decision.
+
+The video game industry in particular has a large impact on the
+economy around the world. In 2018, the US video game industry even
+matched the US film industry, a much older and more mainstream
+industry, in revenue~\cite{VideoGameIndustry2019}. Possibly in part
+due to its economic impact, the video game industry has become
+responsible for many advances in technology, improving and developing
+techniques and hardware~\cite{VideoGameIndustry2019} which have now
+become the norm in many other fields as well due to their
+effectiveness. A very practical and relevant example is the use of
+graphical processing units (GPUs) to speed up the training of machine
+learning models.
+
+We have established that games are playing an important part in
+society, furthering research and innovation in various areas and
+giving people the ability to learn and sozialize in a comfortable
+environment. Due to the infinite possibilities in game environments,
+an enjoyable game exists for almost everyone~-- similar to how almost
+every person finds at least one music genre they enjoy. \\
+However, while playing a game to optimize its underlying mathematical
+problem is fun and important, in this work, we will focus on the
+second part, research and innovation in the hopes of leveraging the
+new knowledge in other fields. While we also optimize on a problem,
+that problem is not related to a game itself but rather it is related
+on a meta level. We try to generate platforming levels, optimizing
+them to be similar to existing levels known to the system. Our system
+will analyze a dataset of levels and try to generate new levels based
+on the seen patterns. It will work without any prior knowledge or
+feature engineering done by a human.
 
 %%% Local Variables:
 %%% mode: latex

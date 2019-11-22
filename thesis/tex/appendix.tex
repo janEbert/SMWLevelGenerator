@@ -1,0 +1,87 @@
+\section{Appendix}
+
+Here, we will list some more details that were not out of the scope of
+the thesis but more intended for a reader interested in further
+programming and design aspects. We will first go more in detail on the
+Julia packages used throughout the thesis and then describe the model
+interface.
+
+\subsection{Packages}
+\label{sec:packages}
+
+Let us now list the the packages most important for our preprocessing
+and training pipeline. While this list does not cover all packages
+used, we hope to give an overview of what the ecosystem made or will
+make possible, why these packages were important for us and what
+issues we still had to solve manually.
+
+We encountered several issues with model checkpoints. We first
+switched from an unmerged pull request branch of
+\mbox{BSON.jl}~\cite{JuliaIOBSONJl2019,SavingArrayLength} (which
+contains an issue only later addressed in the master branch) to the
+HDF5-based \mbox{JLD.jl}~\cite{JuliaIOJLDJl2019}, then to the more
+unstable \mbox{JLD2.jl}~\cite{JuliaIOJLD2Jl2019} due to not being able
+to save functions in \mbox{JLD.jl}. With \mbox{JLD2.jl}, there were
+still errors which led us to also check out a pull request for this
+package~\cite{MaybeFixTypename} (this has been merged but for
+stability reasons, we are not ready to switch to the master branch of
+\mbox{JLD2.jl} just yet). Finally, we settled with \mbox{JLD2.jl} for
+our model checkpoints as the most stable package. While the files are
+not as convenient as those of \mbox{BSON.jl}, we are sure the
+stability is worth it. In the end, we support saving to either
+\mbox{BSON.jl} or \mbox{JLD2.jl} with \mbox{JLD2.jl} as the default.
+
+For the databases containing our training data, we used
+\mbox{JuliaDB.jl}~\cite{JuliaComputingJuliaDBJl2019} as it supports
+parallel and out-of-core processing of the database. While these
+features have not been used yet, they should future-proof our program
+for cluster computing and databases that do not fit into memory on a
+host PC. Smaller statistics (especially pre-computed ones that we load
+to reduce startup time) were saved as CSV files which
+\mbox{CSV.jl}~\cite{JuliaDataCSVJl2019} was a great fit for.
+
+For our machine learning needs, we used
+\mbox{Flux.jl}~\cite{FluxMLFluxJl2019}. While \mbox{Flux.jl} is one of
+the most mature deep learning frameworks in Julia, it still missed
+some basic functionality. For example, we had to define our own
+convolutional layer without bias as it had not been included at the
+time of writing. With \mbox{Zygote.jl}~\cite{FluxMLZygoteJl2019}, a
+framework supporting source-to-source automatic differentiation that
+is to be included in \mbox{Flux.jl}, we hope to gain a large speed
+boost in the future with compiled derivatives as they will not have to
+be tracked at runtime.
+\\
+Due to \mbox{Flux.jl}'s GPU support enabled by
+\mbox{CuArrays.jl}~\cite{JuliaGPUCuArraysJl2019}, we were able to
+achieve great performance even while writing specialized loss
+functions. We were sadly not able to support the CUDA library for
+sparse arrays, cuSPARSE; due to the \mbox{CuArrays.jl} package not
+supporting all the features necessary for us (for example simple
+primitives like array slicing) for cuSPARSE arrays, we had to comment
+out the few lines pertaining to sparse CUDA arrays at the moment.
+These issues were not in the scope of this thesis but will be
+addressed at a later point, surely granting another large speedup to
+any GPU-run training pipeline that uses sparse matrices (the training
+pipline is explained in section~\ref{sec:training-pipeline}). Another,
+more low-level GPU package,
+\mbox{CUDAnative.jl}~\cite{JuliaGPUCUDAnativeJl2019}, allowed us to
+write our own CUDA kernels with ease. This enabled faster clamping of
+the parameters of our Wasserstein GANs. \\
+The \mbox{Transformers.jl}~\cite{peterChengchingwenTransformersJl2019}
+package was essential in getting the GPT-2 transformer model to run.
+While the model is not included in the package as of the writing of
+this thesis, the given building blocks were a large help. \\
+Finally,
+\mbox{TensorBoardLogger.jl}~\cite{vicentiniPhilipVincTensorBoardLoggerJl2019}
+enabled a great tool for monitoring training progress:
+TensorBoard~\cite{TensorBoard}.
+
+\subsection{Model Interface}
+\label{sec:model-interface}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../SMWLevelGenerator"
+%%% End:

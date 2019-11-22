@@ -8,18 +8,18 @@ game with the goal of reaching each level's exit in a limited amount
 of time. Games in the platforming genre confront the player with
 dangers like pits and enemies which have to be avoided by carefully
 jumping and maneuvering accross them in a host of levels. The original
-game features % TODO
-~levels. \\
+game features 75~levels with 96 different exits (each level may have
+more than one goal, especially secret goals). \\
 The player has access to a moveset including but not limited to
 running, jumping, picking up and throwing objects, and even shooting
 fireballs, flying and riding a dinosaur extending the amount of
 abilities even further. To access some abilities, Mario has to pick up
-power-ups usually contained in ``question mark blocks'' (``? blocks'').
-Blocks are commonly activated by hitting them from below. During a
-level, the player may collect various items like the power-ups
-mentioned above (which also let Mario take one extra hit before he is
-defeated) as well as coins and one-up mushrooms which increase the
-amount of lifes (tries) available to the player. \\
+power-ups usually contained in ``question mark blocks'' (``?
+blocks''). Blocks are commonly activated by hitting them from below.
+During a level, the player may collect various items like the
+power-ups mentioned above (which also let Mario take one extra hit
+before he is defeated) as well as coins and one-up mushrooms which
+increase the amount of lifes (tries) available to the player. \\
 Usually, when Mario lands on top of an enemy, the enemy is defeated.
 There are some enemies which Mario cannot safely land on or cannot
 defeat by jumping on top of them. Those enemier require a different
@@ -194,7 +194,7 @@ going to ignore that feature. For simplicity, we are also only going
 to train on horizontal levels. While support for vertical levels in
 database generation exists, models that support both types of levels
 are more complicated. Also, vertical levels only make up a fraction of
-total levels, so not a lot of data is lost (circa 2000 of the over
+total levels, so not a lot of data is lost (circa 2\,000 of the over
 17\,000 levels are vertical).
 
 Calling a screen a matrix is not the whole truth. While screens itself
@@ -382,12 +382,13 @@ other (again, excluding the connections by screen or secondary exits),
 our problem size shrings as we do not need to get a complete view of
 the whole game world. While the original game separates levels into
 % TODO figure of overworld
-different biomes (grassland, cave, forest, \dots) by changing the
-graphics of sequential levels to the corresponding theme, some hacks
-may tell a story by tuning the general feel and environment of one
-level to fit the following one. We can ignore this and still obtain a
-new, interesting Super Mario World game, even though the cosmetic,
-meta-view of the world whose story is told through the game, is lost.
+different biomes or worlds (grassland, cave, forest, \dots) by
+changing the graphics of sequential levels to the corresponding theme,
+some hacks may tell a story by tuning the general feel and environment
+of one level to fit the following one. We can ignore this and still
+obtain a new, interesting Super Mario World game, even though the
+cosmetic, meta-view of the world whose story is told through the game,
+is lost.
 
 With that, we have described the most important concepts in Super
 Mario World and how they influence our decisions regarding model
