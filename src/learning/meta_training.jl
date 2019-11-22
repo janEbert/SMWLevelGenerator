@@ -314,8 +314,9 @@ function load_cp(cppath::AbstractString, use_bson::Val{true})
 end
 
 function load_cp(cppath::AbstractString, use_bson::Val{false})
-    cp = load(cppath)
-    load_cp(cp, String)
+    jldopen(cppath) do cp
+        load_cp(cp, String)
+    end
 end
 
 function load_cp(cp::AbstractDict, cpkeytype::Type)

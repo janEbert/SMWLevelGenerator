@@ -345,20 +345,22 @@ function loadcp(cppath::AbstractString, modeltype::Type{<:LearningModel},
 end
 
 function loadcp(cppath::AbstractString, modeltype::Nothing, use_bson::Val{false})
-    cp = load(cppath)
-    model = togpu(cp["model"]::LearningModel)
+    jldopen(cppath) do cp
+        model = togpu(cp["model"]::LearningModel)
 
-    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
-    return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
+        optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+        return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
+    end
 end
 
 function loadcp(cppath::AbstractString, modeltype::Type{<:LearningModel},
                 use_bson::Val{false})
-    cp = load(cppath)
-    model = togpu(cp["model"]::modeltype)
+    jldopen(cppath) do cp
+        model = togpu(cp["model"]::modeltype)
 
-    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
-    return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
+        optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+        return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
+    end
 end
 
 loadother(cp, use_bson::Val{true})  = loadother(cp, Symbol)

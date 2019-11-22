@@ -584,8 +584,9 @@ function load_d_cp(cppath::AbstractString, use_bson::Val{true})
 end
 
 function load_d_cp(cppath::AbstractString, use_bson::Val{false})
-    cp = load(cppath)
-    load_d_cp(cp, String)
+    jldopen(cppath) do cp
+        load_d_cp(cp, String)
+    end
 end
 
 function load_d_cp(cp::AbstractDict, cpkeytype::Type)
@@ -607,8 +608,9 @@ function load_g_cp(cppath::AbstractString, use_bson::Val{true})
 end
 
 function load_g_cp(cppath::AbstractString, use_bson::Val{false})
-    cp = load(cppath)
-    load_g_cp(cp, String)
+    jldopen(cppath) do cp
+        load_g_cp(cp, String)
+    end
 end
 
 function load_g_cp(cp::AbstractDict, cpkeytype::Type)
@@ -670,8 +672,9 @@ function load_meta_cp(cppath::AbstractString, use_bson::Val{true})
 end
 
 function load_meta_cp(cppath::AbstractString, use_bson::Val{false})
-    cp = load(cppath)
-    load_meta_cp(cp, String)
+    jldopen(cppath) do cp
+        load_meta_cp(cp, String)
+    end
 end
 
 function load_meta_cp(cp::AbstractDict, cpkeytype::Type)
