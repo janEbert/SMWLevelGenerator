@@ -341,12 +341,11 @@ julia> using SMWLevelGenerator, Flux, JLD2
 
 julia> import SMWLevelGenerator.WassersteinGAN  # Change this line.
 
-julia> cp = jldopen("exps/my_best_wsgan_checkpoint.jld2")
-JLDFile [...]
-
-julia> generator = cp["g_model"];  # Note that the keys are `String`s.
-       # This _must_ not give a warning like "Warning: type ... does
-       # not exist in workspace; reconstructing"!
+julia> generator = jldopen("exps/my_best_wsgan_checkpoint.jld2") do cp
+           # This _must_ not give a warning like "Warning: type ... does
+           # not exist in workspace; reconstructing"!
+           generator = cp["g_model"]  # Note that the keys are `String`s.
+       end;
 ```
 
 “Change this line” means that that line is most likely the one you
