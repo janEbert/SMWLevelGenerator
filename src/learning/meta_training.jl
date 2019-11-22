@@ -296,7 +296,8 @@ function save_cp(model, optim, trainlosses, meanlosses,
     # We use this signature so we don't use `mmap`, trading speed for stability.
     # See https://github.com/JuliaIO/JLD2.jl/issues/55
     jldopen(joinpath(logdir, "meta-cp_$steps-steps_loss-$(trainlosses[end])_"
-                     * "$starttimestr.jld2"), true, true, true, IOStream) do io
+                     * "$starttimestr.jld2"), true, true, true, IOStream,
+            compress=true) do io
         # addrequire(io, :Flux)
         write(io, "meta_model", tocpu(model))
         write(io, "meta_optim", tocpu(optim))

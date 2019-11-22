@@ -541,7 +541,7 @@ function save_d_cp(d_model, d_optim, d_trainlosses_real, d_trainlosses_fake, d_t
     # See https://github.com/JuliaIO/JLD2.jl/issues/55
     jldopen(joinpath(logdir, "discriminator-cp_$steps-steps_loss-"
                      * "$(d_testlosses[end])_$starttimestr.jld2"),
-            true, true, true, IOStream) do io
+            true, true, true, IOStream, compress=true) do io
         # addrequire(io, :Flux)
         write(io, "d_model", tocpu(d_model))
         write(io, "d_optim", tocpu(d_optim))
@@ -566,7 +566,8 @@ function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
     # We use this signature so we don't use `mmap`, trading speed for stability.
     # See https://github.com/JuliaIO/JLD2.jl/issues/55
     jldopen(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(testloss)_"
-                     * "$starttimestr.jld2"), true, true, true, IOStream) do io
+                     * "$starttimestr.jld2"), true, true, true, IOStream,
+            compress=true) do io
         # addrequire(io, :Flux)
         write(io, "g_model", tocpu(g_model))
         write(io, "g_optim", tocpu(g_optim))
@@ -652,7 +653,7 @@ function save_meta_cp(meta_model, meta_optim, meta_trainlosses, meta_meanlosses,
     # See https://github.com/JuliaIO/JLD2.jl/issues/55
     jldopen(joinpath(logdir, "meta-cp_$steps-steps_loss-"
                      * "$(meta_trainlosses[end])_$starttimestr.jld2"),
-            true, true, true, IOStream) do io
+            true, true, true, IOStream, compress=true) do io
         # addrequire(io, :Flux)
         write(io, "meta_model", tocpu(meta_model))
         write(io, "meta_optim", tocpu(meta_optim))
