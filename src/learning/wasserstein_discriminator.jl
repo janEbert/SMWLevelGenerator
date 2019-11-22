@@ -82,30 +82,34 @@ function wsdiscriminator1d(num_features=16, imgsize=imgsize1d;
                        modeltype=WassersteinDiscriminatorModel, output_activation=identity,
                        kernelsize=(4,), first_stride=2, kwargs...)
     model.hyperparams[:clamp_value] = clamp_value
+    return model
 end
 
 function wsdiscriminator2d(num_features=64, imgsize=imgsize2d;
                            clamp_value=0.01f0, kwargs...)
-    manualmodel(num_features, imgsize, Symbol("2d");
-                modeltype=WassersteinDiscriminatorModel, output_activation=identity,
-                kwargs...)
+    model = manualmodel(num_features, imgsize, Symbol("2d");
+                        modeltype=WassersteinDiscriminatorModel, output_activation=identity,
+                        kwargs...)
     model.hyperparams[:clamp_value] = clamp_value
+    return model
 end
 
 function wsdiscriminator3dtiles(num_features=128, imgsize=imgsize3dtiles;
                                 clamp_value=0.01f0, kwargs...)
-    manualmodel(num_features, imgsize, Symbol("3dtiles");
-                modeltype=WassersteinDiscriminatorModel, output_activation=identity,
-                kwargs...)
+    model = manualmodel(num_features, imgsize, Symbol("3dtiles");
+                        modeltype=WassersteinDiscriminatorModel, output_activation=identity,
+                        kwargs...)
     model.hyperparams[:clamp_value] = clamp_value
+    return model
 end
 
 function wsdiscriminator3d(num_features=256, imgsize=imgsize3d;
                            clamp_value=0.01f0, kwargs...)
-    manualmodel(num_features, imgsize, Symbol("3d");
-                modeltype=WassersteinDiscriminatorModel, output_activation=identity,
-                kwargs...)
+    model = manualmodel(num_features, imgsize, Symbol("3d");
+                        modeltype=WassersteinDiscriminatorModel, output_activation=identity,
+                        kwargs...)
     model.hyperparams[:clamp_value] = clamp_value
+    return model
 end
 
 end # module

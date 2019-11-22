@@ -66,23 +66,31 @@ function buildmodel(hiddensize::Integer, num_hiddenlayers::Integer, imgsize, dim
 end
 
 function densewsdiscriminator1d(hiddensize=32, num_hiddenlayers=3, imgsize=imgsize1d;
-                                kwargs...)
-    buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("1d"); kwargs...)
+                                clamp_value=0.01f0, kwargs...)
+    model = buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("1d"); kwargs...)
+    model.hyperparams[:clamp_value] = clamp_value
+    return model
 end
 
 function densewsdiscriminator2d(hiddensize=64, num_hiddenlayers=4, imgsize=imgsize2d;
-                                kwargs...)
-    buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("2d"); kwargs...)
+                                clamp_value=0.01f0, kwargs...)
+    model = buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("2d"); kwargs...)
+    model.hyperparams[:clamp_value] = clamp_value
+    return model
 end
 
 function densewsdiscriminator3dtiles(hiddensize=128, num_hiddenlayers=4,
-                                     imgsize=imgsize3dtiles; kwargs...)
-    buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("3dtiles"); kwargs...)
+                                     imgsize=imgsize3dtiles; clamp_value=0.01f0, kwargs...)
+    model = buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("3dtiles"); kwargs...)
+    model.hyperparams[:clamp_value] = clamp_value
+    return model
 end
 
 function densewsdiscriminator3d(hiddensize=256, num_hiddenlayers=4, imgsize=imgsize3d;
-                                kwargs...)
-    buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("3d"); kwargs...)
+                                clamp_value=0.01f0, kwargs...)
+    model = buildmodel(hiddensize, num_hiddenlayers, imgsize, Symbol("3d"); kwargs...)
+    model.hyperparams[:clamp_value] = clamp_value
+    return model
 end
 
 end # module
