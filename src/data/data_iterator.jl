@@ -95,7 +95,7 @@ end
 function dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                           splitindices::AbstractVector, batch_size::Integer,
                           per_tile::Bool, reverse_rows::Val, join_pad::Val, as_matrix::Val)
-    try
+    # try
         firstseq = preprocess(db[1], per_tile, reverse_rows, join_pad, as_matrix)
         seqbuffer = makeseqbuffer(firstseq, batch_size)
         firstseq = nothing
@@ -110,10 +110,10 @@ function dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                 put!(channel, makebatch(seqbuffer, length(indices)))
             end
         end
-    catch e
-        print("Error in data iterator task: ")
-        showerror(stdout, e)
-    end
+    # catch e
+    #     print("Error in data iterator task: ")
+    #     showerror(stdout, e)
+    # end
 end
 
 function makeseqbuffer(firstseq::AbstractVector, batch_size::Integer)
