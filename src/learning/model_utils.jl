@@ -332,8 +332,10 @@ leakyrelu(x) = Flux.leakyrelu(x, 0.2f0)
 Reshape `x` of a size like `(a, b, c, B)` or `(a, b, B)`, where `B` is the batch size to a
 matrix of size `(num_features, B)` (`num_features` should be  `a * b * c`).
 """
-struct BatchToMatrix{I<:Integer}
-    num_features::I
+struct BatchToMatrix
+# TODO had to remove the below as reshape does not support all `Integer` types.
+# struct BatchToMatrix{I<:Integer}
+    num_features::Int
 end
 
 (b::BatchToMatrix)(x) = reshape(x, b.num_features, :)
@@ -348,7 +350,8 @@ struct MatrixTo3DBatch{I<:Integer}
     outputsize3::I
 end
 
-MatrixTo3DBatch(outputsize) = MatrixTo3DBatch(promote(outputsize...)...)
+# TODO have to convert to `Int` as reshape does not support all `Integer` types.
+MatrixTo3DBatch(outputsize) = MatrixTo3DBatch(Int.(outputsize)...)
 
 (b::MatrixTo3DBatch)(x) = reshape(x, b.outputsize1, b.outputsize2, b.outputsize3, :)
 
@@ -361,7 +364,8 @@ struct MatrixTo2DBatch{I<:Integer}
     outputsize2::I
 end
 
-MatrixTo2DBatch(outputsize) = MatrixTo2DBatch(promote(outputsize...)...)
+# TODO have to convert to `Int` as reshape does not support all `Integer` types.
+MatrixTo2DBatch(outputsize) = MatrixTo2DBatch(Int.(outputsize)...)
 
 (b::MatrixTo2DBatch)(x) = reshape(x, b.outputsize1, b.outputsize2, :)
 
