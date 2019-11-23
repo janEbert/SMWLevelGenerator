@@ -41,7 +41,7 @@ function metamakeloss(model::LearningModel, criterion)
     end
 end
 
-function metastep!(model::MetadataModel, meta_params, meta_optim, meta_loss,
+function metastep!(model::LearningModel, meta_params, meta_optim, meta_loss,
                    real_batch, meta_batch)
     l = calculate_loss(model, meta_loss, real_batch, meta_batch)
     grads = gradient(() -> l, meta_params)
