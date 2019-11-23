@@ -3,6 +3,7 @@ module ModelUtils
 import Base.clamp!
 using SparseArrays
 
+using Adapt: adapt
 using BSON
 using CUDAnative
 using CuArrays
@@ -17,7 +18,7 @@ import ..LevelFormatter
 export LearningModel, AbstractDiscriminator, AbstractGenerator
 export makeloss, dataiteratorparams, calculate_loss, step!
 export makesoftloss, soft_criterion, makenoisebatch
-export toggle_gpu, should_use_gpu, togpu
+export toggle_gpu, should_use_gpu, togpu, tocpu
 export mae, bce, leakyrelu
 export BatchToMatrix, MatrixTo3DBatch, MatrixTo2DBatch, ConvNoBias, ConvTransposeNoBias
 
@@ -29,8 +30,8 @@ important information.
 
 First off, to make the underlying model trainable, make the `LearningModel`
 a `Flux.@treelike`.
-A `LearningModel` has to implement one field `hyperparams::Dict{Symbol, Any}` which holds any
-parameters that differentiate the model from another model of the same type (or not).
+A `LearningModel` has to implement one field `hyperparams::Dict{Symbol, Any}` which holds
+any parameters that differentiate the model from another model of the same type (or not).
 The following keys are required in the `hyperparams` dictionary.
    - dimensionality::Symbol: What kind of level data will this be used with, which input
                              will it accept? Can be any `Symbol` in
@@ -44,8 +45,8 @@ following functions:
    - `calculate_loss(model::YourModel, loss, input, target)`: See [`calculate_loss`](@ref).
    - `step!(model::YourModel, parameters, optimizer, loss, input, target)`:
      See [`step!`](@ref).
-   - Optionally: `soft_criterion(model::YourModel, y_hat, y, criterion)`:
-                 See [`soft_criterion`](@ref).
+   - Optionally:
+      - `makesoftloss(model::YourModel, criterion)`: See [`makesoftloss`](@ref).
 It may be possible to use the standard definitions of some of the above functions. See their
 respective implementation to be sure. They are chosen to be sensible defaults but may not
 be correct for `YourModel`.
@@ -273,6 +274,46 @@ togpu(x) = should_use_gpu() ? Flux.gpu(x) : identity(x)
 # togpu(x::AbstractSparseMatrix) = should_use_gpu() ? CuSparseMatrixCSR(x) : identity(x)
 
 # togpu(x::AbstractSparseVector) = should_use_gpu() ? CuSparseVector(x) : identity(x)
+
+function togpu(optim::Flux.ADAM)
+    gpu_states = IdDict()
+    for (k, (m, v, beta)) in optim.state
+        gpu_states[togpu(k)] = (togpu(m), togpu(v), beta)
+    end
+    return Flux.ADAM(optim.eta, optim.beta, gpu_states)
+end
+
+function togpu(optim::Flux.RMSProp)
+    gpu_acc = IdDict()
+    for (k, accval) in optim.acc
+        gpu_acc[togpu(k)] = togpu(accval)
+    end
+    return Flux.RMSProp(optim.eta, optim.rho, gpu_acc)
+end
+
+"""
+    tocpu(x)
+
+Map `x` to the CPU.
+"""
+tocpu(x::CuArray) = adapt(Array, x)
+tocpu(x) = Flux.cpu(x)
+
+function tocpu(optim::Flux.ADAM)
+    cpu_states = IdDict()
+    for (k, state_tuple) in optim.state
+        cpu_states[tocpu(k)] = tocpu.(state_tuple)
+    end
+    return Flux.ADAM(optim.eta, optim.beta, cpu_states)
+end
+
+function tocpu(optim::Flux.RMSProp)
+    cpu_acc = IdDict()
+    for (k, accval) in optim.acc
+        cpu_acc[tocpu(k)] = tocpu(accval)
+    end
+    return Flux.RMSProp(optim.eta, optim.rho, cpu_acc)
+end
 
 
 "Mean absolute error."

@@ -7,14 +7,10 @@ using Dates: now
 using Distributed: RemoteChannel
 using Logging
 
-using Adapt: adapt
-using CuArrays: CuArray
-import Flux
-
 using ..InputStatistics: constantinputsize
 using ..ModelUtils: togpu
 
-export @tblog, logprint, newexpdir, batchtogpu, tocpu, maketarget, cleanup
+export @tblog, logprint, newexpdir, batchtogpu, maketarget, cleanup
 
 """
     @tblog(logger, exs...)
@@ -60,30 +56,6 @@ batchtogpu(batch) = togpu(batch)
 batchtogpu(batch::AbstractVector{<:AbstractArray}) = togpu.(batch)
 
 """
-    tocpu(x)
-
-Map `x` to the CPU.
-"""
-tocpu(x::CuArray) = adapt(Array, x)
-tocpu(x) = Flux.cpu(x)
-
-function tocpu(optim::Flux.ADAM)
-    cpu_states = IdDict()
-    for (k, state_tuple) in optim.state
-        cpu_states[tocpu(k)] = tocpu.(state_tuple)
-    end
-    return Flux.ADAM(optim.eta, optim.beta, cpu_states)
-end
-
-function tocpu(optim::Flux.RMSProp)
-    cpu_acc = IdDict()
-    for (k, accval) in optim.acc
-        cpu_acc[tocpu(k)] = tocpu(accval)
-    end
-    return Flux.RMSProp(optim.eta, optim.rho, cpu_acc)
-end
-
-"""
     maketarget(batch, is_joined_padded::Val{Bool}, is_matrix::Val{Bool})
 
 Return the target (prediction) batch of the given batch.
@@ -92,15 +64,6 @@ appending zeros of the same size instead. Also, the constant input part (except 
 "has not ended"-bit) is removed from each sequence element.
 In addition, the result is appropriately moved to the GPU.
 `Val{Bool}` means a `Val` type of a `Bool` instance.
-
-# TODO these are wrong!
-```jldoctest; setup = :(ENV["SMWLG_IGNORE_GPU"] = true)
-julia> maketarget([[1:10;], [11:20;]], Val(false), Val(false))
-       # Removes the constant part as well!
-2-element Array{SubArray{Int64,1,Array{Int64,1},Tuple{UnitRange{Int64}},true},1}:
- [16, 17, 18, 19, 20]
- [0, 0, 0, 0, 0]
-```
 """
 function maketarget(
         batch::AbstractVector{<:AbstractVector})::AbstractVector{<:AbstractVector}
@@ -149,10 +112,10 @@ function maketarget(batch::AbstractMatrix)::AbstractMatrix
     batchtogpu(target)
 end
 
-cleanup(dataiter::RemoteChannel) = finalize(dataiter)
+cleanup(dataiter::RemoteChannel)   = finalize(dataiter)
 cleanup(dataiter::AbstractChannel) = close(dataiter)
-cleanup(task::Task) = close(task)
-cleanup(file_io::IOStream) = close(file_io)
+cleanup(task::Task)                = close(task)
+cleanup(file_io::IOStream)         = close(file_io)
 
 end # module
 

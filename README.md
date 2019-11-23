@@ -72,6 +72,8 @@ easily be specified manually; we focus on easy extension.
   [7-Zip](https://www.7-zip.org/))
 - [Julia](https://julialang.org/) (version 1.2 or 1.3+)
 - [TensorBoard](https://www.tensorflow.org/) (will be made optional)
+- [Wine](https://www.winehq.org/) (if not on Windows; required to run
+  [Lunar Magic](https://fusoya.eludevisibility.org/lm/index.html))
 
 Execute the following in your command line of choice in this
 directory:

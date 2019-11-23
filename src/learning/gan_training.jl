@@ -589,9 +589,9 @@ function load_d_cp(cppath::AbstractString, use_bson::Val{false})
     end
 end
 
-function load_d_cp(cp::AbstractDict, cpkeytype::Type)
+function load_d_cp(cp, cpkeytype::Type)
     d_model = togpu(cp[cpkeytype("d_model")]::Flux.Chain)
-    d_optim = cp[cpkeytype("d_optim")]
+    d_optim = togpu(cp[cpkeytype("d_optim")])
 
     d_trainlosses_real::Vector{Float32} = cp[cpkeytype("d_trainlosses_real")]
     d_trainlosses_fake::Vector{eltype(d_trainlosses_real)} = cp[
@@ -613,9 +613,9 @@ function load_g_cp(cppath::AbstractString, use_bson::Val{false})
     end
 end
 
-function load_g_cp(cp::AbstractDict, cpkeytype::Type)
+function load_g_cp(cp, cpkeytype::Type)
     g_model = togpu(cp[cpkeytype("g_model")]::Flux.Chain)
-    g_optim = cp[cpkeytype("g_optim")]
+    g_optim = togpu(cp[cpkeytype("g_optim")])
 
     g_trainlosses::Vector{Float32} = cp[cpkeytype("g_trainlosses")]
     testfakes::Vector = cp[cpkeytype("testfakes")]
@@ -677,9 +677,9 @@ function load_meta_cp(cppath::AbstractString, use_bson::Val{false})
     end
 end
 
-function load_meta_cp(cp::AbstractDict, cpkeytype::Type)
+function load_meta_cp(cp, cpkeytype::Type)
     meta_model = togpu(cp[cpkeytype("meta_model")]::Flux.Chain)
-    meta_optim::Flux.ADAM = cp[cpkeytype("meta_optim")]
+    meta_optim::Flux.ADAM = togpu(cp[cpkeytype("meta_optim")])
 
     meta_trainlosses::Vector{Float32} = cp[cpkeytype("meta_trainlosses")]
     meta_meanlosses::Vector{eltype(meta_trainlosses)} = cp[cpkeytype("meta_meanlosses")]

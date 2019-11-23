@@ -19,7 +19,6 @@ using ..ModelUtils
 using ..TrainingUtils
 using ..LSTM
 using ..Transformer
-# using ..ESN
 using ..RandomPredictor
 
 export trainingloop!, TrainingParameters, TPs
@@ -331,7 +330,7 @@ function loadcp(cppath::AbstractString, modeltype::Nothing, use_bson::Val{true})
     cp = BSON.load(cppath)
     model = togpu(cp[:model]::LearningModel)
 
-    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp, use_bson)
     return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
 end
 
@@ -340,7 +339,7 @@ function loadcp(cppath::AbstractString, modeltype::Type{<:LearningModel},
     cp = BSON.load(cppath)
     model = togpu(cp[:model]::modeltype)
 
-    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+    optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp, use_bson)
     return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
 end
 
@@ -348,7 +347,7 @@ function loadcp(cppath::AbstractString, modeltype::Nothing, use_bson::Val{false}
     jldopen(cppath) do cp
         model = togpu(cp["model"]::LearningModel)
 
-        optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+        optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp, use_bson)
         return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
     end
 end
@@ -358,7 +357,7 @@ function loadcp(cppath::AbstractString, modeltype::Type{<:LearningModel},
     jldopen(cppath) do cp
         model = togpu(cp["model"]::modeltype)
 
-        optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp)
+        optimizer, trainlosses, meanlosses, varlosses, past_steps = loadother(cp, use_bson)
         return model, optimizer, trainlosses, meanlosses, varlosses, past_steps
     end
 end
@@ -366,8 +365,8 @@ end
 loadother(cp, use_bson::Val{true})  = loadother(cp, Symbol)
 loadother(cp, use_bson::Val{false}) = loadother(cp, String)
 
-function loadother(cp::AbstractDict, cpkeytype::Type)
-    optimizer::Flux.ADAM = cp[cpkeytype("optimizer")]
+function loadother(cp, cpkeytype::Type)
+    optimizer::Flux.ADAM = togpu(cp[cpkeytype("optimizer")])
 
     trainlosses::Vector{Float32} = cp[cpkeytype("trainlosses")]
     meanlosses::Vector{eltype(trainlosses)} = cp[cpkeytype("meanlosses")]

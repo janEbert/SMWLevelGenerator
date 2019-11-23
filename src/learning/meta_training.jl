@@ -319,9 +319,9 @@ function load_cp(cppath::AbstractString, use_bson::Val{false})
     end
 end
 
-function load_cp(cp::AbstractDict, cpkeytype::Type)
+function load_cp(cp, cpkeytype::Type)
     model = togpu(cp[cpkeytype("meta_model")]::Flux.Chain)
-    optim::Flux.ADAM = cp[cpkeytype("meta_optim")]
+    optim::Flux.ADAM = togpu(cp[cpkeytype("meta_optim")])
 
     trainlosses::Vector{Float32} = cp[cpkeytype("meta_trainlosses")]
     meanlosses::Vector{eltype(trainlosses)} = cp[cpkeytype("meta_meanlosses")]
