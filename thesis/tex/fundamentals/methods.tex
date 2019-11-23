@@ -12,8 +12,8 @@ metadata), we want to generate similar, new levels of large
 dimensionality (also level layers and metadata). This is a very
 complex problem, requiring careful planning and a lot of computational
 power to train a model large or refined enough to capture all the
-essences we need for a new, enjoyable level. A generative adversarial
-network~(GAN)~\cite{goodfellowGenerativeAdversarialNetworks2014}
+essences we need for a new, enjoyable level. A \emph{generative adversarial
+network}~(GAN)~\cite{goodfellowGenerativeAdversarialNetworks2014}
 would~-- with the present knowledge in machine learning~-- be
 exceptionally hard to train on a task with a dimensionality this
 large. A lack of proper computational resources makes this even harder
@@ -54,11 +54,11 @@ where $k$ is the size of a constant input of metadata (explained in
 section~\ref{sec:generation-via-prediction}), $r$ is the amount of
 rows in the given level, $l$ is the amount of layers in the given
 level and $c$ is the amount of columns in the input (this is
-variable). The added 1 in the first matrix dimensionality is a bit
+variable). The added~1 in the first matrix dimensionality is a bit
 determining whether that column is \emph{not} the last column of the
 level. To simplify the above, the input is the level, where each
-column is concatenated with a constant vector of metadata and a 1
-except for the last column which has a 0 at that place. The output
+column is concatenated with a constant vector of metadata and a~1
+except for the last column which has a~0 at that place. The output
 should be the input (except the constant part of each column) from the
 second column onwards with a vector of zeros at the end if the level
 has ended or the predicted next column of the level otherwise.
@@ -69,15 +69,15 @@ Tasked with completing an unfinished sequence, we turn our head to
 sequence prediction models. The models we are using are also called
 sequence-to-sequence models. We will closely orient ourselves on
 natural language processing techniques, specifically natural language
-generation. The models we evaluate are long short-term memory
+generation. The models we evaluate are \emph{long short-term memory}
 (LSTM)~\cite{hochreiterLongShorttermMemory1997} stacks (with a fully
-connected layer at the end) and transformer-based models. More
-specifically, the LSTM stacks are based on
-\emph{char-rnns}~\cite{andrejKarpathyCharrnn2019} and the
-transformer-based models are
-\emph{GPT-2}~\cite{radfordLanguageModelsAre,OpenaiGpt22019}
+connected layer at the end) and \emph{transformer}-based
+models~\cite{vaswaniAttentionAllYou2017}. More specifically, the LSTM
+stacks are based on \emph{char-rnns}~\cite{andrejKarpathyCharrnn2019}
+and the transformer-based models are
+\mbox{\emph{GPT-2}}~\cite{radfordLanguageModelsAre,OpenaiGpt22019}
 models. As a baseline, we implement a non-learning random model that
-simply outputs sequences of either 1 or 0 based on a user-supplied
+simply outputs sequences of either~1 or~0 based on a user-supplied
 chance $p \in [0, 1]$.
 
 The reason we use techniques from natural language processing is that
@@ -103,7 +103,7 @@ keep a state, transformers can analyze multiple different inputs at
 once, non-sequentially. This enables the parallelizability which in
 turn enables faster training enabling larger models. With these
 advantages, we assume that transformers should be better suited to the
-task due to its high dimensionality. With the GPT-2
+task due to its high dimensionality. With the \mbox{GPT-2}
 architecture~\cite{radfordLanguageModelsAre}, transformers'
 capabilities in natural language generation tasks have been shown.
 While those models used an amount of parameters that could not
@@ -122,10 +122,12 @@ where $n$ is the size of a latent vector of noise our model expects
 and $l$ is the amount of layers the generated level will contain.
 
 For our only actual generator in our pipeline, we supply three models:
-a standard deep convolutional generative adversarial network
+a standard \emph{deep convolutional generative adversarial network}
 (DCGAN)~\cite{radfordUnsupervisedRepresentationLearning2016} and two
-Wasserstein GANs; one also based on the DCGAN, another based on fully
-connected layers (we will also call these models
+\emph{Wasserstein
+  GANs}~\cite{arjovskyWassersteinGAN2017,martinarjovskyMartinarjovskyWassersteinGAN2019};
+one also based on the DCGAN, another based on fully connected layers
+(we will also call these models
 MLP-based~\cite{MultilayerPerceptron2019}). Both of these models are
 specially fitted with stride, padding and dilation values to obtain
 the correct screen size ($27 \times 16 \times l$, where $l$ is the number of
@@ -133,9 +135,11 @@ channels or layers).
 
 We decided on using GANs as our generative models due to prior
 experience and as we imagined their generative capabilities to be
-above autoencoders. Whether this is true should be investigated, for
-example by adding and testing autoencoder models as well which was
-sadly not feasible for us due to time constraints. \\
+above
+autoencoders~\cite{kramerNonlinearPrincipalComponent1991,kingmaAutoEncodingVariationalBayes2014,Autoencoder2019}.
+Whether this is true should be investigated, for example by adding and
+testing autoencoder models as well which was sadly not feasible for us
+due to time constraints. \\
 Another factor in our decision was the hope that the adversarial
 objective GANs rely on will improve both the quality and the size of
 the space of generated levels as our models will be less prone to
@@ -178,9 +182,9 @@ decorrelate these two tasks just like we did with the sequence
 prediction models. This has a couple of reasons: For one, the added
 metadata vector would complicate purely convolutional GANs. Another
 reason is that this greatly expands the space of input data from data
-in the set 0 to 1 (or interval from 0 to 1 inclusively, depending on
-if we normalize the data) to real numbers in the interval from 0 to
-512 inclusively (assuming our currently supplied metadata; more
+in the set~0 to~1 (or interval from~0 to~1 inclusively, depending on
+if we normalize the data) to real numbers in the interval from~0
+to~512 inclusively (assuming our currently supplied metadata; more
 information in section~\ref{sec:preprocessing}). \\
 While we are certain that this influences our generative results
 negatively, we hope that decoupling these two tasks yields us an
@@ -198,22 +202,23 @@ the better choice.
 \label{sec:julia}
 
 Our source code is written in
-Julia~\cite{bezansonJuliaFreshApproach2017}. Julia is a programming
-language whose version 1.0 was released in August 2018. It presents
-itself as combining the performance of C, the productivity of Python
-and the generality of Lisp. With this combination, we were able to
-quickly assemble a very performant, high-level data processing and
+\emph{Julia}~\cite{bezansonJuliaFreshApproach2017}. Julia is a
+programming language whose version~1.0 was released in August~2018. It
+presents itself as combining the performance of C, the productivity of
+Python and the generality of Lisp. With this combination, we were able
+to quickly assemble a very performant, high-level data processing and
 low-level machine learning pipeline. It enabled us to~-- for example~--
 change our array types as desired, enabling incremental optimization
 from standard arrays to GPU arrays to sparse arrays to sparse GPU
-arrays. While starting with version 1.1.0, we updated our code to now
-work with versions 1.2.0 (the latest stable release) and 1.3.0-rc5
-(the latest release candidate for the upcoming version). Running on a
-1.3-version or above enables multi-threading for the data iterator
-which may improve training speed by a large magnitude. Our recommended
-version to run the code is therefore 1.3.0-rc5 (once 1.3.0 is released
-as stable, that should be used instead as we expect no syntax or
-functionality changes).
+arrays. While starting with version~1.1.0, we updated our code to now
+work with versions~1.2.0 (the latest stable release)
+and~\mbox{1.3.0-rc5} (the latest release candidate for the upcoming
+version). Running on a 1.3-version or above enables multi-threading
+for the data iterator which may improve training speed by a large
+magnitude. Our recommended version to run the code is
+therefore~\mbox{1.3.0-rc5} (once 1.3.0~is released as stable, that
+should be used instead as we expect no syntax or functionality
+changes).
 
 Thanks to community packages, we were able to easily implement
 functions accelerated by CUDA~\cite{CUDAToolkit2013} and

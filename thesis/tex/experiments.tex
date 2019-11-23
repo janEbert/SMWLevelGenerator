@@ -1,10 +1,37 @@
 \section{Experiments}
 
-\subsection{1D}
+For our experiments, we used cluster computers available to us thanks
+to Bielefeld University; therefore we cannot make exact claims as to
+which CPUs or GPUs we used. \\
+Due to time constraints, we were not able to run experiments over all
+dimensions. We also decided against training for longer than 24~hours
+on a single experiment. With these restrictions, models in larger
+dimensionalities may not have finished training (we set a maximum of
+1000~epochs for all models). In the case of 3D~data with only all tile
+layers (\texttt{3dtiles}), the transformer model was not able to train
+4~complete epochs in the 24~hour time frame (the LSTM in the same
+dimensionality was faster for the reasons explained in
+section~\ref{sec:generation-via-prediction}; due to the large memory
+usage, we had to reduce the batch size to~1~\footnote{We could have
+  implemented batch sizes of~1 to not be batched but instead remain as
+  a singular input to improve performance for this special case.
+  However, we decided it was not worth it; we mentioned our plans for
+  3-dimensional sparse arrays fixing most batch-related issues all at
+  once in section~\ref{sec:generation-via-prediction}.}).
 
-\subsection{2D}
+We are also not going to take a look at every model in higher
+dimensions; internal tests have shown which models work and which
+don't. While we \emph{will} contrast LSTMs and transformers, we are
+going to only present our best models for the other cases. Another
+reason is that we do not wish to waste precious public time on the
+compute cluster and electricity on models that are very unlikely to
+achieve good results.
 
-\subsection{3D, Only Tiles}
+\subsection{1-Dimensional}
+
+\subsection{2-Dimensional}
+
+\subsection{3-Dimensional, Only Tiles}
 
 
 %%% Local Variables:

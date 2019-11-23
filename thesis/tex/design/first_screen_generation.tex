@@ -11,13 +11,13 @@ First off, as mentioned in section~\ref{sec:julia}, we defined
 convolutional layers without bias which were not included in Flux.jl
 at the time of writing. \\
 Our 1-dimensional GANs automatically adjust their layers to the input
-size. The GANs for training data in 2D and above are implemented with
+size. The GANs for training data in~2D and above are implemented with
 manually chosen stride, padding and dilation so the output is the same
 size as the first screen of the level. The input to the discriminators
-of our GANs is the first screen of the level (a vector of 16 elements
-in the 1-dimensional case, a $27 \times 16$ matrix in the
-2-dimensional case and a $27 \times 16 \times l$ cube in the
-3-dimensional case, where $l$ is the amount of layers). Unlike our
+of our GANs is the first screen of the level (a vector of 16~elements
+in the 1-dimensional case, a $27 \times 16$~matrix in the
+2-dimensional case and a $27 \times 16 \times l$~cube in the
+3-dimensional case, where $l$~is the amount of layers). Unlike our
 sequence models, neither the discriminators nor the generators receive
 any constant inputs of metadata (as the metadata is generated from the
 GANs' outputs).
@@ -29,9 +29,9 @@ extending the GAN pipeline with new models as simple as the sequence
 prediction pipeline. Unlike the sequence predictors, discriminator
 models do not allow inputs other than those of the form
 $r \times c \times l \times b$ or $c \times l \times b$ (for the
-1-dimensional case), where $r$ is the amount of rows, $c$ the amount
-of columns, $l$ the amount of layers (channels in image processing)
-and $b$ the batch size. We prodive layers to easily convert from this
+1-dimensional case), where $r$~is the amount of rows, $c$~the amount
+of columns, $l$~the amount of layers (channels in image processing)
+and $b$~the batch size. We prodive layers to easily convert from this
 format to a matrix and back (the matrix format is required for fully
 connected layers). Generator models only take a vector of latent noise
 of a size determined during model creation. This vector is only given
@@ -68,9 +68,9 @@ models as the expected sizes will be different. For the discriminators:
 \begin{itemize}
 \item amount of features in each convolutional layer's kernel; the
   features per successive layer are then multiplied by successive
-  powers of two (starting from $2^{0}$ up to $2^{k - 2}$, where $k$ is
-  the amount of convolutional layers\footnote{We get $k - 2$ because
-    the start counting powers from zero and because the final
+  powers of two (starting from~$2^{0}$ up to~$2^{k - 2}$, where $k$~is
+  the amount of convolutional layers\footnote{We get~$k - 2$ because
+    we start counting powers from zero and because the final
     convolutional layer shrinks the number of features to one.})
 \item normalization layer after each convolutional layer
 \item activation function after each normalization layer
@@ -81,8 +81,8 @@ For the generators:
 \begin{itemize}
 \item amount of features in each convolutional layer's kernel; the
   features sizes follow the same rules as the discriminator but in
-  reverse (starting form $2^{k - 2}$ and shrinking towards $2^{0}$,
-  where $k$ is the amount of convolutional layers)
+  reverse (starting from~$2^{k - 2}$ and shrinking towards~$2^{0}$,
+  where $k$~is the amount of convolutional layers)
 \item size of latent noise vector (the input size)
 \item normalization layer after each convolutional layer
 \item activation function after each normalization layer

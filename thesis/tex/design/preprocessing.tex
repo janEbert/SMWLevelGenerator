@@ -5,23 +5,23 @@ Our data was preprocessed so we obtain the following: A
 space-efficient, performant, abstract level matching what we as humans
 see. To actually get all those traits, we had to apply some tricks.
 First, we need to establish the following: Remember that each level
-may contain $30 \cdot 10^{6}$ entries at maximum~-- this requires
+may contain $30 \cdot 10^{6}$~entries at maximum~-- this requires
 $30 \cdot 10^{6}\text{ bits} \div 8 = 3.75 \cdot 10^{6}\text{ bytes} =
-3.75\text{ MB}$ (MB are megabytes) of storage \emph{per level},
+3.75\text{ MB}$ (MB~are megabytes) of storage \emph{per level},
 assuming we are able to compactly store eight entries per byte
 (usually you need one byte per entry but as we have binary values, we
-can store one value in one bit). With approximately 17\,000 levels, we
+can store one value in one bit). With approximately 17\,000~levels, we
 would then need
 $3.75\text{ MB} * 17\,000 \approx 63.75 \cdot 10^{3}\text{ MB} =
-63.75\text{ GB}$ (GB are gigabytes) of storage at maximum. While data
+63.75\text{ GB}$ (GB~are gigabytes) of storage at maximum. While data
 is cheap and this calculated number is the absolute maximum amount of
 storage we may need, we would like our data to be more compact for
 both efficiency and portability.
 
 Even the data containing only layers of all tiles is so large that
-keeping the full database in 8 gigabytes of memory is not
+keeping the full database in 8~gigabytes of memory is not
 possible\footnote{This is the amount of unused RAM the author had
-  available on his laptop while working with about 2\,000 browser tabs
+  available on his laptop while working with about 2\,000~browser tabs
   open.}. That means that creating a database is slower~-- as we would
 have to partially write results to the file, garbage collect, then
 restart with another partial result~-- and that reading, the much more
@@ -50,7 +50,7 @@ possible layers. Our two final optimizations were compressing the
 indices of the sparse matrices to the smallest type still being able
 to index and~-- because that was still not small enough~-- only storing
 non-empty sparse matrices in an array. We wrote a custom compressed
-sparse 3D array format for that.
+sparse 3D~array format for that.
 
 All in all, we now support four different compression levels with two
 possible extensions based on compact bit arrays where each value fits
@@ -58,10 +58,12 @@ into one bit. The final size of the 3-dimensional database containing
 all layers is roughly 430~MB if the highest compression level is used.
 For sharing purposes, this data can be heavily compressed due to
 recurring values, resulting in a 28~MB file when compressed with the
-combination of \texttt{tar} and \texttt{gzip}. A 7-Zip-compressed file
-consumes about 16~MB of storage\footnote{No special settings for
-  \texttt{tar}, but the following command line options for 7-Zip:
-  \texttt{-t7z -mx9 -m0=lzma2 -mmt2 -md1024m}}. \medskip
+combination of \texttt{tar} and \texttt{gzip}. A
+\mbox{7-Zip}-compressed file consumes about 16~MB of
+storage\footnote{No special settings for \texttt{tar}, but the
+  following command line options for \mbox{7-Zip}: \texttt{-t7z -mx9
+    -m0=lzma2 -mmt2 -md1024m}}.
+\medskip
 
 While compression is great to share data, we are also interested in
 speed. The usage of sparse arrays already nets us an increase in
@@ -95,9 +97,9 @@ types to allow increasing model complexity:
 \begin{enumerate}
 \item 1-dimensional data containing only one row (or column for
   vertical levels) of one layer of the level. This row is computed in
-  one of two ways (as given by the user): either the row is (1) the
+  one of two ways (as given by the user): either the row is (1)~the
   row containing the maximum amount of values in the given layer or
-  (2) a combined row obtained by squashing all elements that are equal
+  (2)~a combined row obtained by squashing all elements that are equal
   to one in the given layer vertically.
   % TODO figure for this
 
@@ -106,9 +108,9 @@ types to allow increasing model complexity:
   first non-empty tile below Mario's starting position\footnote{We
     mention this explicitly as the main entrance is two tiles above
     Mario's feet. Also, the empty tile is the tile corresponding to
-    tile 37.}. If there is no non-empty tile below that position, we
+    tile~37.}. If there is no non-empty tile below that position, we
   return the layer correspoding
-  to tile 256, the default ground tile. \\
+  to tile~256, the default ground tile. \\
   It must be noted that this is not the correct tile for all levels.
 \item 2-dimensional data containing only one layer of the level. The
   default layer is the same as for 1-dimensional data and suffers the
@@ -133,13 +135,13 @@ This information is the object types the data was created with and the
 input size for sequence prediction models and GANs (the input sizes
 will be calculated automatically in the future). Our system is easily
 extensible to support any desired types; we only implemented the
-following (as mentioned, only 3D data needs extra implementations):
-\begin{description}
-\item[1d] any 1-dimensional data
-\item[2d] any 2-dimensional data
-\item[3dtiles] 3-dimensional data containing all tile layers
-\item[3d] 3-dimensional data containing all layers
-\end{description}
+following (as mentioned, only 3D~data needs extra implementations):
+\begin{itemize}
+\item \texttt{1d}: any 1-dimensional data
+\item \texttt{2d}: any 2-dimensional data
+\item \texttt{3dtiles}: 3-dimensional data containing all tile layers
+\item \texttt{3d}: 3-dimensional data containing all layers
+\end{itemize}
 We also provide specific model creation functions for each of these
 dimensionalities, giving the user simple access to the correct model
 for each task. We will discuss this in detail in
@@ -184,11 +186,11 @@ This is a comprehensive list of all of them:
   augmentation, handling levels with a starting position in the middle
   is simply not possible with our architecture.)
 \item The type of tile that is assumed to be a level's ground
-  (relevant for 1- and 2-dimensional data generation) is determined
+  (relevant for 1-~and 2-dimensional data generation) is determined
   heuristically (explained above; the first non-empty tile below
   Mario's starting position).
-\item Levels that are (1) vertical, (2) boss levels or (3)
-  levels with layer 2 interaction are excluded.
+\item Levels that are (1)~vertical, (2)~boss levels or (3)~levels with
+  layer~2 interaction are excluded.
 \item Levels with modes deemed unusable by Lunar Magic are excluded.
 \item Expanded levels (as designated by Lunar Magic) are excluded.
 \item If the database contains a single sprite, we exclude all levels

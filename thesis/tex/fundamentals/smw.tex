@@ -8,7 +8,7 @@ game with the goal of reaching each level's exit in a limited amount
 of time. Games in the platforming genre confront the player with
 dangers like pits and enemies which have to be avoided by carefully
 jumping and maneuvering accross them in a host of levels. The original
-game features 75~levels with 96 different exits (each level may have
+game features 75~levels with 96~different exits (each level may have
 more than one goal, especially secret goals). \\
 The player has access to a moveset including but not limited to
 running, jumping, picking up and throwing objects, and even shooting
@@ -42,7 +42,7 @@ database suitable for feeding into a machine learning model.
 \subsubsection{Hacking Scene}
 \label{sec:hacks}
 
-At the time of writing, Super Mario World is almost 30 years old. Due
+At the time of writing, Super Mario World is almost 30~years old. Due
 to both its age and success, it has been able to gain a large
 following of people not only interested in playing the game but also
 extending it. As with many other~-- especially retro~-- games, there is
@@ -61,10 +61,10 @@ program we use for applying patches is \emph{Floating
   IPS}~\cite{alcaroAlcaroFlips2019,FloatingIPSFlips}, or \emph{Flips}.
 
 Due to the refined tooling available, users do not need to program in
-65C816 assembly\footnote{The Super Nintendo Entertainment System's 16
-  bit microprocessor is based on the 65C816 microprocessor.} to modify
-the game. Instead, even non-technical users are able to use one of the
-oldest tools to modify Super Mario World: \emph{Lunar
+65C816 assembly\footnote{The Super Nintendo Entertainment System's
+  16~bit microprocessor is based on the 65C816 microprocessor.} to
+modify the game. Instead, even non-technical users are able to use one
+of the oldest tools to modify Super Mario World: \emph{Lunar
   Magic}~\cite{FuSoYaNicheLunar}. It features a GUI and has optional
 features that extend Super Mario World with new functionality such as
 larger levels, custom coded tiles, and more. The creator of Lunar
@@ -72,8 +72,8 @@ Magic, \emph{FuSoYa}, modified the existing software to support both
 dumping and reconstructing levels, making this work possible due to
 the reduced workload of parsing the data from the binary ROM. The
 features are currently only available in a private build (based on
-Lunar Magic version 3.04) that will be used throughout the thesis to
-(1) parse level data from existing ROMs and to (2) write newly
+Lunar Magic version~3.04) that will be used throughout the thesis to
+(1)~parse level data from existing ROMs and to (2)~write newly
 generated levels back into the original Super Mario World ROM.
 
 With Lunar Magic as a user friendly tool granting creators all the
@@ -94,16 +94,16 @@ understanding its every behaviour. So we used the ``vanilla'' tag to
 exclude hacks using behaviour not in the original game (also called
 the ``vanilla'' game; we will use these terms interchangeably). 
 Also, to assert some form of quality in the dataset, only hacks with a
-rating greater than or equal to 3.0 were downloaded (our rating is the
-mean of all individual ratings, ranging from 1.0 to 5.0 and including
+rating greater than or equal to~3.0 were downloaded (our rating is the
+mean of all individual ratings, ranging from~1.0 to~5.0 and including
 \emph{None} for no individual ratings). Sadly, some hacks are
 protected via an encryption (possibly offered by Lunar Magic) and do
 not allow reading their data; we had to omit all of these. All in all,
-over 17\,000 unique levels in over 300 hacks were obtained thanks to
+over 17\,000~unique levels in over 300~hacks were obtained thanks to
 the community keeping a masterpiece alive and fresh for not only all
 the years since the game's release but also for many years to come.
 While this amount of data is not a lot relative to what deep learning
-models usually train on in 2019 (with data points in the millions,
+models usually train on in~2019 (with data points in the millions,
 even approaching billions), it may be enough for our models to get a
 grasp on what makes a level enjoyable.
 
@@ -194,8 +194,8 @@ going to ignore that feature. For simplicity, we are also only going
 to train on horizontal levels. While support for vertical levels in
 database generation exists, models that support both types of levels
 are more complicated. Also, vertical levels only make up a fraction of
-total levels, so not a lot of data is lost (circa 2\,000 of the over
-17\,000 levels are vertical).
+total levels, so not a lot of data is lost (circa~2\,000 of the over
+17\,000~levels are vertical).
 
 Calling a screen a matrix is not the whole truth. While screens itself
 are basically only areas in a level, those areas can contain many
@@ -209,7 +209,7 @@ While we will explain ``layers'' in this section, in the hacking
 community, the term ``layer'' refers to both interactive and graphical
 tilemaps (of which there are three of). When we refer to the second
 meaning, we will explicitly list a number behind the layer (for
-example ``layer 2''). \\
+example ``layer~2''). \\
 Aside from the previously explained screens, levels consist mainly of
 five different \emph{object types} which each correspond to a file
 dumped by Lunar Magic. Also, each of these object types needs many
@@ -225,26 +225,26 @@ are listed here:
   out of a level (exits are described below). Even non-interactive
   background objects like arrow signs or bushes that only exist for
   aesthetical reasons are tiles. In the hacking community, this layer
-  of tiles is also called ``layer 1''. \\
-  The original game supports 512 tiles, each with possibly different
+  of tiles is also called ``layer~1''. \\
+  The original game supports 512~tiles, each with possibly different
   behaviour. Lunar Magic extends the amount of tiles by allowing users
-  to define new, custom tiles that either (1) reference another tile's
+  to define new, custom tiles that either (1)~reference another tile's
   behaviour (these references may recurse but not loop), so only
-  changing the texture of the tile or (2) point to a custom procedure,
+  changing the texture of the tile or (2)~point to a custom procedure,
   so possibly changing both, the texture and the behaviour of the
   tile. Due to only allowing vanilla hacks that promise not to
   implement custom behaviour, we can ignore the second case and simply
   follow references until finding one of the original tiles. \\
   As mentioned at the beginnig of this paragraph, tiles may exist on
-  two layers in the level. Layer 2 may contain interactive objects or
+  two layers in the level. Layer~2 may contain interactive objects or
   just non-interactive graphical background data. A special property
-  of layer 2 tiles is that they can move if desired (how that is
-  achieved will be described in a bit). When layer 2 is used for
+  of layer~2 tiles is that they can move if desired (how that is
+  achieved will be described in a bit). When layer~2 is used for
   interactive tiles, it cannot act as a background tilemap. Therefore,
   a third (strictly non-interactive) layer exists for the sole purpose
-  of a background tilemap which is usually in layer 2. This layer 3 is
+  of a background tilemap which is usually in layer~2. This layer~3 is
   not related to tiles in any way. For simplicity, we ignore all data
-  in layers 2 and 3.
+  in layers~2 and~3.
 \item \emph{Metadata} is any data that changes the behaviour of a
   level without belonging to a certain position in the level. For
   example, which tileset (that is, the graphics) or which background
@@ -260,7 +260,7 @@ are listed here:
   sprite). \\
   Sprites may also have other effects on the level; for example,
   sprites control auto-scroll behaviour in a level or the movement of
-  layer 2 tiles. Sprites may also affect a level's lighting or
+  layer~2 tiles. Sprites may also affect a level's lighting or
   background objects. When Mario reaches a screen with one of those
   special sprites, the behaviour will activate.
 \item \emph{Exits} connect one level to another. An exit is
@@ -285,22 +285,21 @@ example, each unique type of tile like ``ground ledge block'' or
 ``grey cement block'' is a type instance of the object type ``tile'').
 Each of these type instances regards its own layer to get a binary
 encoding of the level. Prior to constructing our data, we need to know
-the amount of layers. We already know that there are 512 unique tiles
+the amount of layers. We already know that there are 512~unique tiles
 in the vanilla game. For the sprites, we need the amount of unique
 sprites used over all hacks. To represent all possible exits, we need
 the maximum amount of screen exits and connected secondary exits and
 entrances. In each hack, we count the amount of screen exits and
 connected secondary exits and entrances and take the maximum of each
-of these over all hacks. We also need 2 layers to represent the
+of these over all hacks. We also need 2~layers to represent the
 level's main and midway entrance points. If we sum up the total amount
 of all unique tiles and sprites, the maximum amount of screen exits
 and (connected) secondary exits and secondary entrances plus the two
 entrance points, we get a total of
 $512 + 241 + 511 + 449 + 449 + 2 = 2164$ layers. A horizontal level
-consists of 27 rows and at maximum $16 \cdot 32 = 512$ columns (16
-columns per screen, 32 screens at maximum). We may therefore get a
-maximum amount of $27 \cdot 512 \cdot 2164 \approx 30 \cdot 10^{6}$
-entries in the
+consists of 27~rows and at maximum $16 \cdot 32 = 512$ columns (16~columns
+per screen, 32~screens at maximum). We may therefore get a maximum
+amount of $27 \cdot 512 \cdot 2164 \approx 30 \cdot 10^{6}$ entries in the
 abstract, binary representation of a level. \\
 As the dimensionality of levels containing all layers is quite high
 (and mostly filled with emptiness), we provide filters to only process
@@ -331,12 +330,12 @@ when training our model. Each level has three headers containing
 metadata. A primary and a secondary level header and a sprite header.
 While we could feed our model all the different metadata points, we
 are only interested in the ones that provide information on two
-issues: (1) changes to interactive parts of the level and (2) changes
-to a level's size or ``vanilla-ness''. We need (1) so our model may
+issues: (1)~changes to interactive parts of the level and (2)~changes
+to a level's size or ``vanilla-ness''. We need~(1) so our model may
 learn the correct representation of each tile for each level and we
-need (2) to be able to filter undesired levels. As an example for (1),
+need (2)~to be able to filter undesired levels. As an example for~(1),
 we already mentioned the graphics setting and its influence on tiles.
-An example for (2) is how many screens the level contains or whether
+An example for~(2) is how many screens the level contains or whether
 the level uses Lunar Magic's expanded format or whether it's a
 horizontal, vertical, or even boss level. \\
 Finally, positional information about the main and midway entrance of

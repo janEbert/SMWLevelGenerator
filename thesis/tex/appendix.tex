@@ -10,10 +10,10 @@ interface.
 \label{sec:packages}
 
 Let us now list the the packages most important for our preprocessing
-and training pipeline. While this list does not cover all packages
-used, we hope to give an overview of what the ecosystem made or will
-make possible, why these packages were important for us and what
-issues we still had to solve manually.
+and training pipeline. While this list deliberately does not cover all
+packages used, we hope to give an overview of what the ecosystem made
+or will make possible, why these packages were important for us and
+what issues we still had to solve manually.
 
 We encountered several issues with model checkpoints. We first
 switched from an unmerged pull request branch of
@@ -49,8 +49,7 @@ time of writing. With \mbox{Zygote.jl}~\cite{FluxMLZygoteJl2019}, a
 framework supporting source-to-source automatic differentiation that
 is to be included in \mbox{Flux.jl}, we hope to gain a large speed
 boost in the future with compiled derivatives as they will not have to
-be tracked at runtime.
-\\
+be tracked at runtime. \\
 Due to \mbox{Flux.jl}'s GPU support enabled by
 \mbox{CuArrays.jl}~\cite{JuliaGPUCuArraysJl2019}, we were able to
 achieve great performance even while writing specialized loss
@@ -68,9 +67,9 @@ more low-level GPU package,
 write our own CUDA kernels with ease. This enabled faster clamping of
 the parameters of our Wasserstein GANs. \\
 The \mbox{Transformers.jl}~\cite{peterChengchingwenTransformersJl2019}
-package was essential in getting the GPT-2 transformer model to run.
-While the model is not included in the package as of the writing of
-this thesis, the given building blocks were a large help. \\
+package was essential in getting the \mbox{GPT-2} transformer model to
+run. While the model is not included in the package as of the writing
+of this thesis, the given building blocks were a large help. \\
 Finally,
 \mbox{TensorBoardLogger.jl}~\cite{vicentiniPhilipVincTensorBoardLoggerJl2019}
 enabled a great tool for monitoring training progress:
@@ -79,7 +78,54 @@ TensorBoard~\cite{TensorBoard}.
 \subsection{Model Interface}
 \label{sec:model-interface}
 
+While the source code already gives a good documentation of the model
+interface, for completeness sake, we will give a brief overview here
+as well. Our model interface \texttt{LearningModel} is an abstract
+class that implements several methods that may be overwritten. For a
+class \texttt{YourModel} to be a \texttt{LearningModel}, the model
+needs to (1)~be defined as a \texttt{Flux.@treelike} (in future
+versions as a \texttt{Flux.@functor}; this is simply a line consisting
+of \texttt{Flux.@treelike YourModel}) to enable parameter tracking and
+several convenience methods. It needs to (2)~implement a field
+\texttt{hyperparams} of type \texttt{Dict\{Symbol, Any\}} which may
+hold any parameters that discern the model from a model of the same
+type (these are optional). (3)~The \texttt{hyperparams} dictionary has
+one required key, the \texttt{:dimensionality} of the model as a
+\texttt{Symbol} so data may be correctly shaped for the model (this is
+any of the types of training data we listed in
+section~\ref{sec:preprocessing}).
 
+(4)~A \texttt{LearningModel} model for sequence prediction has to
+implement the following functions:
+\begin{itemize}
+\item \texttt{(model::YourModel)(input)}: the application function to
+  enable calling the model on input data.
+\item \texttt{makeloss(model::YourModel, criterion)}: return a
+  2-argument loss function by applying the given criterion (for
+  example, a criterion is \texttt{Flux.mse}).
+\item \texttt{dataiterartorparams(model::YourModel)}: return
+  parameters for the data iterator (does the model expect data as a
+  vector of vectors, in matrix form, as a joined vector, \dots).
+\item \texttt{calculate\_loss(model::YourModel, loss, input, target)}:
+  return the loss obtained by applying the loss function to the given
+  input with the given target (this is mostly the function returned by
+  \texttt{makeloss}, but with optional preparation of the model).
+\item \texttt{step!(model::YourModel, parameters, optimizer, loss,
+    input, target)}: update the given model with a single training
+  step on the given input with the given target and return the loss; a
+  single training step.
+\item (optionally) \texttt{makesoftloss(model::YourModel, criterion)}:
+  like \texttt{makeloss} but return a ``soft'' loss function
+  penalizing wrong predictions less (this can of course just be used
+  as any other alternative loss function).
+\end{itemize}
+
+GANs and metadata predictors do not need to implement
+\texttt{dataiterartorparams} and the optional \texttt{makesoftloss} as
+they are not used. However, some functions expect different arguments.
+For these, we refer a curious reader to the source code. \\
+Finally, the generator models of GANs are required to save the input
+size of their latent vectors under the key \texttt{:inputsize}.
 
 %%% Local Variables:
 %%% mode: latex

@@ -19,28 +19,28 @@ the generated level's metadata. This constant input is then combined
 with the level in the correct specification, depending on whether the
 sequence predictor accepts columns or singular tiles, and all but the
 last sequence elements have their ``sequence has not ended yet''-bit
-set to 1. \\
+set to~1. \\
 The data is now in the same format as a preprocessed real level and we
 apply the sequence prediction model sequentially until we either find
-that the ``sequence has not ended yet''-bit is 0 or until the maximum
+that the ``sequence has not ended yet''-bit is~0 or until the maximum
 level length is reached. This complete output is then postprocessed.
 
 As we skipped some metadata when preparing our data, we need to fill
 the omissions with default values. For all unknown data, we chose
-either the defaults of level 261, the first level Lunar Magic presents
+either the defaults of level~261, the first level Lunar Magic presents
 to the user, or give ``empty'' values if possible. Before we give an
 example, remember that Lunar Magic dumps sprite data in a ``.sp'' file
 containing the sprite header and then data of individual sprites in
 the level until a designator for the ending is encountered. If our
 model does not generate sprites, we don't write back the sprites in
-level 261 but instead set the sprite header to that of level 261 but
+level~261 but instead set the sprite header to that of level~261 but
 do not give any sprites themselves. While the sprite header is
 required, sprites are not.
 
 Generation functions include generating a single level or multiple
-levels. A function to generate a whole hack of levels (meaning 512
-different levels, each with a different number) is planned. We also
-implement model-specific generation functions. For the sequence
+levels. A function to generate a whole hack of levels (meaning
+512~different levels, each with a different number) is planned. We
+also implement model-specific generation functions. For the sequence
 prediction model, functions may generate levels like the above
 functions or based on predicting on the original game's levels. The
 GANs may also generate only the first screen for a level

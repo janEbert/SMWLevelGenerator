@@ -25,6 +25,12 @@ All data iterators use thread-safe channels which the user can take
 values out of without having to worry about race conditions and
 synchronicity.
 
+For optimization purposes related to actual training on the data, we
+minimize the amount of data per batch for models that require padded
+data. For example, batches for transformer models only contain columns
+up to the maximum level length per batch instead of up to the maximum
+level length over all levels (512~columns for horizontal levels).
+
 We do not normalize our data in any way. Normalizing the mean would
 mean losing the sparsity patterns which improve computational
 efficiency by a large margin. We decided against normalizing the
