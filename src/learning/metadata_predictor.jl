@@ -43,11 +43,9 @@ end
 
 function metastep!(model::LearningModel, meta_params, meta_optim, meta_loss,
                    real_batch, meta_batch)
-    GC.enable(false)
     l = calculate_loss(model, meta_loss, real_batch, meta_batch)
     grads = gradient(() -> l, meta_params)
     Flux.Optimise.update!(meta_optim, meta_params, grads)
-    GC.enable(true)
     return l
 end
 

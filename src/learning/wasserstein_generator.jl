@@ -47,7 +47,6 @@ end
 
 function wsstep!(g_model::AbstractGenerator, g_params, g_optim, g_loss,
                  real_target, curr_batch_size)
-    GC.enable(false)
     noise_batch = makenoisebatch(g_model, curr_batch_size)
 
     # Use real labels for modified loss function
@@ -58,7 +57,6 @@ function wsstep!(g_model::AbstractGenerator, g_params, g_optim, g_loss,
 
     # Update
     Flux.Optimise.update!(g_optim, g_params, grads)
-    GC.enable(true)
     return g_l
 end
 
