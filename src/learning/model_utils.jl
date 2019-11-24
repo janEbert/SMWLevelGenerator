@@ -328,6 +328,7 @@ bce(y_hat, y) = Flux.binarycrossentropy(y_hat, y; ϵ=1f-12)
 
 leakyrelu(x) = Flux.leakyrelu(x, 0.2f0)
 
+
 """
 Reshape `x` of a size like `(a, b, c, B)` or `(a, b, B)`, where `B` is the batch size to a
 matrix of size `(num_features, B)` (`num_features` should be  `a * b * c`).
@@ -395,9 +396,7 @@ function Base.clamp!(a::CuArray, low, high)
     @cuda blocks=blocks threads=threads kernel(a, low, high)
     return a
 end
-
 
-
 
 """
 Convert all checkpoints in the given directory according to the given 1-argument

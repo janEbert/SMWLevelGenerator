@@ -20,8 +20,16 @@ end
 
 "Return the given `AbstractVector{SparseMatrixCSC{T}}` as an `Array{T, 3}`."
 function unsparse(sparsearray::AbstractVector{<:SparseMatrixCSC}; dims=2)
-    # TODO is that `map` really necessary?
-    reduce((a, b) -> cat(a, b, dims=dims), map(Array, sparsearray))
+    # TODO are those `map(Array, ...)` really necessary?
+    if dims == 2
+        reduce((a, b) -> cat(a, b, dims=dims),
+               map(x -> reshape(x, size(x, 1), 1, size(x, 2)), map(Array, sparsearray)))
+    elseif dims == 3
+        reduce((a, b) -> cat(a, b, dims=dims), map(Array, sparsearray))
+    else
+        reduce((a, b) -> cat(a, b, dims=dims),
+               map(x -> reshape(x, 1, size(x, 1), size(x, 2)), map(Array, sparsearray)))
+    end
 end
 
 function compressindices(data::SparseMatrixCSC{T, defaultindextype}) where T
