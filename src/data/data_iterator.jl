@@ -402,7 +402,7 @@ end
 
 function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                               splitindices::AbstractVector, batch_size::Integer)
-    # try
+    try
         screendims = db[1].data isa AbstractVector{<:Number} ? 3 : 4
         screen_buffer = [Array{Float32, screendims}(undef, ntuple(_ -> 0, screendims))
                          for _ in 1:batch_size]
@@ -413,7 +413,11 @@ function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                 for (i, index) in enumerate(indices)
                     @inbounds row = db[index]
                     screenview, hasendedbit = gan_preprocess(row)
-                    screen_buffer[i] = reshape(screenview, size(screenview)..., 1, 1)
+                    if ndims(screenview) == 3
+                        screen_buffer[i] = reshape(screenview, size(screenview)..., 1)
+                    else
+                        screen_buffer[i] = reshape(screenview, size(screenview)..., 1, 1)
+                    end
                     constantinput_buffer[i] = vcat(getconstantinput(row), !hasendedbit)
                 end
                 # TODO pre-allocate and fill array instead of reduction
@@ -425,10 +429,10 @@ function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                 put!(channel, (screen_batch, constantinput_batch))
             end
         end
-    # catch e
-    #     print("Error in data iterator task: ")
-    #     showerror(stdout, e)
-    # end
+    catch e
+        print("Error in data iterator task: ")
+        showerror(stdout, e)
+    end
 end
 
 function gan_dataiteratorchannel(db::IndexedTable, buffersize)
@@ -481,7 +485,7 @@ end
 function firstscreen(data::AbstractVector{<:AbstractSparseMatrix})
 
     return (reduce((x, y) -> cat(x, y, dims=2),
-                   map(x -> reshape(x, size(x, 1), 1, size(x, 2)),
+                   map(col -> reshape(col, size(col, 1), 1, size(col, 2)),
                        view(data, 1:LevelStatistics.screencols))),
             length(data) == LevelStatistics.screencols)
 end
