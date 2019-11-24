@@ -250,9 +250,9 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                  * "Seed: $(params.seed).")
 
         if past_steps == 0
-            testfakes = [Flux.data(g_model(const_noise))]
+            testfakes = [tocpu(Flux.data(g_model(const_noise)))]
         else
-            push!(testfakes, Flux.data(g_model(const_noise)))
+            push!(testfakes, tocpu(Flux.data(g_model(const_noise))))
         end
         testloss = testmodel(d_model, d_loss, testfakes[end], const_fake_target)
         if past_steps > 0
@@ -334,7 +334,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 steps += 1
 
                 if logevery != 0 && steps % logevery == 0
-                    push!(testfakes, Flux.data(g_model(const_noise)))
+                    push!(testfakes, tocpu(Flux.data(g_model(const_noise))))
                     testloss = testmodel(d_model, d_loss, testfakes[end], const_fake_target)
                     @tblog tblogger d_testloss=testloss log_step_increment=0
                     if d_l > max_d_loss
@@ -421,7 +421,7 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 end
                 if saveevery != 0 && steps % saveevery == 0
                     if logevery != 0 && steps % logevery != 0
-                        push!(testfakes, Flux.data(g_model(const_noise)))
+                        push!(testfakes, tocpu(Flux.data(g_model(const_noise))))
                         testloss = testmodel(d_model, d_loss, testfakes[end],
                                              const_fake_target)
                         @tblog tblogger d_testloss=testloss log_step_increment=0
@@ -557,7 +557,7 @@ function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
     bson(joinpath(logdir, "generator-cp_$steps-steps_d-loss-$(testloss)_"
                   * "$starttimestr.bson"),
          g_model=tocpu(g_model), g_optim=tocpu(g_optim),
-         g_trainlosses=g_trainlosses, testfakes=tocpu.(testfakes),
+         g_trainlosses=g_trainlosses, testfakes=testfakes,
          const_noise=tocpu(const_noise), steps=steps)
 end
 
@@ -572,7 +572,7 @@ function save_g_cp(g_model, g_optim, g_trainlosses, testfakes, const_noise,
         write(io, "g_model", tocpu(g_model))
         write(io, "g_optim", tocpu(g_optim))
         write(io, "g_trainlosses", g_trainlosses)
-        write(io, "testfakes", tocpu.(testfakes))
+        write(io, "testfakes", testfakes)
         write(io, "const_noise", tocpu(const_noise))
         write(io, "steps", steps)
     end

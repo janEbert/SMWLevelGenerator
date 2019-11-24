@@ -483,9 +483,8 @@ function firstscreen(data::AbstractArray{T, 3}) where T
 end
 
 function firstscreen(data::AbstractVector{<:AbstractSparseMatrix})
-
     return (reduce((x, y) -> cat(x, y, dims=2),
-                   map(col -> reshape(col, size(col, 1), 1, size(col, 2)),
+                   map(allcols -> reshape(allcols, size(allcols, 1), 1, size(allcols, 2)),
                        view(data, 1:LevelStatistics.screencols))),
             length(data) == LevelStatistics.screencols)
 end
