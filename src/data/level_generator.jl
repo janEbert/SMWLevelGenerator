@@ -20,7 +20,7 @@ export generate_reshaped_screen, generatelevel, writescreen, writelevel, writele
 const lmpath = joinpath(@__DIR__, "..", "..", "tools",
                                   "lm304ebert21892usix", "Lunar Magic.exe")
 
-const level105dbid_1d_singleline_t = 0x2b7d
+const level105dbid_1d_nosquash_t = 0x2b7d
 const level105dbid_2d_t = 0x2b7d
 const level105dbid_3d_t = 0x2b7d
 const level105dbid_3d_tesx = 0x2b7d

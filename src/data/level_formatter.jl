@@ -33,14 +33,14 @@ const dimensionality_defaultflags = Dict{Symbol, String}(
 
 """
     to1d(level::Level; keep::UInt16=0x100, empty::UInt16=0x025, binaryout=true,
-         rettype=Int8, singleline=true)
+         rettype=Int8, squash=false)
     to1d(file, flags="t"; kwargs...)
 
 Return the contents of the given `level` or `file` as a `Vector{rettype}` where `keep`
 indicates which tiles are kept in the output; other tiles are substituted with `empty`.
 Only the first layer of the given level ([:, :, 1]) is used for construction.
 
-If `singleline` is `true`, use only the first line containing the maximum amount of `keep`
+If `squash` is `false`, use only the first line containing the maximum amount of `keep`
 tiles. Otherwise, squash or flatten over all rows (or columns in vertical levels) so that
 you obtain one line of all `keep` tiles in the level.
 If `binaryout` is `true`, `keep` tiles are converted to ones and `empty` tiles to zeros.
@@ -50,7 +50,7 @@ To convert the output to a `String` (instead of a `Vector{String}`), use [`tostr
 `file` can be any type that [`buildlevel`](@ref) accepts. See there for the description of
 `flags` as well.
 
-## `singleline` behaviour
+## `squash` behaviour
 Take the following horizontal level ('#' are `keep` tiles, '0' are `empty` tiles,
 '*' are any other tiles):
 ```
@@ -58,11 +58,11 @@ Take the following horizontal level ('#' are `keep` tiles, '0' are `empty` tiles
     ##0#*#
     #0##0#
 ```
-With `singleline=true`, this will be converted to:
+With `squash=false`, this will be converted to:
 ```
     ##0#0#
 ```
-With `singleline=false`, we get the following:
+With `squash=true`, we get the following:
 ```
     ####0#
 ```
@@ -79,10 +79,10 @@ function to1d(level::Level; kwargs...)
 end
 
 function to1d(level::AbstractMatrix{UInt16}; keep::UInt16=0x100, empty::UInt16=0x025,
-              binaryout::Bool=true, rettype::Type=Int8, singleline::Bool=true)
+              binaryout::Bool=true, rettype::Type=Int8, squash::Bool=false)
     binaryout || @assert sizeof(rettype) > 1 "too small `rettype`. Try `widen`ing it."
 
-    if singleline
+    if !squash
         # Tested – works!
         counts = map(row -> count(isequal(keep), row), eachrow(level))
         maxline = argmax(counts)

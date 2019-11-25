@@ -101,7 +101,7 @@ databases](#download-pre-computed-databases).
 ### Quick Start
 
 Download and unzip
-[this](https://drive.google.com/uc?export=download&id=1z1-jS39eFMoHZxlUnOCaHkmjjeIBa-TY),
+[this](https://drive.google.com/uc?export=download&id=1pj7HZOHiZwllOlxBYQaHksmuVHfQc5Ab),
 then see [Training](#training) or [Generation](#generation).
 
 ### Environment
@@ -157,9 +157,9 @@ line will work.
 #### Download Pre-computed Databases
 
 Alternatively, download a 34 MB `7z` file from
-[here](https://drive.google.com/uc?export=download&id=1z1-jS39eFMoHZxlUnOCaHkmjjeIBa-TY)
+[here](https://drive.google.com/uc?export=download&id=1pj7HZOHiZwllOlxBYQaHksmuVHfQc5Ab)
 or a 60 MB `tar.gz` from
-[here](https://drive.google.com/uc?export=download&id=1tx3g1b8gJ4Kzqq0kDHe8DCoOhhCp8Qq3).
+[here](https://drive.google.com/uc?export=download&id=19KMFjeZFIzFPannYSMkLZAHE32YL1Ezc).
 You will need to decompress these.
 
 ## Training

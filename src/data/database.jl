@@ -372,10 +372,10 @@ end
 # when loading)
 
 function generate_default_databases(dir=".")
-    generatedb(joinpath(dir, "levels_1d_singleline_flags_t.jdb"),
+    generatedb(joinpath(dir, "levels_1d_flags_t.jdb"),
                formatfunction=to1d, compression=0)
-    generatedb(joinpath(dir, "levels_1d_notsingleline_flags_t.jdb"),
-               formatfunction=x -> to1d(x, singleline=false), flags="t", compression=0)
+    generatedb(joinpath(dir, "levels_1d_squashed_flags_t.jdb"),
+               formatfunction=x -> to1d(x, squash=true), flags="t", compression=0)
     generatedb(joinpath(dir, "levels_2d_flags_t.jdb"), formatfunction=to2d, compression=1)
     generatedb(joinpath(dir, "levels_3d_flags_t.jdb"), flags="t")
     generatedb(joinpath(dir, "levels_3d_flags_tesx.jdb"), compression=3)

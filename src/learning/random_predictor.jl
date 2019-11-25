@@ -50,8 +50,8 @@ end
 
 function random1d(activationchance::Real=0.17624f0, inputsize::Integer=inputsize1d,
                   outputsize::Integer=outputsizeof(inputsize))
-    # Default activation chance for singleline, flags "t" database.
-    # For notsingleline, flags "t": 0.27743f0
+    # Default activation chance for `squash=false`, flags "t" database.
+    # For `squash=true`, flags "t": 0.27743f0
     RandomModel(activationchance, inputsize, outputsize, Symbol("1d"))
 end
 
