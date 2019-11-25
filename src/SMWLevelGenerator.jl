@@ -6,7 +6,7 @@ export generatedb, generate_default_databases
 export loaddb, dataiterator, dataiterator!, dataiteratorchannel
 
 # Model utilities
-export toggle_gpu
+export toggle_gpu, togpu, tocpu
 
 # Sequence prediction models
 export lstm1d, lstm2d, lstm3dtiles, lstm3d

@@ -32,7 +32,7 @@ const dimensionality_defaultflags = Dict{Symbol, String}(
 
 
 """
-    to1d(level::Level; keep::UInt16=0x100, empty::UInt16=0x025, binaryout=true,
+    to1d(level::Level; flags="t", keep::UInt16=0x100, empty::UInt16=0x025, binaryout=true,
          rettype=Int8, squash=false)
     to1d(file, flags="t"; kwargs...)
 
@@ -66,16 +66,20 @@ With `squash=true`, we get the following:
 ```
     ####0#
 ```
-
-# Examples
-```julia-repl or jldoctest
-```
 """
-function to1d(level::Level; kwargs...)
+function to1d(level::Level; flags::Union{AbstractString,
+                                 AbstractChar}=dimensionality_defaultflags[Symbol("1d")],
+              kwargs...)
     isvertical(level.stats) && @warn ("this method is not useful with "
                                       * "vertical levels")
-    tiles = view(level.data, :, :, firstindex(level.data, 3))
-    to1d(tiles; kwargs...)
+    if 't' in flags
+        level, groundtile = find_ground_tile(level, flags)
+        tiles = view(level.data, :, :, firstindex(level.data, 3))
+        to1d(tiles; keep=groundtile, kwargs...)
+    else
+        tiles = view(level.data, :, :, firstindex(level.data, 3))
+        to1d(tiles; kwargs...)
+    end
 end
 
 function to1d(level::AbstractMatrix{UInt16}; keep::UInt16=0x100, empty::UInt16=0x025,
@@ -117,18 +121,13 @@ end
 function to1d(file, flags::Union{AbstractString,
                                  AbstractChar}=dimensionality_defaultflags[Symbol("1d")];
               kwargs...)
-    if 't' in flags
-        level, groundtile = find_ground_tile(file, flags)
-        to1d(level; keep=groundtile, kwargs...)
-    else
-        level = buildlevel(file, flags)
-        to1d(level; kwargs...)
-    end
+    level = buildlevel(file, flags * 'e')
+    to1d(level; flags=flags, kwargs...)
 end
 
 
 """
-    to2d(level::Level; keep::UInt16=0x100, empty::UInt16=0x025, binaryout=true,
+    to2d(level::Level; flags="t", keep::UInt16=0x100, empty::UInt16=0x025, binaryout=true,
          rettype=Int8)
     to2d(file, flags="t"; kwargs...)
 
@@ -146,9 +145,17 @@ To convert the output to a `String` (instead of a `Matrix{String}`), use [`tostr
 ```julia-repl or jldoctest
 ```
 """
-function to2d(level::Level; kwargs...)
-    tiles = view(level.data, :, :, firstindex(level.data, 3))
-    to2d(tiles; kwargs...)
+function to2d(level::Level; flags::Union{AbstractString,
+                                 AbstractChar}=dimensionality_defaultflags[Symbol("2d")],
+              kwargs...)
+    if 't' in flags
+        level, groundtile = find_ground_tile(level, flags)
+        tiles = view(level.data, :, :, firstindex(level.data, 3))
+        to2d(tiles; keep=groundtile, kwargs...)
+    else
+        tiles = view(level.data, :, :, firstindex(level.data, 3))
+        to2d(tiles; kwargs...)
+    end
 end
 
 function to2d(level::AbstractMatrix{UInt16}; keep::UInt16=0x100, empty::UInt16=0x025,
@@ -172,13 +179,8 @@ end
 function to2d(file, flags::Union{AbstractString,
                                  AbstractChar}=dimensionality_defaultflags[Symbol("2d")];
               kwargs...)
-    if 't' in flags
-        level, groundtile = find_ground_tile(file, flags)
-        to2d(level; keep=groundtile, kwargs...)
-    else
-        level = buildlevel(file, flags)
-        to2d(level; kwargs...)
-    end
+    level = buildlevel(file, flags)
+    to2d(level; flags=flags, kwargs...)
 end
 
 # TODO Could refactor this into `to2d` using `1 - Int(keepempty)` or
@@ -213,8 +215,8 @@ end
 
 
 """
-    to3d(level::Level, tiles=true; empty::UInt16=0x025, binaryout=true, rettype=Int8,
-         tiles=true)
+    to3d(level::Level, tiles=true; flags="tesx", empty::UInt16=0x025, binaryout=true,
+         rettype=Int8, tiles=true)
     to3d(file, flags="tesx"; kwargs...)
 
 Return the contents of the given `level` or `file` as an `Array{rettype, 3}` where each
@@ -239,7 +241,10 @@ julia> ndims(level)  # Size of dimension 3 can vary.
 3
 ```
 """
-function to3d(level::Level, args...; kwargs...)
+function to3d(level::Level, args...;
+              flags::Union{AbstractString,
+                           AbstractChar}=dimensionality_defaultflags[Symbol("3d")],
+              kwargs...)
     # `level.data::Array{UInt16, 3}` so call corresponding method.
     to3d(level.data, args...; kwargs...)
 end
@@ -247,7 +252,6 @@ end
 function to3d(level::AbstractArray{UInt16, 3}, tiles::Bool=true; binaryout::Bool=true,
               rettype::Type=Int8, kwargs...)
     binaryout || @assert sizeof(rettype) > 1 "too small `rettype`. Try `widen`ing it."
-
     to3d(level, Val(tiles); binaryout=binaryout, rettype=rettype, kwargs...)
 end
 
@@ -313,22 +317,41 @@ function find_ground_tile(file, flags)
     @assert 't' in flags "no tiles in level; cannot find ground tile"
     if 'e' in flags
         level = buildlevel(file, flags)
-        remove_entrances = false
     else
         level = buildlevel(file, flags * 'e')
-        remove_entrances = true
     end
+    find_ground_tile(level, flags)
+end
+
+function find_ground_tile(level::Level, flags)
+    remove_entrances = !('e' in flags)
 
     entrance_y, entrance_x = mainentrance(level.stats)
     # Start at the first tile below Mario's actual starting position.
     entrance_y += 2
     # Copy so vertical caching is faster. Also, the horizontal copy is very small.
+    tilelayer = LevelBuilder.tilelayer(level)
     if isvertical(level.stats)
-        searchregion = LevelBuilder.tilelayer(level)[entrance_x, entrance_y:end]
+        if entrance_x > size(entrance_x, 1)
+            @warn "entrance at x=$(entrance_x) out of bounds; using default ground tile."
+            searchregion = nothing
+        else
+            searchregion = tilelayer[entrance_x, entrance_y:end]
+        end
     else
-        searchregion = LevelBuilder.tilelayer(level)[entrance_y:end, entrance_x]
+        if entrance_x > size(entrance_x, 2)
+            @warn "entrance at x=$(entrance_x) out of bounds; using default ground tile."
+            searchregion = nothing
+        else
+            searchregion = tilelayer[entrance_y:end, entrance_x]
+        end
     end
-    tileindex = findfirst(!isequal(0x25), searchregion)
+
+    if isnothing(searchregion)
+        tileindex = nothing
+    else
+        tileindex = findfirst(!isequal(0x25), searchregion)
+    end
 
     if isnothing(tileindex)
         groundtile = 0x100

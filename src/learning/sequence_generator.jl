@@ -46,6 +46,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractMatrix)
     isempty(initialinput) && return (), empty(initialinput)
     constantinputs = initialinput[1:constantinputsize - 1, :]
     constantinput = constantinputs[:, 1]
+    # TODO preallocate large sequence instead of growing
     sequence = initialinput
     prediction = sequence[constantinputsize:end, :]
     Flux.reset!(model)
@@ -53,6 +54,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractMatrix)
     # While the "sequence has not ended yet" bit is not set...
     while (prediction[1, end] != 0
            && size(prediction, 2) < LevelStatistics.maxcolshori)
+        @show typeof(sequence)
         prediction = tocpu(Flux.data(model(togpu(sequence))))
         sequence = hcat(sequence, vcat(constantinput, prediction[:, end]))
     end

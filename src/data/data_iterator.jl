@@ -232,19 +232,14 @@ end
 
 slicedata(data::AbstractVector, ::Val) = (col for col in data)
 
-slicedata(data::AbstractMatrix, ::Val{true}) = (col for col in eachcol(data))
+slicedata(data::AbstractMatrix, ::Val) = (col for col in eachcol(data))
 
-function slicedata(data::AbstractMatrix, ::Val{false})
-    (reverse(col, dims=1) for col in eachcol(data))
-end
-
-function slicedata(data::AbstractArray{T, 3}, ::Val{true}) where T
-    (vec(reverse(allcols, dims=1)) for allcols in eachslice(data, dims=2))
-end
-
-function slicedata(data::AbstractArray{T, 3}, ::Val{false}) where T
+function slicedata(data::AbstractArray{T, 3}, ::Val) where T
     (vec(allcols) for allcols in eachslice(data, dims=2))
 end
+
+# We only implement reversing for these as the others are covered in the
+# `preprocess` method.
 
 function slicedata(data::AbstractVector{<:AbstractSparseMatrix},
                    #=reverse_rows=#::Val{true}) where T

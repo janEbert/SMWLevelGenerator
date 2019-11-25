@@ -172,12 +172,13 @@ function generatedata(rootdir::AbstractString=leveldir; formatfunction::Function
         # level multiple times.
         for file in map(f -> joinpath(dir, f),
                         filter(f -> endswith(f, ".map"), readdir(dir)))
-            if isnothing(flags)
-                level = buildlevel(file, verbose=false)
+            if funcsymbol !== :to3d && 't' in flags
+                # TODO better check; doesn't work with anonymous functions that _are_ `to3d`
+                level = buildlevel(file, flags * 'e', verbose=false)
             else
                 level = buildlevel(file, flags, verbose=false)
             end
-            data = formatfunction(level) |> compressionfunction
+            data = formatfunction(level, flags=flags) |> compressionfunction
             totalsize += Base.summarysize(data)
 
             if !defined_datalist
@@ -375,7 +376,8 @@ function generate_default_databases(dir=".")
     generatedb(joinpath(dir, "levels_1d_flags_t.jdb"),
                formatfunction=to1d, compression=0)
     generatedb(joinpath(dir, "levels_1d_squashed_flags_t.jdb"),
-               formatfunction=x -> to1d(x, squash=true), flags="t", compression=0)
+               formatfunction=(x; flags) -> to1d(x, flags=flags, squash=true),
+               flags="t", compression=0)
     generatedb(joinpath(dir, "levels_2d_flags_t.jdb"), formatfunction=to2d, compression=1)
     generatedb(joinpath(dir, "levels_3d_flags_t.jdb"), flags="t")
     generatedb(joinpath(dir, "levels_3d_flags_tesx.jdb"), compression=3)

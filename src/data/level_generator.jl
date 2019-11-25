@@ -35,12 +35,43 @@ function get_from_method(model::LearningModel)
                            Symbol("from" * String(dimensionality)[1:2]))
 end
 
-function setup_prediction(modelpath::AbstractString, dbpath::AbstractString)
+function loadmodel(modelpath::AbstractString, #=use_bson=#::Val{true})
     cp = BSON.load(modelpath)
     model = togpu(cp[:model])
+end
+
+function loadmodel(modelpath::AbstractString, #=use_bson=#::Val{false})
+    jldopen(modelpath) do cp
+        togpu(cp["model"])
+    end
+end
+
+function setup_prediction(modelpath::AbstractString, dbpath::AbstractString, use_bson::Val)
+    model = loadmodel(modelpath, use_bson)
     db = DataIterator.loaddb(dbpath)
     from_method = get_from_method(model)
     return model, db, from_method
+end
+
+function setup_prediction(modelpath::AbstractString, db, use_bson::Val)
+    model = loadmodel(modelpath, use_bson)
+    from_method = get_from_method(model)
+    return model, db, from_method
+end
+
+function setup_prediction(model, dbpath::AbstractString, ::Val)
+    db = DataIterator.loaddb(dbpath)
+    from_method = get_from_method(model)
+    return model, db, from_method
+end
+
+function setup_prediction(model, db, ::Val)
+    from_method = get_from_method(model)
+    return model, db, from_method
+end
+
+function setup_prediction(model, db, use_bson::Bool)
+    setup_prediction(model, db, Val(use_bson))
 end
 
 # TODO better function names (indicate that the levels are written to a file)
@@ -51,11 +82,11 @@ function predict_hack()
     error("not implemented.")
 end
 
-function predict_vanilla(modelpath::AbstractString,
-                         dbpath::AbstractString="levels_3d_flags_tesx.jdb",
-                         indices=vanilladbids_2d_t; first_screen=true,
-                         write_rom::Union{AbstractString, Nothing}=nothing)
-    model, db, from_method = setup_prediction(modelpath, dbpath)
+function predict_vanilla(model::Union{LearningModel,AbstractString},
+                         db="levels_3d_flags_tesx.jdb", indices=vanilladbids_2d_t;
+                         first_screen=true,
+                         write_rom::Union{AbstractString, Nothing}=nothing, use_bson=false)
+    model, db, from_method = setup_prediction(model, db, use_bson)
     # Create in parallel, write to ROM sequentially.
     for row in filter(r -> r.id in indices, db)
         sequence, constantinput = predict_from_row(model, row, from_method, first_screen)
@@ -70,7 +101,7 @@ function predict_vanilla(model::LearningModel, db::IndexedTable,
 end
 
 """
-    predict_levels(amount, modelpath, dbpath="levels_3d_flags_tesx.jdb";
+    predict_levels(amount, model, db="levels_3d_flags_tesx.jdb";
                    first_screen=true, seed=nothing, write_rom=nothing)
 
 Generate the given amount of levels from random database entries and write each to a file.
@@ -81,11 +112,10 @@ If `write_rom` is not `nothing`, the given path to a ROM will be used to reconst
 generated level in the ROM (overwriting the previous contents).
 A random seed can optionally be specified with `seed`.
 """
-function predict_levels(amount, modelpath::AbstractString,
-                        dbpath::AbstractString="levels_3d_flags_tesx.jdb";
-                        first_screen=true, seed=nothing,
-                        write_rom::Union{AbstractString, Nothing}=nothing)
-    model, db, from_method = setup_prediction(modelpath, dbpath)
+function predict_levels(amount, model::Union{LearningModel,AbstractString},
+                        db="levels_3d_flags_tesx.jdb"; first_screen=true, seed=nothing,
+                        write_rom::Union{AbstractString, Nothing}=nothing, use_bson=false)
+    model, db, from_method = setup_prediction(model, db, use_bson)
     indices = collect(one(UInt):convert(UInt, length(db)))
     if !isnothing(seed)
         shuffle!(MersenneTwister(seed), indices)
@@ -103,7 +133,7 @@ function predict_levels(amount, modelpath::AbstractString,
 end
 
 """
-    predict_level(modelpath, dbpath, dbid; first_screen=true, write_rom=nothing)
+    predict_level(model, db, dbid; first_screen=true, write_rom=nothing)
 
 Predict the rest of the level with the given database ID and write it to a file.
 If `first_screen` is `true`, use the level's first screen as prediction input instead
@@ -111,11 +141,11 @@ of only the first part of the sequence.
 If `write_rom` is not `nothing`, the given path to a ROM will be used to reconstruct the
 generated level in the ROM (overwriting the previous contents).
 """
-function predict_level(modelpath::AbstractString,
-                       dbpath::AbstractString="levels_3d_flags_tesx.jdb",
-                       dbid::UInt64=UInt64(SequenceGenerator.level105dbid_3d_tesx);
-                       first_screen=true, write_rom=nothing)
-    model, db, from_method = setup_prediction(modelpath, dbpath)
+function predict_level(model::Union{LearningModel,AbstractString},
+                       db="levels_3d_flags_tesx.jdb",
+                       dbid::UInt64=UInt64(level105dbid_3d_tesx);
+                       first_screen=true, write_rom=nothing, use_bson=false)
+    model, db, from_method = setup_prediction(model, db, use_bson)
     sequence, constantinput = predict_from_id(model, db, dbid, from_method, first_screen)
     writeback(sequence, constantinput)
     lmwrite(write_rom, constantinput.number)
@@ -201,7 +231,6 @@ function build_first_screen(model::LearningModel, gen_first_screen, constantinpu
             resultmatrix[constantinputsize, end] = constantinput[end]
             return resultmatrix
         else
-            @show size(gen_first_screen)
             result = [vcat(constantinput[1:end - 1], 1, col)
                       for col in DataIterator.slicedata(gen_first_screen, Val(false))]
             result[end][constantinputsize] = constantinput[end]
@@ -243,18 +272,13 @@ function generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
                        input=randinputs(g_model), return_intermediate=false)
     gen_first_screen = generatescreen(g_model, input)
     constantinput = generatemetadata(meta_model, gen_first_screen)
-    @show size(gen_first_screen)
     gen_first_screen = reshape_first_screen(g_model, gen_first_screen)
-    @show size(gen_first_screen)
     if first_screen
         initialinput = build_first_screen(predictor, gen_first_screen, constantinput)
     else
         initialinput = build_one_input(predictor, gen_first_screen, constantinput)
     end
-    @show size(initialinput)
-    @show size(first(initialinput))
-    @show typeof(initialinput)
-    level = generatesequence(predictor, initialinput)
+    level = generatesequence(predictor, initialinput)[2]
     if return_intermediate
         return (gen_first_screen, constantinput, level)
     else
