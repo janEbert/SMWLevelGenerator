@@ -405,7 +405,7 @@ end
 
 function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                               splitindices::AbstractVector, batch_size::Integer)
-    try
+    # try
         screendims = db[1].data isa AbstractVector{<:Number} ? 3 : 4
         screen_buffer = [Array{Float32, screendims}(undef, ntuple(_ -> 0, screendims))
                          for _ in 1:batch_size]
@@ -432,10 +432,10 @@ function gan_dataiteratortask(channel::AbstractChannel, db::IndexedTable,
                 put!(channel, (screen_batch, constantinput_batch))
             end
         end
-    catch e
-        print("Error in data iterator task: ")
-        showerror(stdout, e)
-    end
+    # catch e
+    #     print("Error in data iterator task: ")
+    #     showerror(stdout, e)
+    # end
 end
 
 function gan_dataiteratorchannel(db::IndexedTable, buffersize)
