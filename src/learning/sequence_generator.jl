@@ -5,7 +5,7 @@ import Flux
 # This import is only for documentation reference purposes.
 import ..LevelFormatter
 using ..InputStatistics
-using ..ModelUtils: LearningModel, togpu
+using ..ModelUtils: LearningModel, togpu, tocpu
 using ..LevelStatistics
 
 export generatesequence
@@ -32,7 +32,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractArray)
     Flux.testmode!(model)
     # While the "sequence has not ended yet" bit is not set...
     while sequence[end][1] != 0 && length(sequence) < LevelStatistics.maxcolshori
-        push!(sequence, Flux.cpu(Flux.data(
+        push!(sequence, tocpu(Flux.data(
             model(togpu(vcat(constantinput, sequence[end]))))))
     end
     if sequence[end][1] != 0
@@ -53,7 +53,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractMatrix)
     # While the "sequence has not ended yet" bit is not set...
     while (prediction[1, end] != 0
            && size(prediction, 2) < LevelStatistics.maxcolshori)
-        prediction = Flux.cpu(Flux.data(model(togpu(sequence))))
+        prediction = tocpu(Flux.data(model(togpu(sequence))))
         sequence = hcat(sequence, vcat(constantinput, prediction[:, end]))
     end
     if prediction[1, end] != 0
@@ -81,7 +81,7 @@ function generatesequence(model::LearningModel, initialscreen::AbstractVector{T}
     # Give the model the initial inputs, pre-tuning it (and disregard the predictions.)
     model.(initialscreen[1:end - 1])
     while sequence[end][1] != 0 && length(sequence) < LevelStatistics.maxcolshori
-        push!(sequence, Flux.cpu(Flux.data(
+        push!(sequence, tocpu(Flux.data(
             model(togpu(vcat(constantinput, sequence[end]))))))
     end
     if sequence[end][1] != 0

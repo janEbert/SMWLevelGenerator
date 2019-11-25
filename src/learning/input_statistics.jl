@@ -40,13 +40,13 @@ outputsizeof(inputsize) = inputsize - constantinputsize + 1
 
 # GAN (first screen generation)
 imgsize1d = (screencols, 1)
-imgsize2d = (screencols, screenrows, 1)
-imgsize3dtiles = (screencols, screenrows, LevelStatistics.uniquevanillatiles)
+imgsize2d = (screenrows, screencols, 1)
+imgsize3dtiles = (screenrows, screencols, LevelStatistics.uniquevanillatiles)
 """
 If this number is wrong, update your constant statistics files
 (run src/data/sprites.jl and src/data/secondary_level_stats.jl outside the REPL).
 """
-imgsize3d = (screencols, screenrows, layers3d)
+imgsize3d = (screenrows, screencols, layers3d)
 
 end # module
 

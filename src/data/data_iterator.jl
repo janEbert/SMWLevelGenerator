@@ -232,9 +232,17 @@ end
 
 slicedata(data::AbstractVector, ::Val) = (col for col in data)
 
-slicedata(data::AbstractMatrix, ::Val) = (col for col in eachcol(data))
+slicedata(data::AbstractMatrix, ::Val{true}) = (col for col in eachcol(data))
 
-function slicedata(data::AbstractArray{T, 3}, ::Val) where T
+function slicedata(data::AbstractMatrix, ::Val{false})
+    (reverse(col, dims=1) for col in eachcol(data))
+end
+
+function slicedata(data::AbstractArray{T, 3}, ::Val{true}) where T
+    (vec(reverse(allcols, dims=1)) for allcols in eachslice(data, dims=2))
+end
+
+function slicedata(data::AbstractArray{T, 3}, ::Val{false}) where T
     (vec(allcols) for allcols in eachslice(data, dims=2))
 end
 
@@ -326,7 +334,7 @@ function build_result(data, constantinput, reverse_rows::Val, as_matrix::Val{fal
     for (res_col, data_col) in zip(result_vector, slicedata(data, reverse_rows))
         res_col[1:constantinputsize - 1]   = constantinput
         res_col[constantinputsize]         = 1
-        res_col[constantinputsize + 1:end] = data_col
+        res_col[constantinputsize + 1:end] .= data_col
     end
     if result_vector[end] isa AbstractSparseArray
         result_vector[end][constantinputsize] = 0

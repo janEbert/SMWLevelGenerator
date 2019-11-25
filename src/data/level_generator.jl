@@ -144,7 +144,7 @@ function predict_from_row(model, row, from_method, first_screen)
     sequence, constantinput = deconstructall(model, sequence, constantinput, from_method)
 end
 
-function getrange(input::AbstractVector, range)
+function getrange(input::AbstractVector{<:AbstractVector}, range)
     range == 1:1 && return input[1]
     return input[range]
 end
@@ -184,7 +184,7 @@ function reshape_first_screen(g_model, first_screen)
     elseif g_model.hyperparams[:dimensionality] === Symbol("2d")
         return reshape(first_screen, size(first_screen)[1:2])
     else
-        return first_screen
+        return reshape(first_screen, size(first_screen)[1:3])
     end
 end
 
@@ -195,14 +195,17 @@ function build_first_screen(model::LearningModel, gen_first_screen, constantinpu
     else
         if dataiterparams.as_matrix
             maybevec = reduce(hcat, (vcat(constantinput[1:end - 1], 1, col)
-                                     for col in DataIterator.slicedata(gen_first_screen)))
+                                     for col in DataIterator.slicedata(gen_first_screen,
+                                                                       Val(false))))
             resultmatrix = reshape(maybevec, size(maybevec, 1), size(maybevec, 2))
             resultmatrix[constantinputsize, end] = constantinput[end]
             return resultmatrix
         else
+            @show size(gen_first_screen)
             result = [vcat(constantinput[1:end - 1], 1, col)
-                      for col in DataIterator.slicedata(gen_first_screen)]
+                      for col in DataIterator.slicedata(gen_first_screen, Val(false))]
             result[end][constantinputsize] = constantinput[end]
+            return result
         end
     end
 end
@@ -214,9 +217,9 @@ function build_one_input(model::LearningModel, gen_first_screen, constantinput)
     else
         if dataiterparams.as_matrix
             reshape(vcat(constantinput,
-                         first(DataIterator.slicedata(gen_first_screen))), :, 1)
+                         first(DataIterator.slicedata(gen_first_screen, Val(false)))), :, 1)
         else
-            vcat(constantinput, first(DataIterator.slicedata(gen_first_screen)))
+            vcat(constantinput, first(DataIterator.slicedata(gen_first_screen, Val(false))))
         end
     end
 end
@@ -240,12 +243,17 @@ function generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
                        input=randinputs(g_model), return_intermediate=false)
     gen_first_screen = generatescreen(g_model, input)
     constantinput = generatemetadata(meta_model, gen_first_screen)
+    @show size(gen_first_screen)
     gen_first_screen = reshape_first_screen(g_model, gen_first_screen)
+    @show size(gen_first_screen)
     if first_screen
         initialinput = build_first_screen(predictor, gen_first_screen, constantinput)
     else
         initialinput = build_one_input(predictor, gen_first_screen, constantinput)
     end
+    @show size(initialinput)
+    @show size(first(initialinput))
+    @show typeof(initialinput)
     level = generatesequence(predictor, initialinput)
     if return_intermediate
         return (gen_first_screen, constantinput, level)

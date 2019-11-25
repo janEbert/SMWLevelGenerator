@@ -330,18 +330,19 @@ julia> writescreen(generator, write_rom=rompath, number=0x106);
 ## Loading Models
 
 To load a model, you need to `import` or be `using` all the packages
-the model uses as well.
+the model uses as well (good candidates are `Flux` and/or
+`Transformers`).
 
 ### JLD2
 
-You will additionally need to `import` the
-exact module the model is defined in. For example, for a stored
-`WassersteinGAN`, do the following:
+Due to a bug in JLD2, you will additionally need to `import` the
+module containing any GANs you may want to load. For example, for a
+stored `WassersteinGAN`, do the following:
 
 ```julia
 julia> using SMWLevelGenerator, Flux, JLD2
 
-julia> import SMWLevelGenerator.WassersteinGAN  # Change this line.
+julia> import SMWLevelGenerator.WassersteinGAN  # Change this line if necessary.
 
 julia> generator = jldopen("exps/my_best_wsgan_checkpoint.jld2") do cp
            # This _must_ not give a warning like "Warning: type ... does
@@ -350,9 +351,7 @@ julia> generator = jldopen("exps/my_best_wsgan_checkpoint.jld2") do cp
        end;
 ```
 
-“Change this line” means that that line is most likely the one you
-need to change if loading another type of model to the module defining
-the model.
+Other models do not need this extra line.
 
 ### BSON
 

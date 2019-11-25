@@ -249,12 +249,13 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
         logprint(logger, "Starting GAN training at $starttimestr for $epochs epochs. "
                  * "Seed: $(params.seed).")
 
+        testfake = Flux.data(g_model(const_noise))
         if past_steps == 0
-            testfakes = [tocpu(Flux.data(g_model(const_noise)))]
+            testfakes = [tocpu(testfake)]
         else
-            push!(testfakes, tocpu(Flux.data(g_model(const_noise))))
+            push!(testfakes, tocpu(testfake))
         end
-        testloss = testmodel(d_model, d_loss, testfakes[end], const_fake_target)
+        testloss = testmodel(d_model, d_loss, testfake, const_fake_target)
         if past_steps > 0
             @tblog tblogger log_step_increment=convert(Int, past_steps)
             pop!(testfakes)
@@ -334,8 +335,9 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 steps += 1
 
                 if logevery != 0 && steps % logevery == 0
-                    push!(testfakes, tocpu(Flux.data(g_model(const_noise))))
-                    testloss = testmodel(d_model, d_loss, testfakes[end], const_fake_target)
+                    testfake = Flux.data(g_model(const_noise))
+                    push!(testfakes, tocpu(testfake))
+                    testloss = testmodel(d_model, d_loss, testfake, const_fake_target)
                     @tblog tblogger d_testloss=testloss log_step_increment=0
                     if d_l > max_d_loss
                         max_d_loss = d_l
@@ -421,8 +423,9 @@ function gan_trainingloop!(d_model::Union{AbstractDiscriminator, AbstractString}
                 end
                 if saveevery != 0 && steps % saveevery == 0
                     if logevery != 0 && steps % logevery != 0
-                        push!(testfakes, tocpu(Flux.data(g_model(const_noise))))
-                        testloss = testmodel(d_model, d_loss, testfakes[end],
+                        testfake = Flux.data(g_model(const_noise))
+                        push!(testfakes, tocpu(testfake))
+                        testloss = testmodel(d_model, d_loss, testfake,
                                              const_fake_target)
                         @tblog tblogger d_testloss=testloss log_step_increment=0
                         push!(d_testlosses, testloss)
