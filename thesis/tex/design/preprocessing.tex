@@ -73,7 +73,7 @@ from left to right instead of from ``front to back''. To better
 explain, remember that we \emph{do} store layers ``front to back'' for
 the highest compression level; most layers of object types are empty
 but most columns (slices from left to right) in the level are
-not. % TODO figure
+not. \\
 As a result, highly compressed data is stored in a way making it more
 costly to bring it back together as caching suffers a lot when we need
 each layer column by column (we would need to iterate over all layers
@@ -100,8 +100,8 @@ types to allow increasing model complexity:
   one of two ways (as given by the user): either the row is (1)~the
   row containing the maximum amount of values in the given layer or
   (2)~a combined row obtained by squashing all elements that are equal
-  to one in the given layer vertically.
-  % TODO figure for this
+  to one in the given layer vertically. See
+  figure~\ref{fig:squash-example} for a simple visualization.
 
   To determine which layer to use by default (the tile we assume to be
   the ground tile for the level), we use a heuristic: we find the
@@ -109,7 +109,7 @@ types to allow increasing model complexity:
     mention this explicitly as the main entrance is two tiles above
     Mario's feet. Also, the empty tile is the tile corresponding to
     tile~37.}. If there is no non-empty tile below that position, we
-  return the layer correspoding
+  return the layer corresponding
   to tile~256, the default ground tile. \\
   It must be noted that this is not the correct tile for all levels.
 \item 2-dimensional data containing only one layer of the level. The
@@ -118,6 +118,26 @@ types to allow increasing model complexity:
 \item 3-dimensional data containing whole more than one layer of the
   level. By default, all layers are used.
 \end{enumerate}
+
+\begin{figure}[t]
+  \centering
+  \subfloat[Input]{%
+    \centering
+    \includegraphics[width=0.5\textwidth]{squash_example.png}
+  }\\
+  \subfloat[\texttt{squash=false}]{%
+    \centering
+    \includegraphics[width=0.5\textwidth]{squash_false.png}
+  }\\
+  \subfloat[\texttt{squash=true}]{%
+    \centering
+    \includegraphics[width=0.5\textwidth]{squash_true.png}
+  }%
+  \caption{The two ways to obtain 1-dimensional data. Given (a)~as the
+    input for either case, the outcome is either (b)~when taking the
+    maximum over all rows or (c)~when squashing over all rows.}
+  \label{fig:squash-example}
+\end{figure}
 
 Each of these can work on any combination of object types of data in
 the level; for example, we can have 2-dimensional data containing only

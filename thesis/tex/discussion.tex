@@ -23,18 +23,18 @@ future. We also have several improvements planned for the project
 which are out of the scope of this thesis. \\
 As is usual in deep learning, for all our models, tuning the
 hyperparameters further may lead to surprising results. While we do
-not believe~-- looking at the experimens and our prior discussion
+not believe~-- looking at the experiments and our prior discussion
 above~-- that only changing hyperparameters will lead to a good level
 generator, with deep learning you never know if the combined changes
 over many parameters may suddenly lead to a good result. \\
 We also believe the training pipeline in general would benefit from
 further features such as learning rate regulation (especially for
-warmup).
+warm-up).
 
 In terms of the sequence prediction models, first off, we should try
 training on generated data that goes back some amount steps into the
 past instead of only on ``perfectly'' predicted data~-- the actual,
-ground thruth data (we mentioned this in
+ground truth data (we mentioned this in
 section~\ref{sec:generation-via-prediction}). This would allow
 minimizing errors for future predictions. As we see, we cannot rely on
 the model to predict the next column perfectly, meaning an error for

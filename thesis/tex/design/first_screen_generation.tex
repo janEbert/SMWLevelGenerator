@@ -1,26 +1,23 @@
 \subsection{First Screen Generation}
 \label{sec:first-screen-generation}
 
-% TODO mention GPU clamping
-
 In the following, we will describe implementation details of our GANs,
 which each include a separate discriminator and generator model.
 At first, we will only focus on DCGAN-based models.
 
 First off, as mentioned in section~\ref{sec:julia}, we defined
-convolutional layers without bias which were not included in Flux.jl
-at the time of writing. \\
+convolutional layers without bias which were not included in
+\mbox{Flux.jl}~\cite{FluxMLFluxJl2019} at the time of writing. \\
 Our 1-dimensional GANs automatically adjust their layers to the input
 size. The GANs for training data in~2D and above are implemented with
 manually chosen stride, padding and dilation so the output is the same
 size as the first screen of the level. The input to the discriminators
 of our GANs is the first screen of the level (a vector of 16~elements
-in the 1-dimensional case, a $27 \times 16$~matrix in the
-2-dimensional case and a $27 \times 16 \times l$~cube in the
-3-dimensional case, where $l$~is the amount of layers). Unlike our
-sequence models, neither the discriminators nor the generators receive
-any constant inputs of metadata (as the metadata is generated from the
-GANs' outputs).
+in the 1-dimensional case, a $27 \times 16$~matrix in the 2-dimensional
+case and a $27 \times 16 \times l$~cube in the 3-dimensional case, where
+$l$~is the amount of layers). Unlike our sequence models, neither the
+discriminators nor the generators receive any constant inputs of
+metadata (as the metadata is generated from the GANs' outputs).
 
 We use the same abstract model class for our GANs that was used for
 the sequence prediction models, but extend it with two new classes for
@@ -31,7 +28,7 @@ models do not allow inputs other than those of the form
 $r \times c \times l \times b$ or $c \times l \times b$ (for the
 1-dimensional case), where $r$~is the amount of rows, $c$~the amount
 of columns, $l$~the amount of layers (channels in image processing)
-and $b$~the batch size. We prodive layers to easily convert from this
+and $b$~the batch size. We provide layers to easily convert from this
 format to a matrix and back (the matrix format is required for fully
 connected layers). Generator models only take a vector of latent noise
 of a size determined during model creation. This vector is only given

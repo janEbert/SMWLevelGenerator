@@ -14,7 +14,7 @@
 I hereby declare that this master's thesis was authored solely by
 myself, Jan~Ebert. All figures and other illustrations were created by
 myself unless noted otherwise. All sources and any parts thereof~--
-including programme source code, data, tables and figures~-- used in
+including program source code, data, tables and figures~-- used in
 this work have been properly cited and referenced.
 
 \bigskip
@@ -28,8 +28,23 @@ this work have been properly cited and referenced.
 % \newpage
 
 \begin{abstract}
-\setcounter{page}{3}
-% TODO
+  \setcounter{page}{3} We present \emph{SMWLevelGenerator}, a simple
+  and extensible preprocessing, training and execution pipeline for
+  Super Mario World level generation. We start by generating parts of
+  a level via generative adversarial networks, predict metadata via
+  image processing-based methods and ``generate'' the rest of the
+  level via sequence prediction. We implement a multitude of models, a
+  pipeline handling different kinds of training data and easily
+  extensible interfaces to handle both more data and more models. The
+  training pipeline is optimized for both CPU as well as GPU usage and
+  our preprocessing pipeline keeps database sizes to reasonable
+  limits.
+
+  Our sequence prediction models learn to generate levels based on the
+  most general way possible, meaning they are unplayable and bland.
+  While our trained networks do not achieve the desired results, we
+  hope to provide an environment for future research to intuitively
+  use, improve and extend our collected knowledge.
 \end{abstract}
 
 % \newpage

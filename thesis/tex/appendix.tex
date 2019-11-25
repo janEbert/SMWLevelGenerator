@@ -61,7 +61,7 @@ out the few lines pertaining to sparse CUDA arrays at the moment.
 These issues were not in the scope of this thesis but will be
 addressed at a later point, surely granting another large speedup to
 any GPU-run training pipeline that uses sparse matrices (the training
-pipline is explained in section~\ref{sec:training-pipeline}). Another,
+pipeline is explained in section~\ref{sec:training-pipeline}). Another,
 more low-level GPU package,
 \mbox{CUDAnative.jl}~\cite{JuliaGPUCUDAnativeJl2019}, allowed us to
 write our own CUDA kernels with ease. This enabled faster clamping of
@@ -103,7 +103,7 @@ implement the following functions:
 \item \texttt{makeloss(model::YourModel, criterion)}: return a
   2-argument loss function by applying the given criterion (for
   example, a criterion is \texttt{Flux.mse}).
-\item \texttt{dataiterartorparams(model::YourModel)}: return
+\item \texttt{dataiteratorparams(model::YourModel)}: return
   parameters for the data iterator (does the model expect data as a
   vector of vectors, in matrix form, as a joined vector, \dots).
 \item \texttt{calculate\_loss(model::YourModel, loss, input, target)}:
@@ -121,7 +121,7 @@ implement the following functions:
 \end{itemize}
 
 GANs and metadata predictors do not need to implement
-\texttt{dataiterartorparams} and the optional \texttt{makesoftloss} as
+\texttt{dataiteratorparams} and the optional \texttt{makesoftloss} as
 they are not used. However, some functions expect different arguments.
 For these, we refer a curious reader to the source code. \\
 Finally, the generator models of GANs are required to save the input

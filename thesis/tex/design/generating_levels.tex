@@ -7,9 +7,9 @@ level. Applying the models in sequence is one step; then we need to
 reverse the whole preprocessing pipeline, converting our abstract
 representation back to the correct formats that Lunar Magic can write
 into the ROM. In this section, we will step through this pipeline one
-by one.
+by one. Once again, remember the high-level overview shown in
+figure~\ref{fig:pipeline} on page~\pageref{fig:pipeline}.
 
-% TODO reference to figure of pipeline (should be somewhere previous)
 We start with random input of the correct size for our generator,
 apply it and get our first screen. At this point, we could also apply
 our discriminator and retry generating the first screen if the emitted

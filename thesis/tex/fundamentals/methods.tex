@@ -38,9 +38,22 @@ the pipeline, generating a complete level from a minimal amount of
 input. To obtain the first input of the to be predicted sequence, we
 use a generative model. Finally, to generate the metadata described on
 page~\pageref{par:metadata}, we use an image processor that predicts
-the metadata of a level by analysing its first screen~-- the output of
+the metadata of a level by analyzing its first screen~-- the output of
 the generative model and input to the sequence predictor.
-% TODO picture of pipeline here or maybe at end of section
+
+Figure~\ref{fig:pipeline} gives a visual summary of the pipeline.
+
+\begin{figure}[t]
+  \centering
+  % \def\svgwidth{\columnwidth}
+  \input{img/pipeline.pdf_tex}
+  \caption{An overview of the generation pipeline. Blue blocks
+    indicate abstract objects while red block denote models. Not shown
+    is the bit indicating whether the level has not ended. The
+    metadata vector is concatenated to the first screen as is even
+    though the figure may suggest some kind of shortening.}
+  \label{fig:pipeline}
+\end{figure}
 
 \subsubsection{Sequence Prediction}
 \label{sec:sequence-prediction}
@@ -87,7 +100,7 @@ of redundant information.
 
 A long short-term memory cell's specialty is a recurrent memory that
 ``remembers'' values of a sequence, depending on connection weights.
-Due to this behaviour, it is well suited for both non-linear and
+Due to this behavior, it is well suited for both non-linear and
 long-term dependencies in Mario levels as both can be captured from
 any prior, relevant sequence element (for example, a keyhole at the
 beginning of the level implies a key later and the other way around).
@@ -194,7 +207,7 @@ would make training even harder. This estimate may be wrong as the
 metadata could also help as more correlation in the data may be found.
 
 In the end, while both approaches should be experimented with, this
-excercise will be left to subsequent work. The image processing model
+exercise will be left to subsequent work. The image processing model
 may be removed in favor of a GAN-only approach if that proves to be
 the better choice.
 

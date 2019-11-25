@@ -72,11 +72,9 @@ input, by concatenating the preprocessed columns in the second
 dimension; we then concatenate multiple of these matrices in the third
 dimension to get a batch of inputs. As neither Julia nor cuSPARSE
 provides support for sparse arrays in the third dimension, we are not
-able to obtain perfect performance for the transformer models. We
-noticed that the loss in speed due to non-sparse data only affected
-data of very high dimensionality (over~2D), meaning the transformer
-models still outperformed LSTMs in lower dimensionalities where data
-without sparsity was used. \\
+able to obtain perfect performance for the transformer models (as we
+mentioned, cuSPARSE could not be used as of yet so this and the
+following only affects data on the CPU at the moment). \\
 This batching issue also has a large effect on memory usage as the
 non-sparse data takes up a lot of space in high dimensions. For
 3-dimensional data, a batch of 32~matrices of maximum length
@@ -88,7 +86,12 @@ $58438 \cdot 32 \cdot 512 \cdot 2\text{ bytes} \approx 2 \cdot 10^{9} = 2\text{ 
 contains a large model is only possible in rare cases, so reducing
 batch size, thereby decreasing efficiency, is the only option. In the
 future, we will implement a wrapper around sparse matrices to act as a
-3-dimensional array during computation for transformer models.
+3-dimensional array during computation for transformer models. \\
+We noticed a loss in speed for data of very high dimensionality
+(over~2D), meaning the transformer models still outperformed LSTMs in
+lower dimensionalities but were less efficient for more
+high-dimensional data. We assume this is due to implementation
+differences in the packages.
 
 We will now list the configuration options for our sequence prediction
 models. As already mentioned, we provide convenience functions for
