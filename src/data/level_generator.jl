@@ -329,7 +329,7 @@ function writelevels(predictor::LearningModel, g_model::AbstractGenerator,
                      meta_model::LearningModel; inputs=randinputs(g_model, 512),
                      first_screen=true, write_rom=nothing)
     inputs isa Number && (inputs = randinputs(g_model, inputs))
-    for input in inputs
+    for input in eachslice(inputs, dims=ndims(inputs))
         writelevel(predictor, g_model, meta_model,
                    first_screen=first_screen, input=input, write_rom=write_rom)
     end
