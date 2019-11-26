@@ -282,7 +282,7 @@ function generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
     if return_intermediate
         return (gen_first_screen, constantinput, level)
     else
-        return level, constantinput
+        return level, constantinput[firstindex(constantinput):end - 1]
     end
 end
 
