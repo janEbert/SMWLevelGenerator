@@ -40,7 +40,18 @@ to a shell script interpreter, we provide downloads for pre-computed
 databases in the dimensions we support out of the box (listed in
 section~\ref{sec:preprocessing}). If, on the other hand, the levels
 are available, generating those databases is done in a single function
-call.
+call (\texttt{generate_default_databases()}).
+
+Our repository contains pre-calculated values for several statistics
+(these exist mostly to minimize the amount of layers we supply to the
+models). However, when setting up manually, we recommend running the
+functions \texttt{SMWLevelGenerator.Sprites.generateall()} and
+\texttt{SMWLevelGenerator.SecondaryLevelStats.generateall()} to
+pre-calculate statistics based on the user's dataset. If any of the
+files containing statistics is not found, that statistic is otherwise
+calculated on each load of the module. Depending on the size of the
+dataset, this make take some time, therefore, pre-calculating will
+speed up precompilation of the module.
 
 Several other scripts allow further processing of the data, including:
 \begin{itemize}

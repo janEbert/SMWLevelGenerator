@@ -131,6 +131,15 @@ Finally, some [patches](stats/remove_patches.txt),
 [roms](stats/remove_roms.txt) and [levels](stats/removed_levels.txt)
 had to be removed for various reasons (ROMs mostly due to encryption).
 
+**Whenever you remove or add hacks, always execute
+`SMWLevelGenerator.Sprites.generateall()` and
+`SMWLevelGenerator.SecondaryLevelStats.generateall()`!**  
+This will pre-calculate statistics to speed up loading and~-- more
+importantly~-- update the statistics according to _your_ dataset. If
+you are setting up manually, you must not skip this step to get the
+correct statistics. We do this to minizime the amount of layers we
+supply to the model.
+
 ### Databases
 
 You may either generate the databases yourself or download them.
@@ -192,7 +201,7 @@ julia --project -O3 -e '
     const dbpath = "levels_2d_flags_t.jdb";
     const res = trainingloop!(model, dbpath, TPs(
         epochs=1000,
-        logdir="exps/meta_2d_low_learning_rate",
+        logdir=joinpath("exps", "meta_2d_low_learning_rate"),
         dataiter_threads=3,
         use_soft_criterion=false,
     ));
@@ -208,7 +217,7 @@ julia --project -O3 -e '
     const dbpath = "levels_2d_flags_t.jdb";
     const res = trainingloop!(model, dbpath, TPs(
         epochs=1000,
-        logdir="exps/meta_2d_low_learning_rate",
+        logdir=joinpath("exps", "meta_2d_low_learning_rate"),
         dataiter_threads=3,
         use_soft_criterion=false,
     ));
@@ -228,7 +237,7 @@ julia --project -O3 -e '
     const res = gan_trainingloop!(d_model, g_model, dbpath, GTPs(
         epochs=1000,
         lr=5e-5,
-        logdir="exps/gan_2d",
+        logdir=joinpath("exps", "gan_2d"),
         dataiter_threads=3,
     ));
 '
@@ -249,7 +258,7 @@ julia --project -O3 -e '
         optimizer=Flux.RMSProp,
         d_warmup_steps=0,
         d_steps_per_g_step=1,
-        logdir="exps/densewsgan_2d_rmsprop",
+        logdir=joinpath("exps", "densewsgan_2d_rmsprop"),
         dataiter_threads=3,
     ));
 '
@@ -267,7 +276,7 @@ julia --project -O3 -e '
     const res = meta_trainingloop!(model, dbpath, MTPs(
         epochs=1000,
         lr=5e-5,
-        logdir="exps/meta_2d_low_learning_rate",
+        logdir=joinpath("exps", "meta_2d_low_learning_rate"),
         dataiter_threads=3,
     ));
 '
@@ -282,7 +291,7 @@ julia --project -O3 -e '
     const dbpath = "levels_2d_flags_t.jdb";
     const res = meta_trainingloop!(model, dbpath, MTPs(
         epochs=1000,
-        logdir="exps/densemeta_2d_64_3",
+        logdir=joinpath("exps", "densemeta_2d_64_3"),
         dataiter_threads=3,
     ));
 '
@@ -348,7 +357,8 @@ julia> using SMWLevelGenerator, Flux, JLD2
 
 julia> import SMWLevelGenerator.WassersteinGAN  # Change this line if necessary.
 
-julia> generator = jldopen("exps/my_best_wsgan_checkpoint.jld2") do cp
+julia> generator = jldopen(joinpath("exps",
+               "my_best_wsgan_checkpoint.jld2")) do cp
            # This _must_ not give a warning like "Warning: type ... does
            # not exist in workspace; reconstructing"!
            generator = cp["g_model"]  # Note that the keys are `String`s.
@@ -366,7 +376,7 @@ other words, data loss). For these, you do something like this:
 ```julia
 julia> using SMWLevelGenerator, Flux, BSON
 
-julia> cp = BSON.load("exps/my_best_wsgan_checkpoint.jld2");
+julia> cp = BSON.load(joinpath("exps", "my_best_wsgan_checkpoint.jld2"));
 Dict{Symbol,Any} [...]
 
 julia> generator = cp[:g_model];  # Note that the keys are `Symbol`s.
