@@ -7,7 +7,7 @@ using ..XYTables
 export deconstructconstantinput, deconstructlevel
 
 function deconstructconstantinput(constantinput::AbstractVector{Float32})
-    deconstructconstantinput(convert.(UInt16, constantinput))
+    deconstructconstantinput(round.(UInt16, constantinput))
 end
 
 "Return the statistics stored in the constant input."

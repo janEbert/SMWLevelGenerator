@@ -10,7 +10,7 @@ using ..LevelStatistics
 
 export generatesequence
 
-# TODO different input types (as_matrix for example; maybe dispatch to the correct function)
+# TODO more `view`s
 # TODO Take `reverse_rows` into account!
 # TODO and `each_tile`
 
