@@ -70,7 +70,7 @@ easily be specified manually; we focus on easy extension.
   download pre-computed databases; see below)
 - Any decompression program (we recommend
   [7-Zip](https://www.7-zip.org/))
-- [Julia](https://julialang.org/) (version 1.2 or 1.3+)
+- [Julia](https://julialang.org/) (version 1.2 or 1.3)
 - [TensorBoard](https://www.tensorflow.org/) (will be made optional)
 - [Wine](https://www.winehq.org/) (if not on Windows; required to run
   [Lunar Magic](https://fusoya.eludevisibility.org/lm/index.html))
@@ -101,7 +101,7 @@ databases](#download-pre-computed-databases).
 ### Quick Start
 
 Download and unzip
-[this](https://drive.google.com/uc?export=download&id=1pj7HZOHiZwllOlxBYQaHksmuVHfQc5Ab),
+[this](https://drive.google.com/uc?export=download&id=1eFe0ZkYEd-eOw1Vfa4nUlLP-zweadDbO),
 then see [Training](#training) or [Generation](#generation).
 
 ### Environment
@@ -161,9 +161,9 @@ line will work.
 #### Download Pre-computed Databases
 
 Alternatively, download a 34 MB `7z` file from
-[here](https://drive.google.com/uc?export=download&id=1pj7HZOHiZwllOlxBYQaHksmuVHfQc5Ab)
+[here](https://drive.google.com/uc?export=download&id=1RB8T_fT__vqv8lUPdEfbmbm6EmGR3tpw)
 or a 60 MB `tar.gz` from
-[here](https://drive.google.com/uc?export=download&id=19KMFjeZFIzFPannYSMkLZAHE32YL1Ezc).
+[here](https://drive.google.com/uc?export=download&id=1eFe0ZkYEd-eOw1Vfa4nUlLP-zweadDbO).
 You will need to decompress these.
 
 ## Training
