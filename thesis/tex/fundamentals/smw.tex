@@ -91,11 +91,11 @@ Being able to filter hacks was important for two reasons. One being
 that programmed custom behavior was out of the scope of this work,
 requiring both parsing the binary 65C816 assembly code and then
 understanding its every behavior. So we used the ``vanilla'' tag to
-exclude hacks using behavior not in the original game (also called
-the ``vanilla'' game; we will use these terms interchangeably). 
-Also, to assert some form of quality in the dataset, only hacks with a
-rating greater than or equal to~3.0 were downloaded (our rating is the
-mean of all individual ratings, ranging from~1.0 to~5.0 and including
+exclude hacks using behavior not in the original game (also called the
+``vanilla'' game; we will use these terms interchangeably). Also, to
+assert some form of quality in the dataset, only hacks with a rating
+greater than or equal to~3.0 were downloaded (our rating is the mean
+of all individual ratings, ranging from~1.0 to~5.0 and including
 \emph{None} for no individual ratings). Sadly, some hacks are
 protected via an encryption (possibly offered by Lunar Magic) and do
 not allow reading their data; we had to omit all of these. All in all,
@@ -105,7 +105,9 @@ the years since the game's release but also for many years to come.
 While this amount of data is not a lot relative to what deep learning
 models usually train on in~2019 (with data points in the millions,
 even approaching billions), it may be enough for our models to get a
-grasp on what makes a level enjoyable.
+grasp on what makes a level enjoyable. A list of the authors and a
+table containing more detailed statistics of the hacks is included in
+the source code repository.
 
 Sadly, the ``vanilla'' tag is user-assigned, meaning users may label
 hacks with some non-vanilla behavior as ``vanilla'' while others may
@@ -138,10 +140,10 @@ in some missing gaps of what makes up a level.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{Level105_midway_goal.png}
-  \caption{Aside from the midway and goal point, this figure also
-    shows that the midway entrance is separate from the midway point.
-    While the midway point consists purely of tiles, the moving goal
-    point tape is actually a sprite.}
+  \caption{Aside from the midway and goal point, also depicted is that
+    the midway entrance is separate from the midway point. While the
+    midway point consists purely of tiles, the moving goal point tape
+    is actually a sprite.}
   \label{fig:midway-goal}
 \end{figure}
 
