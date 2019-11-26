@@ -332,14 +332,14 @@ function find_ground_tile(level::Level, flags)
     # Copy so vertical caching is faster. Also, the horizontal copy is very small.
     tilelayer = LevelBuilder.tilelayer(level)
     if isvertical(level.stats)
-        if entrance_x > size(entrance_x, 1)
+        if entrance_x > size(tilelayer, 1)
             @warn "entrance at x=$(entrance_x) out of bounds; using default ground tile."
             searchregion = nothing
         else
             searchregion = tilelayer[entrance_x, entrance_y:end]
         end
     else
-        if entrance_x > size(entrance_x, 2)
+        if entrance_x > size(tilelayer, 2)
             @warn "entrance at x=$(entrance_x) out of bounds; using default ground tile."
             searchregion = nothing
         else
