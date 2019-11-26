@@ -52,15 +52,20 @@ files containing statistics is not found, that statistic is otherwise
 calculated on each load of the module. Depending on the size of the
 dataset, this make take some time, therefore, pre-calculating will
 speed up precompilation of the module.
+\medskip
 
 Several other scripts allow further processing of the data, including:
 \begin{itemize}
 \item summarizing statistics of the hacks (like authors, rating,
   \dots)
-\item removing duplicate levels based on their CRC32 checksums
+\item removing duplicate and test levels based on their CRC32
+  checksums
 \item removing levels with non-vanilla behavior
 \end{itemize}
 These have already been implemented in Julia.
+
+Detailed setup instructions are found in the project repository's
+README.
 
 %%% Local Variables:
 %%% mode: latex

@@ -127,9 +127,18 @@ protection and/or download limits):
 Alternatively, check out the [scripts](scripts) folder to find out how
 to set everything up manually. We have documentation!
 
-Finally, some [patches](stats/remove_patches.txt),
+Some [patches](stats/remove_patches.txt),
 [roms](stats/remove_roms.txt) and [levels](stats/removed_levels.txt)
 had to be removed for various reasons (ROMs mostly due to encryption).
+
+It is also very much recommended to [remove duplicate and test
+levels](scripts/check_checksums.jl) and [remove custom
+sprites](scripts/remove_custom_sprites.jl):
+
+```sh
+julia --project scripts/check_checksums.jl
+julia --project scripts/remove_custom_sprites.jl
+```
 
 **Whenever you remove or add hacks, always execute
 `SMWLevelGenerator.Sprites.generateall()` and
