@@ -59,6 +59,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractMatrix)
     end
     if prediction[1, end] != 0
         println("Force stopped generation due to maximum level length.")
+        sequence = sequence[:, 1:end - 1]
     end
     Flux.testmode!(model, false)
     return constantinput, postprocess(sequence[constantinputsize:end, :],
