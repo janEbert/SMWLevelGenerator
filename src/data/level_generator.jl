@@ -310,7 +310,7 @@ function writelevel(predictor::LearningModel, g_model::AbstractGenerator,
     level, constantinput = generatelevel(predictor, g_model, meta_model,
                                          first_screen=first_screen, input=input)
     from_method = get_from_method(predictor)
-    level, constantinput = deconstructall(level, constantinput, from_method)
+    level, constantinput = deconstructall(predictor, level, constantinput, from_method)
 
     writeback(level, constantinput)
     lmwrite(write_rom, constantinput.number)
