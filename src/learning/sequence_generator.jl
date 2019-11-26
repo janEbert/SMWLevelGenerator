@@ -47,7 +47,7 @@ function generatesequence(model::LearningModel, initialinput::AbstractMatrix)
     constantinputs = initialinput[1:constantinputsize - 1, :]
     constantinput = constantinputs[:, 1]
     # TODO preallocate large sequence instead of growing
-    sequence = convert(Array, initialinput)
+    sequence = convert(Matrix, initialinput)
     prediction = sequence[constantinputsize:end, :]
     Flux.reset!(model)
     Flux.testmode!(model)
@@ -61,7 +61,8 @@ function generatesequence(model::LearningModel, initialinput::AbstractMatrix)
         println("Force stopped generation due to maximum level length.")
     end
     Flux.testmode!(model, false)
-    return constantinput, postprocess(prediction, model.hyperparams[:dimensionality])
+    return constantinput, postprocess(sequence[constantinputsize:end, :],
+                                      model.hyperparams[:dimensionality])
 end
 
 """
