@@ -271,7 +271,7 @@ function generatelevel(predictor::LearningModel, g_model::AbstractGenerator,
                        meta_model::LearningModel; first_screen=true,
                        input=randinputs(g_model), return_intermediate=false)
     gen_first_screen = generatescreen(g_model, input)
-    constantinput = generatemetadata(meta_model, gen_first_screen)
+    constantinput = vec(generatemetadata(meta_model, gen_first_screen))
     gen_first_screen = reshape_first_screen(g_model, gen_first_screen)
     if first_screen
         initialinput = build_first_screen(predictor, gen_first_screen, constantinput)
