@@ -127,6 +127,10 @@ protection and/or download limits):
 Alternatively, check out the [scripts](scripts) folder to find out how
 to set everything up manually. We have documentation!
 
+Finally, some [patches](stats/remove_patches.txt),
+[roms](stats/remove_roms.txt) and [levels](stats/removed_levels.txt)
+had to be removed for various reasons (ROMs mostly due to encryption).
+
 ### Databases
 
 You may either generate the databases yourself or download them.
@@ -367,6 +371,12 @@ Dict{Symbol,Any} [...]
 
 julia> generator = cp[:g_model];  # Note that the keys are `Symbol`s.
 ```
+
+## Sources
+
+See [`stats/authors.txt`](stats/authors.txt) for a list of authors or
+[`stats/hack_stats.csv`](stats/hack_stats.csv) for detailed
+information about each hack.
 
 ## License
 

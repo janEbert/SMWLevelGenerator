@@ -3,35 +3,60 @@
 For our experiments, we used cluster computers available to us thanks
 to Bielefeld University; therefore we cannot make exact claims as to
 which CPUs or GPUs we used. \\
-Due to time constraints, we were not able to run experiments over all
-dimensions. We also decided against training for longer than 24~hours
-on a single experiment. With these restrictions, models in larger
-dimensionalities may not have finished training (we set a maximum of
-1000~epochs for all models). In the case of 3D~data with only all tile
-layers (\texttt{3dtiles}), the transformer model was not able to train
-4~complete epochs in the 24~hour time frame (the LSTM in the same
-dimensionality was faster for the reasons explained in
-section~\ref{sec:generation-via-prediction}; due to the large memory
-usage, we had to reduce the batch size to~1~\footnote{We could have
+Due to time and resource constraints, we were not able to run
+experiments over all dimensions. We also decided against training for
+longer than 24~hours on a single experiment. With these restrictions,
+models in larger dimensionalities may not have finished training (we
+set a maximum of 1\,000~epochs for all models). In the case of 3D~data
+with only all tile layers (\texttt{3dtiles}), the LSTM was not able to
+train 4~complete epochs in the 24~hour time frame. The transformer in
+the same dimensionality was faster even though we had to reduce the
+batch size to~1 due to the large memory usage we explained in
+section~\ref{sec:generation-via-prediction}\footnote{We could have
   implemented batch sizes of~1 to not be batched but instead remain as
   a singular input to improve performance for this special case.
   However, we decided it was not worth it; we mentioned our plans for
   3-dimensional sparse arrays fixing most batch-related issues all at
-  once in section~\ref{sec:generation-via-prediction}.}).
+  once in section~\ref{sec:generation-via-prediction}.}.
 
 We are also not going to take a look at every model in higher
 dimensions; internal tests have shown which models work and which
 don't. While we \emph{will} contrast LSTMs and transformers, we are
-going to only present our best models for the other cases. Another
+going to only present select models for the other cases. Another
 reason is that we do not wish to waste precious public time on the
 compute cluster and electricity on models that are very unlikely to
 achieve good results.
 
 \subsection{1-Dimensional}
 
+
+
 \subsection{2-Dimensional}
 
+We used the default model parameters for all models. Earlier tests
+showed that a larger amount of parameters increased loss in general
+and did not lead to decreasing it even after many epochs. Therefore,
+with regards to the amount of parameters, we are mostly confident in
+our choices. However, due to inexperience with the transformer models,
+we may have chosen wrong values.
+
+In the 2-dimensional case, our LSTM learns to complete levels based on
+a mostly solid line of ground tiles. 
+
 \subsection{3-Dimensional, Only Tiles}
+
+The 3-dimensional models trained on layers of tiles only were already
+taking very long (too long) to train. In the 24~hours of training, the
+latest checkpoint of our LSTM model only had 3\,000~training steps.
+The transformer model managed 27\,000~steps. For the sake of
+presenting results, we will not compare these two models as the LSTM
+was hardly trained.
+
+Most likely due to its low amount of training, the LSTM we trained
+generalizes even further than the one from the 2-dimensional case. It
+mostly generates tiles one ID above empty tiles (with more training,
+this will most likely converge towards empty tiles~-- assuming the
+model continues generalizing).
 
 
 %%% Local Variables:

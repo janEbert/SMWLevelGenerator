@@ -107,6 +107,11 @@ The parameters are collectively combined with parameters stored in the
 model (an optional specification of our abstract model interface) and
 saved in a JSON file to combine both human readability and parsing.
 
+To make debugging model prototypes easier, we implement the
+\texttt{overfit\_on\_batch} parameter for all training loops, allowing
+the user to overfit the model on a small batch of a default or chosen
+size, thereby catching most early errors.
+
 We already mentioned in section~\ref{sec:generation-via-prediction}
 that our sequence prediction models implement a ``soft'' loss
 function; these are also selected as a training parameter. \\

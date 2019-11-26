@@ -6,30 +6,118 @@ for ways to further de-regularize.
 
 Due to most of the work relying on the sequence prediction models,
 these are the weakest link of our pipeline. What we found out is that
-the models were not able to memorize the data but instead minimized
-error by heavily generalizing. While we tried giving the models more
-layers, this resulted in much higher and not decreasing loss.
+the models were not able to memorize the data (overfit on it) but
+instead minimized error by heavily generalizing. While we tried giving
+the models more layers, this resulted in much higher, oscillating loss
+that ultimately was not decreasing even after many epochs.
 
 \subsection{Related Work}
 
+Most related work worked with the simpler environment given by Super
+Mario Bros.~\cite{SuperMarioBros2019}. With fewer layers,
+interactions and general size, this is~-- while still fundamentally
+hard~-- a much simpler problem in relation to the high dimensions we
+are faced with in Super Mario World.
 
+We also noticed that a lot of the papers we list here use datasets
+much smaller than ours (often even using subsets of the 32~levels in
+Super Mario Bros.), most likely for simplification purposes but
+possibly also to increase the odds of overfitting which we assume may
+be desired. Another possibility may be disregard for or unawareness of
+community-created levels.
+
+A related paper using a column-per-column encoding by Dahlskog et
+al.~\cite{dahlskogLinearLevelsNgrams2014} uses $n$-grams~% TODO cite
+to predict levels based on the same ``style'' found in the training
+dataset, citing the simplicity of $n$-grams in modeling surface-level
+statistics. While capturing the structure of the training levels well,
+these models would fail to work with or ``invent'' never-before seen
+columns. We hoped to enable this kind of ``creative generalization''
+with our deep learning models.
+
+Geitgey~\cite{geitgeyMachineLearningFun2018} successfully predicts
+Super Mario Bros.\ levels by using a char-rnn. His approach encoded
+the level as a string (with one-hot class encodings, predicting the
+next tile), reading it out column per column from top to bottom (like
+we do when reading per tile in default order); his model was also
+responsible for setting the length of the columns, making his problem
+space significantly larger. Due to the combinatorial explosion of
+classes when predicting per column\footnote{With
+  $d = 2^{l \cdot r} \cdot 512 \cdot 32 \cdot 7 \cdot 14 \cdot 8 \cdot 8 \cdot 2 \cdot 2 \cdot 18$, where
+  fixed numbers are the amount of possible values of the constant
+  metadata vector, $l$~is the number of layers, $r$~the number of rows
+  and $d$ the resulting number of classes, for 3-dimensional input
+  columns containing all layers ($l = 2164$, $r = 27$), $d$ has
+  17\,599~\emph{digits} compared to $d = 662$ for $r = 1$ (per-tile
+  input).} and for efficiency reasons, we had foregone the approach of
+class encoding initially. However, with the already implemented option
+of reading per tile and the new-found knowledge of our experiments, we
+should revisit and implement this approach for future experiments.
+
+Summerville and Mateas~\cite{summervilleSuperMarioString2016} analyze
+several methods of encoding the level, ultimately also deciding that
+per-tile encodings are easier to learn than per-column encodings. They
+also propose using ``snaking'', alternating reading each column from
+bottom to top, then from top to bottom. This benefits locality in the
+sequence and artificially doubles the dataset enabled by starting the
+snaking from either bottom to top or top to bottom. Another
+proposition is adding another value to the input~-- a continually
+increasing value to enable a better understanding of level progression
+to the model. They also use A* search~\cite{SearchAlgorithm2019}
+to enable better playability of the level. \\
+This was not relevant to our case for two reasons: (1)~contrary to
+Super Mario Bros., Super Mario Word allows backtracking, making it
+impossible to only consider linear paths and (2)~due to the largely
+increased amount of interactions, we cannot assume that tracking a
+path over tiles leads to the completion of a level. However, the path
+enabled controlling the difficulty of the level by widening or
+shrinking it and lead to better results; adapting an approach based on
+path-search should be very worthwhile.
+
+% TODO BLABLA DCGAN MIT CMA-ES
+
+Giacomello et al.\ successfully used both a unconditional and
+conditional Wasserstein GAN with gradient
+penalty~\cite{gulrajaniImprovedTrainingWasserstein2017} to generate
+DOOM~\cite{Doom1993Video2019} levels. Both GANs take as input
+important features of the level (platforms, walls, \dots) while the
+conditional version also receives metadata information (size, number
+of rooms, \dots). While DOOM is a 3-dimensional first-person shooter,
+the authors in turn base their work on papers related to platform
+level generation for Super Mario Bros., completing the cycle. The
+authors show that a GAN-only approach works well in a complex domain;
+considering conditional information (by this we mean both GANs
+receiving prior level information; this is not unique to the
+conditional GAN) was not in our interest but may be desired to improve
+results.
 
 \subsection{Future Improvements}
 
 While the experiments have shown that our approach to generating
 levels via sequence prediction have not worked out yet, we have many
 suggestions and possible solutions that ought to be tried out in the
-future. We also have several improvements planned for the project
-which are out of the scope of this thesis. \\
+future in addition to the ones already mentioned in the previous
+section. We also have several improvements planned for the project
+which are out of the scope of this thesis. However, we do want to
+mention that a distributed version would make a lot of sense for
+larger models; then, training models for the 3-dimensional case with
+all layers may be feasible.
+
 As is usual in deep learning, for all our models, tuning the
 hyperparameters further may lead to surprising results. While we do
 not believe~-- looking at the experiments and our prior discussion
 above~-- that only changing hyperparameters will lead to a good level
 generator, with deep learning you never know if the combined changes
-over many parameters may suddenly lead to a good result. \\
+over many parameters may suddenly lead to a good result. In
+particular, reducing or removing dropout may help. \\
 We also believe the training pipeline in general would benefit from
 further features such as learning rate regulation (especially for
 warm-up).
+
+While a lack of features may be influencing our results, a lot of
+features we implemented could sadly not be tested well due to time
+constraints. These include the per-tile encoding, ``soft'' loss and
+the LSTMs' skip connections.
 
 In terms of the sequence prediction models, first off, we should try
 training on generated data that goes back some amount steps into the

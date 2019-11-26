@@ -43,7 +43,7 @@ dump_levels() {
         $wine_bin "$lunar_magic" -ExportMap16FG "$rom_basename.smc" "map16fg.bin" 105
         # Don't forget to clean up after yourself! (Remove the link.)
         # Or do forget because you are going to use it again.
-        # rm "$rom_basename.smc"
+        rm "$rom_basename.smc"
         cd "$exec_dir"
     done
     echo "Done."
