@@ -9,25 +9,26 @@ interface.
 \subsection{Packages}
 \label{sec:packages}
 
-Let us now list the the packages most important for our preprocessing
-and training pipeline. While this list deliberately does not cover all
-packages used, we hope to give an overview of what the ecosystem made
-or will make possible, why these packages were important for us and
-what issues we still had to solve manually.
+Let us now list the packages (excluding Julia's large standard
+library) most important for our preprocessing and training pipeline.
+While this list deliberately does not cover all packages used, we hope
+to give an overview of what the ecosystem made or will make possible,
+why these packages were important for us and what issues we still had
+to solve manually.
 
 We encountered several issues with model checkpoints. We first
 switched from an unmerged pull request branch of
-\mbox{BSON.jl}~\cite{JuliaIOBSONJl2019,SavingArrayLength} (which
+\mbox{BSON.jl}~\cite{JuliaIOBSONJl2019,keslerSavingArrayLength} (which
 contains an issue only later addressed in the master branch) to the
 HDF5-based \mbox{JLD.jl}~\cite{JuliaIOJLDJl2019}, then to the more
 unstable \mbox{JLD2.jl}~\cite{JuliaIOJLD2Jl2019} due to not being able
 to save functions in \mbox{JLD.jl}. With \mbox{JLD2.jl}, there were
 still errors which led us to also check out a pull request for this
-package~\cite{MaybeFixTypename} (this has been merged but for
-stability reasons, we are not ready to switch to the master branch of
-\mbox{JLD2.jl} just yet). Finally, we settled with \mbox{JLD2.jl} for
-our model checkpoints as the most stable package. While the files are
-not as convenient as those of \mbox{BSON.jl}, we are sure the
+package~\cite{palethorpeMaybeFixTypename} (this has been merged but
+for stability reasons, we are not ready to switch to the master branch
+of \mbox{JLD2.jl} just yet). Finally, we settled with \mbox{JLD2.jl}
+for our model checkpoints as the most stable package. While the files
+are not as convenient as those of \mbox{BSON.jl}, we are sure the
 stability is worth it. In the end, we support saving to either
 \mbox{BSON.jl} or \mbox{JLD2.jl} with \mbox{JLD2.jl} as the default.
 

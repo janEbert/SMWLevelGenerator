@@ -13,9 +13,9 @@ Since the data iterator is responsible for shaping our data to the
 form expected by the model, we still need to apply some more
 preprocessing to the already preprocessed data contained in the
 database. As this may be a large bottleneck, we focused on optimizing
-data iteration (on any 1.3-version and above of Julia, this bottleneck
-can mostly be avoided by simply using enough data iterator threads).
-As we explained in section~\ref{sec:preprocessing}, our data is stored
+data iteration (on any Julia version 1.3 or later, this bottleneck can
+mostly be avoided by simply using enough data iterator threads). As we
+explained in section~\ref{sec:preprocessing}, our data is stored
 differently if using the highest compression level. We also explained
 that storing our 3-dimensional data in ``columnar'' layers (sliced
 along the second dimension) is more performant. With the columnar

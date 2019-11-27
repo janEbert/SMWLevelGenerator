@@ -2,9 +2,9 @@
 
 if [ -x "$(command -v $p7z_bin)" ]; then
     # .7z
-    wget "https://drive.google.com/uc?export=download&id=1RB8T_fT__vqv8lUPdEfbmbm6EmGR3tpw"
+    wget "https://drive.google.com/uc?export=download&id=1_7Lz4UVKvtptYcX4PzdbEC3Z1ORnFaY0"
 else
     # .tar.gz
-    wget "https://drive.google.com/uc?export=download&id=1eFe0ZkYEd-eOw1Vfa4nUlLP-zweadDbO"
+    wget "https://drive.google.com/uc?export=download&id=1Ujr7l5lpRCO-EROOqobZyi8C-Eu3U4in"
 fi
 

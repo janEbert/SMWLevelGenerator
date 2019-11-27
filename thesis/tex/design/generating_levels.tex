@@ -24,6 +24,12 @@ The data is now in the same format as a preprocessed real level and we
 apply the sequence prediction model sequentially until we either find
 that the ``sequence has not ended yet''-bit is~0 or until the maximum
 level length is reached. This complete output is then postprocessed.
+Note that we decided against rounding during all of these steps,
+making generated data unlike any training data. With this, we hope to
+enable an even larger space for generation. Rounding in-between each
+step will be made optional in the future as the current behaviour may
+not be desired (as rounding is an intuitive simplification during
+generation).
 
 As we skipped some metadata when preparing our data, we need to fill
 the omissions with default values. For all unknown data, we chose
@@ -44,7 +50,9 @@ also implement model-specific generation functions. For the sequence
 prediction model, functions may generate levels like the above
 functions or based on predicting on the original game's levels. The
 GANs may also generate only the first screen for a level
-independently.
+independently. This function also exists for the metadata predictor
+but we have not implemented writing the predicted data back to the
+level as of yet.
 
 Note that during all of this, the user does not have to worry about
 dimensionality in any way; all of this is handled automatically if the

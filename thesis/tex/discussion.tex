@@ -1,8 +1,14 @@
 \section{Discussion}
 
-The experiments once again show how well neural networks generalize.
-In our case, this generalization was a bit too much and we should look
-for ways to further de-regularize.
+Just as we implemented our pipeline to be as general as possible, our
+models learned to be as general as possible. The experiments once
+again show just how well neural networks generalize. In our case, this
+generalization was a bit too much and we should look for ways to
+further de-regularize. Formulating the problem as a regression had a
+large influence on this, though we will discuss this in
+section~\ref{sec:related-work}. We also assume that choosing mean
+square error as the criterion did not penalize layers close to each
+other enough (leading to models generating ``almost empty'' tiles).
 
 Due to most of the work relying on the sequence prediction models,
 these are the weakest link of our pipeline. What we found out is that
@@ -12,6 +18,7 @@ the models more layers, this resulted in much higher, oscillating loss
 that ultimately was not decreasing even after many epochs.
 
 \subsection{Related Work}
+\label{sec:related-work}
 
 Most related work worked with the simpler environment given by Super
 Mario Bros.~\cite{SuperMarioBros2019}. With fewer layers, interactions
@@ -101,7 +108,8 @@ dataset consisted of only a single level, the results show more
 variability than expected. This variability was a byproduct of using
 an actual generative approach, making moving through the latent space
 for individual chunks of the level possible to obtain gradual
-mutations.
+mutations. While evolutionarily searching the latent space was a great
+idea, implementing this was out of the scope of this work.
 
 Giacomello et al.\ successfully used both a unconditional and
 conditional Wasserstein GAN with gradient
@@ -157,6 +165,11 @@ minimizing errors for future predictions. As we see, we cannot rely on
 the model to predict the next column perfectly, meaning an error for
 each predicted column will accumulate and result in worse and worse
 predictions.
+
+The high-dimensional experiments showed how the transformer with less
+training had a~-- in our opinion~-- better representation of the data
+than the LSTM. This is also a form of de-regularization and might be
+worth exploring.
 
 We could try implementing more loss functions akin to the ``soft''
 loss we introduced in section~\ref{sec:generation-via-prediction} as
