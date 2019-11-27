@@ -17,7 +17,7 @@ why these packages were important for us and what issues we still had
 to solve manually.
 
 We encountered several issues with model checkpoints. We first
-switched from an unmerged pull request branch of
+switched from an unmerged pull request branch of \\
 \mbox{BSON.jl}~\cite{JuliaIOBSONJl2019,keslerSavingArrayLength} (which
 contains an issue only later addressed in the master branch) to the
 HDF5-based \mbox{JLD.jl}~\cite{JuliaIOJLDJl2019}, then to the more
@@ -101,7 +101,7 @@ implement the following functions:
 \begin{itemize}
 \item \texttt{(model::YourModel)(input)}: the application function to
   enable calling the model on input data.
-\item \texttt{makeloss(model::YourModel, criterion)}: return a
+\item \texttt{makeloss(model::YourModel, criterion)}: return a \\
   2-argument loss function by applying the given criterion (for
   example, a criterion is \texttt{Flux.mse}).
 \item \texttt{dataiteratorparams(model::YourModel)}: return

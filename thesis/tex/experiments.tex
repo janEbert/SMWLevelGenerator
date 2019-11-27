@@ -110,7 +110,7 @@ transformer models, we may have chosen bad values.
   }%
   \caption{Selected model parameters of the transformers; parameter
     names on the y-axis versus model constructors on the x-axis.
-    ``attn'' is short for attention ``ff'' for feedforward.}
+    ``attn'' is short for attention, ``ff'' for feedforward.}
   \label{tab:transformerparams}
 \end{table}
 
@@ -280,21 +280,22 @@ no predictions. So the only results we have are empty levels.
 The 3-dimensional models that trained on layers of tiles only were
 already taking very long (too long) to train. In the 24~hours of
 training, the latest checkpoint of our LSTM model only had
-3\,000~training steps. The transformer model managed 27\,000~steps,
-but remember that its batch size was~1 whereas the LSTM trained on
-batches of size~32. This means that it actually trained on
+3\,000~training steps. The transformer model managed \\
+27\,000~steps, but remember that its batch size was~1 whereas the LSTM
+trained on batches of size~32. This means that it actually trained on
 significantly less data than the LSTM. For the sake of presenting
 results, we will use the LSTM's latest checkpoint. Therefore, note
 that these results are not comparable as the transformer was hardly
 trained compared to the LSTM.
 
 Mostly due to its low amount of training, the LSTM we trained
-generalizes even further than the one from the 2-dimensional case. It
-mostly generates tiles one ID above empty tiles (with more training,
-this will most likely converge towards empty tiles~-- assuming the
-model continues generalizing). These outputs stayed constant except
-for level~258 where the model at some points starts to act like the
-models presented above and outputs columns of only empty tiles.
+generalizes even further than the one from the \\
+2-dimensional case. It mostly generates tiles one ID above empty tiles
+(with more training, this will most likely converge towards empty
+tiles~-- assuming the model continues generalizing). These outputs
+stayed constant except for level~258 where the model at some points
+starts to act like the models presented above and outputs columns of
+only empty tiles.
 
 The transformer model converges further towards empty tiles than the
 LSTM but constantly outputs the same column consisting of a mix of
