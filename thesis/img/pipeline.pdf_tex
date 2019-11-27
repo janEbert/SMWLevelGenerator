@@ -1,0 +1,79 @@
+%% Creator: Inkscape inkscape 0.92.4, www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'pipeline.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{340.96432663bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,1.54350414)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{pipeline.pdf}}%
+    \put(0.51737948,1.4908845){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Latent noise vector\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{pipeline.pdf}}%
+    \put(0.51737948,1.38892387){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}First screen generator\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{pipeline.pdf}}%
+    \put(0.51737948,1.04934809){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Metadata predictor\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{pipeline.pdf}}%
+    \put(0.51737941,0.94759043){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Metadata vector\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{pipeline.pdf}}%
+    \put(0.51841912,0.6082175){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Sequence predictor\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{pipeline.pdf}}%
+    \put(0.51906501,0.26002848){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Level cube\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{pipeline.pdf}}%
+    \put(0.51906501,1.21913592){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}First screen cube\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{pipeline.pdf}}%
+    \put(0.66939645,0.77805211){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}First screen cube\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{pipeline.pdf}}%
+    \put(0.19197589,0.84593411){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Metadata\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{pipeline.pdf}}%
+    \put(0.19224438,0.72393324){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}...\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=11]{pipeline.pdf}}%
+    \put(0.19197589,0.77808091){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Metadata\end{tabular}}}}%
+  \end{picture}%
+\endgroup%
