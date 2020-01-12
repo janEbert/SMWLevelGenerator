@@ -74,6 +74,14 @@ easily be specified manually; we focus on easy extension.
 - [TensorBoard](https://www.tensorflow.org/) (will be made optional)
 - [Wine](https://www.winehq.org/) (if not on Windows; required to run
   [Lunar Magic](https://fusoya.eludevisibility.org/lm/index.html))
+- [Private build of Lunar
+  Magic](https://drive.google.com/uc?export=download&id=1WSsvEhWEZiIMc7W0kVZW3Z4m7_Qc0Ess)
+- [Floating IPS](https://dl.smwcentral.net/11474/floating.zip) (also
+  included in the above link with Lunar Magic)
+- American Super Mario World ROM (CRC32 checksum `a31bead4`; others
+  may work too but this one is tested)
+- (optional) [LMSW](https://dl.smwcentral.net/4840/lmsw.zip) (internal
+  emulator for Lunar Magic; newer versions exist but are not tested)
 
 Execute the following in your command line of choice in this
 directory:
@@ -82,10 +90,12 @@ directory:
 julia --project -e 'using Pkg; Pkg.instantiate()'
 ```
 
-Or in the Julia REPL, execute:
+Or in the Julia REPL, type `]` to enter `pkg` mode. Then, execute the
+second line:
 
 ```julia
-julia> ] activate .; instantiate
+julia> ]
+pkg> activate .; instantiate
 ```
 
 Julia is now correctly setup for this project with all dependencies
@@ -100,6 +110,7 @@ databases](#download-pre-computed-databases).
 
 ### Quick Start
 
+First, get the [dependencies](#dependencies) above.  
 Download and unzip
 [this](https://drive.google.com/uc?export=download&id=1Ujr7l5lpRCO-EROOqobZyi8C-Eu3U4in),
 then see [Training](#training) or [Generation](#generation).
@@ -143,8 +154,8 @@ julia --project scripts/remove_custom_sprites.jl
 **Whenever you remove or add hacks, always execute
 `SMWLevelGenerator.Sprites.generateall()` and
 `SMWLevelGenerator.SecondaryLevelStats.generateall()`!**  
-This will pre-calculate statistics to speed up loading and~-- more
-importantly~-- update the statistics according to _your_ dataset. If
+This will pre-calculate statistics to speed up loading and – more
+importantly – update the statistics according to _your_ dataset. If
 you are setting up manually, you must not skip this step to get the
 correct statistics. We do this to minizime the amount of layers we
 supply to the model.
