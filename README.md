@@ -12,7 +12,9 @@ their corresponding training loops. When you actually want to generate
 levels, we have functions handling everything in the background.
 
 For fundamental questions, check out the
-[thesis](thesis/SMWLevelGenerator.pdf).
+[thesis](thesis/SMWLevelGenerator.pdf). The
+[presentation](presentation/org/SMWLevelGenerator-presentation.pdf)
+may prove useful as a less detailed introduction.
 
 ## Table of Contents
    - [Features](#features)
