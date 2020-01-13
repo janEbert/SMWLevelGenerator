@@ -275,8 +275,8 @@ Too many to list (check out the thesis!), here are important ones:
 *** Data Preprocessing
 - Lunar Magic dumps five different files for each level corresponding
   to different parts of the level
-- Filter duplicate and vanilla game test levels by checksums
 - Remove encrypted hacks (yep...) and those throwing errors
+- Filter duplicate and vanilla game test levels by checksums
 - Remove levels not adhering to vanilla behavior
 - Format levels according to user-specified configuration
   (dimensionality, which layers, output type, ...)
@@ -345,7 +345,7 @@ in 2D, cube in 3D), outputs are scalars whether input is real.
 screen tensors.
 *** Image Processing Models
 - Convolutional
-- MLP
+- Dense (MLP)
 
 Inputs are first screen tensors, outputs are the constant metadata
 vectors also supplied to the sequence predictor.
