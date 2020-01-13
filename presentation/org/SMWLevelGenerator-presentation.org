@@ -211,11 +211,9 @@ The framework can be roughly divided into these modules:
 - Level generation pipeline
 *** Setup (Quick Version)
 #+attr_beamer: :overlay +-
-1. Get dependencies ([[https://julialang.org/][Julia 1.3]], [[https://www.tensorflow.org/][TensorBoard,
-   [[https://drive.google.com/uc?export=download&id=1WSsvEhWEZiIMc7W0kVZW3Z4m7_Qc0Ess][Lunar
-   Magic]][fn::Private build], [[https://dl.smwcentral.net/11474/floating.zip][Floating IPS]], [[https://www.winehq.org/][Wine]] if not on Windows]],
-   Super Mario World ROM[fn::American version; CRC32 checksum
-   =a31bead4=])
+1. Get dependencies ([[https://julialang.org/][Julia 1.3]], [[https://www.tensorflow.org/][TensorBoard]], [[https://drive.google.com/uc?export=download&id=1WSsvEhWEZiIMc7W0kVZW3Z4m7_Qc0Ess][Lunar Magic]][fn::Private
+   build], [[https://dl.smwcentral.net/11474/floating.zip][Floating IPS]], [[https://www.winehq.org/][Wine]] if not on Windows, Super Mario World
+   ROM[fn::American version; CRC32 checksum =a31bead4=])
 2. Instantiate Julia project: \newline
    ~julia --project -e "using Pkg; Pkg.instantiate()"~
 3. [[https://drive.google.com/uc?export=download&id=1Ujr7l5lpRCO-EROOqobZyi8C-Eu3U4inf][Download databases]] and decompress
