@@ -39,6 +39,13 @@ _region_.tex
 *.run.xml
 /thesis/auto/
 
+# Org
+*.pyg
+/presentation/org/*.tex
+/presentation/org/*.odt
+/presentation/org/*.html
+/presentation/org/auto/
+
 # Other stuff
 *.bak
 *.dll
