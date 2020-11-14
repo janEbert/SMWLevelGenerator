@@ -1,11 +1,11 @@
 # Binary or data directories
-compressed_hacks/
-exps/
-hacks/
-levels/
-roms/
-stats/
-tools/
+/compressed_hacks/
+/exps/
+/hacks/
+/levels/
+/roms/
+/stats/
+/tools/
 
 # Archives
 *.7z
@@ -37,7 +37,7 @@ _region_.tex
 *.bcf
 *.blg
 *.run.xml
-thesis/auto/
+/thesis/auto/
 
 # Other stuff
 *.bak
