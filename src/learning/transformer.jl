@@ -255,7 +255,6 @@ function init_weights!(layer::Flux.Dense, std)
 end
 
 # Already initialized with bias zero and weights one.
-# TODO Actually can't remember...
 init_weights!(layer::Flux.LayerNorm, ::Any) = layer
 
 init_weights!(layer::Any, ::Any) = layer
