@@ -195,14 +195,20 @@ end
   and satisfying for me to contribute
 - Writing in Julia made adding new features and functionality a breeze
   (sparse GPU array support in a few lines)
+- Since submission: countless improvements in the ecosystem such as
+  using optimized math via [[https://github.com/FluxML/Torch.jl][Torch.jl]]
 There is still a lot of work ahead but it is getting there.
 *** Julia Ecosystem -- What to Look Out For
 Hot at the moment and interesting for us:
-- Deep learning frameworks [[https://github.com/FluxML/Flux.jl][Flux.jl]] (used for thesis) and [[https://github.com/denizyuret/Knet.jl][Knet.jl]]
+- [[https://github.com/SciML][SciML]] toolbox for physics-informed ML with focus on differential
+  equations
 - Source-to-source automatic differentiation via [[https://github.com/FluxML/Zygote.jl][Zygote.jl]] (was too
-  unstable for me; recently became default AD engine for Flux.jl)
-- TPU compilation via [[https://github.com/JuliaTPU/XLA.jl][XLA.jl]] (would have to use [[https://github.com/malmaud/TensorFlow.jl][TensorFlow.jl]])
-- Many others including classical ML frameworks, toolkits and algorithms
+  unstable for me; became default AD engine for [[https://github.com/FluxML/Flux.jl][Flux.jl]] after
+  submission) or soon [[https://gist.github.com/Keno/4a6507b75288b1fe671e9d1cc683014f][Diffractor.jl]] (WIP)
+- TPU compilation via [[https://github.com/FluxML/XLA.jl][FluxML/XLA.jl]] (using [[https://github.com/google/jax][JAX]] build) or
+  [[https://github.com/JuliaTPU/XLA.jl][JuliaTPU/XLA.jl]] (with [[https://github.com/malmaud/TensorFlow.jl][TensorFlow.jl]])
+- Many others including classical ML frameworks, toolkits and
+  algorithms
 * Framework
 ** Introduction
 *** SMWLevelGenerator
@@ -214,7 +220,7 @@ The framework can be roughly divided into these modules:
 - Level generation pipeline
 *** Setup (Quick Version)
 #+attr_beamer: :overlay +-
-1. Get dependencies ([[https://julialang.org/][Julia 1.3]], [[https://www.tensorflow.org/][TensorBoard]], [[https://drive.google.com/uc?export=download&id=1WSsvEhWEZiIMc7W0kVZW3Z4m7_Qc0Ess][Lunar Magic]][fn::Private
+1. Get dependencies ([[https://julialang.org/downloads/oldreleases/#v131_dec_30_2019][Julia 1.3]], [[https://www.tensorflow.org/][TensorBoard]], [[https://drive.google.com/uc?export=download&id=1WSsvEhWEZiIMc7W0kVZW3Z4m7_Qc0Ess][Lunar Magic]][fn::Private
    build], [[https://dl.smwcentral.net/11474/floating.zip][Floating IPS]], [[https://www.winehq.org/][Wine]] if not on Windows, Super Mario World
    ROM[fn::American version; CRC32 checksum =a31bead4=])
 2. Instantiate Julia project: \newline
@@ -281,7 +287,7 @@ Too many to list (check out the thesis!), here are important ones:
 *** Data Preprocessing
 - Lunar Magic dumps five different files for each level corresponding
   to different parts of the level
-- Remove encrypted hacks (yep...) and those throwing errors
+- Remove encrypted hacks and those throwing errors
 - Filter duplicate and vanilla game test levels by checksums
 - Remove levels not adhering to vanilla behavior
 - Format levels according to user-specified configuration
@@ -311,9 +317,10 @@ Due to recurring values, ~tar~ and ~gzip~ compress this further
 /that's/ portable.
 *** Data Iterator
 Optimizations:
-- Sparse arrays already optimize our data iterator for large dimensionalities
-- Sparse GPU arrays currently uncommented due to missing functionality
-  in external package
+- Sparse arrays already optimize our data iterator for large
+  dimensionalities
+- Sparse GPU arrays commented due to previously missing functionality
+  in external package (now fixed, but needs testing)
 - Arbitrarily many threads or single coroutine for data iterator
 Different models require different data layouts; there are several
 implementations that cover most cases (as matrix or as list of
@@ -322,7 +329,7 @@ this behind the scenes due to...
 *** Model Interface
 Abstract type requiring minimal implementation to work with the
 framework; adding new models requires the following:
-1. Defined as ~Flux.@treelike~ (~Flux.@functor~ in future versions)
+1. Defined as ~Flux.@treelike~ (~Flux.@functor~ in recent versions)
 2. Field ~hyperparams~ of type ~Dict{Symbol, Any}~
 3. Required key in ~hyperparams~[fn::GAN generators require one more
    key ~:inputsize~]: ~:dimensionality~ of model (a ~Symbol~)[fn::1D,
@@ -424,10 +431,10 @@ What can be done to further improve the framework?
 *** My Takeaways
 - Test models /in practice/ regularly
 - Stacking models is way too complex for this kind of task
-- Julia actually keeps all its promises (although the language and
-  ecosystem are still very/too young)
-- You will *never* have read enough papers on task-specific machine
-  learning prior to working on it
+- Julia keeps all its promises (although the language and ecosystem
+  are still very young)
+- Read *even more* task-specific machine learning papers prior to
+  working on it
 *** Questions                                                       :B_frame:
 	:PROPERTIES:
 	:BEAMER_env: frame
