@@ -81,7 +81,8 @@ to implement, train and test models:
 - Level generation using a combination of different methods
 - Focus on simplicity for library user
 *** With That Out of the Way...
-- Source code, thesis and slides available at [[https://github.com/janEbert/SMWLevelGenerator]]
+- Source code, thesis and slides available at
+  [[https://github.com/janEbert/SMWLevelGenerator/tree/fzj][~github.com/janEbert/SMWLevelGenerator/tree/fzj~]]
 - Clickable links are invisible but should be obvious
 * Fundamentals
 ** Super Mario World
