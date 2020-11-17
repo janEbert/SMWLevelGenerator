@@ -67,7 +67,7 @@ function torawdata(matrix::AbstractMatrix{UInt16})::Vector{UInt8}
     if isvertical(matrix)
         # Level is vertical
 
-        # Put each subscreen of each screen into a new layer of the cube.
+        # Put each subscreen of each screen into a new layer of the cuboid.
         # Inner loop splits `matrix` into individual screens.
         # Outer loop splits each screen into its two subscreens.
         # The result is concatenated in the third dimension.
@@ -80,7 +80,7 @@ function torawdata(matrix::AbstractMatrix{UInt16})::Vector{UInt8}
         # Level is horizontal
 
         transposed = permutedims(matrix)
-        # Put each screen into a new layer of the cube
+        # Put each screen into a new layer of the cuboid.
         cuboid = reduce((a, b) -> cat(a, b, dims=3),
                         (view(transposed, i:i + screencols - 1, :)
                          for i in axes(transposed, 1)[1:screencols:end]))

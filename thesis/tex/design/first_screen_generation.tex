@@ -14,7 +14,7 @@ manually chosen stride, padding and dilation so the output is the same
 size as the first screen of the level. The input to the discriminators
 of our GANs is the first screen of the level (a vector of 16~elements
 in the 1-dimensional case, a $27 \times 16$~matrix in the 2-dimensional
-case and a $27 \times 16 \times l$~cube in the 3-dimensional case, where
+case and a $27 \times 16 \times l$~cuboid in the 3-dimensional case, where
 $l$~is the amount of layers). Unlike our sequence models, neither the
 discriminators nor the generators receive any constant inputs of
 metadata (as the metadata is generated from the GANs' outputs).
