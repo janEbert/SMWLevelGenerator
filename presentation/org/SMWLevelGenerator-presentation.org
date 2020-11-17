@@ -448,35 +448,4 @@ Any questions?
 	:BEAMER_env: frame
 	:BEAMER_opt: standout
 	:END:
-Thank you for your attention! \newline \pause There's one more thing...
-* Extra Slides                                                   :B_appendix:
-  :PROPERTIES:
-  :BEAMER_env: appendix
-  :END:
-*** How Not to Fix a Bug                                            :B_frame:
-	:PROPERTIES:
-	:BEAMER_env: frame
-	:END:
-#+begin_src octave :exports code
-# Given level tensor `level` and integer `x_pos` > 0
-b = size(x_pos, 2)  # Size of second dim of `x_pos`
-if x_pos > b  # Array bounds check (b == 1)
-    return default_value
-else
-    return cool_heuristic(level, x_pos)
-end
-#+end_src
-\pause
-#+attr_beamer: :overlay +-
-1. Function containing this snippet was never called in practice as I
-   only added it to an interactive function but not the one called
-   during database generation (meaning testing worked just fine)
-2. After fixing 1., did not throw an error as ~size~ is defined on
-   integers for broadcasting reasons. ~x_pos~ is almost always > 1
-3. Result: Not fun@@beamer:\uncover<5->{; I'm learning Rust now}@@
-*** The End (For Real)                                              :B_frame:
-	:PROPERTIES:
-	:BEAMER_env: frame
-	:BEAMER_opt: standout
-	:END:
-Thank you for your extended attention!
+Thank you for your attention!
