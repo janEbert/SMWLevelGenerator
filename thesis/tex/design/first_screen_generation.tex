@@ -5,9 +5,9 @@ In the following, we will describe implementation details of our GANs,
 which each include a separate discriminator and generator model.
 At first, we will only focus on DCGAN-based models.
 
-First off, as mentioned in section~\ref{sec:julia}, we defined
-convolutional layers without bias which were not included in
-\mbox{Flux.jl}~\cite{FluxMLFluxJl2019} at the time of writing. \\
+First off, we defined convolutional layers without bias which were not
+included in \mbox{Flux.jl}~\cite{FluxMLFluxJl2019} at the time of
+writing. \\
 Our 1-dimensional GANs automatically adjust their layers to the input
 size. The GANs for training data in~2D and above are implemented with
 manually chosen stride, padding and dilation so the output is the same
@@ -77,9 +77,10 @@ models as the expected sizes will be different. For the discriminators:
 For the generators:
 \begin{itemize}
 \item amount of features in each convolutional layer's kernel; the
-  features sizes follow the same rules as the discriminator but in
-  reverse (starting from~$2^{k - 2}$ and shrinking towards~$2^{0}$,
-  where $k$~is the amount of convolutional layers)
+  features' sizes follow the same pattern as those of the
+  discriminator but in reverse (starting from~$2^{k - 2}$ and
+  shrinking towards~$2^{0}$, where $k$~is the amount of convolutional
+  layers)
 \item size of latent noise vector (the input size)
 \item normalization layer after each convolutional layer
 \item activation function after each normalization layer

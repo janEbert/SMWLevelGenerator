@@ -49,8 +49,8 @@ Figure~\ref{fig:pipeline} gives a visual summary of the pipeline.
   \input{img/pipeline.pdf_tex}
   \caption{An overview of the generation pipeline for the
     3-dimensional case. Blue blocks indicate abstract objects while
-    orange blocks denote models. The metadata vector is concatenated to
-    the first screen as is even though the figure may suggest some
+    orange blocks denote models. The metadata vector is concatenated
+    to the first screen as is even though the figure may suggest some
     kind of shortening. Not shown is the bit indicating whether the
     level has not ended and the transformation and flattening of the
     first screen cuboid to the correctly preprocessed value (these are
@@ -81,7 +81,7 @@ has ended or the predicted next column of the level otherwise.
 Simplifying even further, given an incomplete level as input, we wish
 to predict the next column for each column in the input.
 
-Tasked with completing an unfinished sequence, we turn our head to
+Tasked with completing an unfinished sequence, we turn our head toward
 sequence prediction models. The models we are using are also called
 sequence-to-sequence models. We will closely orient ourselves on
 natural language processing techniques, specifically natural language
@@ -114,7 +114,7 @@ improve upon the LSTM with parallelizability which~-- with the required
 computational power for increasingly large neural networks~-- is a very
 important factor. Unlike LSTMs, transformers do not keep a hidden
 state; they analyze the whole input at once, masking future sequence
-elements appropriately if desired (as we do). Due to not having to
+elements appropriately if desired (which we do). Due to not having to
 keep a state, transformers can analyze multiple different inputs at
 once, non-sequentially. This enables the parallelizability which in
 turn enables faster training enabling larger models. With these
@@ -166,7 +166,7 @@ which solve these, making them a great fit for future experiments). \\
 Finally, the reason we employ both convolutional and MLP-based GANs is
 primarily due to empirical reasons. While convolutions may suit the
 edges in Super Mario World levels, maybe enough levels employ either
-too small or not enough edges to make the convolutions worthwhile.
+too small or not enough edges to make the convolutions non-worthwhile.
 
 \subsubsection{Image Processing}
 \label{sec:image-processing}

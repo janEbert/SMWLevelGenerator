@@ -12,7 +12,7 @@ assuming we are able to compactly store eight entries per byte
 (usually you need one byte per entry but as we have binary values, we
 can store one value in one bit). With approximately 17\,000~levels, we
 would then need
-$3.75\text{ MB} * 17\,000 \approx 63.75 \cdot 10^{3}\text{ MB} =
+$3.75\text{ MB} \times 17\,000 \approx 63.75 \cdot 10^{3}\text{ MB} =
 63.75\text{ GB}$ (GB~are gigabytes) of storage at maximum. While data
 is cheap and this calculated number is the absolute maximum amount of
 storage we may need, we would like our data to be more compact for
@@ -39,18 +39,18 @@ encoding which means we also have to store whether something is
 a lot of speed due to improved computational techniques. We will not
 have to iterate over our whole sparse array but only over the
 non-zeros when computing a matrix-matrix-multiplication, for example.
-Also, CUDA supports sparse arrays via the cuSPARSE~\cite{CuSPARSE2012}
-library, enabling GPU-powered sparse array computations as well (this
-sadly has not worked out yet, as we explained in
-section~\ref{sec:julia}). Julia does not support sparse arrays above
-two dimensions, so we needed to write our own custom storage for
-3-dimensional sparse arrays. While we managed to greatly reduce
-storage space this way, it was still not enough for storing all
-possible layers. Our two final optimizations were compressing the
-indices of the sparse matrices to the smallest type still being able
-to index and~-- because that was still not small enough~-- only storing
-non-empty sparse matrices in an array. We wrote a custom compressed
-sparse 3D~array format for that.
+Also, CUDA supports sparse arrays via the
+\mbox{cuSPARSE}~\cite{CuSPARSE2012} library, enabling GPU-powered
+sparse array computations as well (this sadly has not worked out yet,
+as we explained in section~\ref{sec:julia}). Julia does not support
+sparse arrays above two dimensions, so we needed to write our own
+custom storage for 3-dimensional sparse arrays. While we managed to
+greatly reduce storage space this way, it was still not enough for
+storing all possible layers. Our two final optimizations were
+compressing the indices of the sparse matrices to the smallest type
+still being able to index and~-- because that was still not small
+enough~-- only storing non-empty sparse matrices in an array. We wrote
+a custom compressed sparse 3D~array format for that.
 
 All in all, we now support four different compression levels with two
 possible extensions based on compact bit arrays where each value fits
@@ -100,7 +100,7 @@ types to allow increasing model complexity:
   one of two ways (as given by the user): either the row is (1)~the
   row containing the maximum amount of values in the given layer or
   (2)~a combined row obtained by squashing all elements that are equal
-  to one in the given layer vertically. See
+  to 1 in the given layer vertically. See
   figure~\ref{fig:squash-example} for a simple visualization.
 
   To determine which layer to use by default (the tile we assume to be
@@ -115,7 +115,7 @@ types to allow increasing model complexity:
 \item 2-dimensional data containing only one layer of the level. The
   default layer is the same as for 1-dimensional data and suffers the
   same issues.
-\item 3-dimensional data containing whole more than one layer of the
+\item 3-dimensional data containing more than one layer of the
   level. By default, all layers are used.
 \end{enumerate}
 
@@ -172,7 +172,7 @@ In this thesis, we work with data in column form. This means that our
 models read levels column per column from the left to right. We
 decided on this order as it captures elements in the past better than
 reading the level row per row (where you go back and forth between the
-start and end of the level). We also mode it possible to read the
+start and end of the level). We also made it possible to read the
 levels tile by tile if desired. The order is the same as for the
 columns, reading from top to bottom, then from left to right. It is
 also possible to change this order to read from bottom to top, then
@@ -192,7 +192,7 @@ This is a comprehensive list of all of them:
 \item We omit a lot of metadata. (We suggest the omitted data is not
   related to level generation. As they are already parsed, including
   the omitted data is only a matter of uncommenting and adding a few
-  lines of code, adjusting model inputs and database generation.)
+  lines of code, adjusting model inputs, and database generation.)
 \item Test levels or unfinished levels~-- unless contained in the
   original game~-- are in the dataset.
 \item Any data that is out of bounds is ignored (for example, sprites

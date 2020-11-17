@@ -44,7 +44,8 @@ to reduce startup time) were saved as CSV files which
 For our machine learning needs, we used
 \mbox{Flux.jl}~\cite{FluxMLFluxJl2019}. While \mbox{Flux.jl} is one of
 the most mature deep learning frameworks in Julia, it still missed
-some basic functionality. For example, we had to define our own
+some basic functionality. For example, as mentioned in
+section~\ref{sec:first-screen-generation}, we had to define our own
 convolutional layer without bias as it had not been included at the
 time of writing. With \mbox{Zygote.jl}~\cite{FluxMLZygoteJl2019}, a
 framework supporting source-to-source automatic differentiation that
@@ -55,15 +56,15 @@ Due to \mbox{Flux.jl}'s GPU support enabled by
 \mbox{CuArrays.jl}~\cite{JuliaGPUCuArraysJl2019}, we were able to
 achieve great performance even while writing specialized loss
 functions. We were sadly not able to support the CUDA library for
-sparse arrays, cuSPARSE; due to the \mbox{CuArrays.jl} package not
-supporting all the features necessary for us (for example simple
-primitives like array slicing) for cuSPARSE arrays, we had to comment
-out the few lines pertaining to sparse CUDA arrays at the moment.
-These issues were not in the scope of this thesis but will be
+sparse arrays, \mbox{cuSPARSE}; due to the \mbox{CuArrays.jl} package
+not supporting all the features necessary for us (for example simple
+primitives like array slicing) for \mbox{cuSPARSE} arrays, we had to
+comment out the few lines pertaining to sparse CUDA arrays at the
+moment. These issues were not in the scope of this thesis but will be
 addressed at a later point, surely granting another large speedup to
 any GPU-run training pipeline that uses sparse matrices (the training
-pipeline is explained in section~\ref{sec:training-pipeline}). Another,
-more low-level GPU package,
+pipeline is explained in section~\ref{sec:training-pipeline}).
+Another, more low-level GPU package,
 \mbox{CUDAnative.jl}~\cite{JuliaGPUCUDAnativeJl2019}, allowed us to
 write our own CUDA kernels with ease. This enabled faster clamping of
 the parameters of our Wasserstein GANs. \\

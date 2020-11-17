@@ -141,9 +141,9 @@ in some missing gaps of what makes up a level.
   \centering
   \includegraphics[width=\textwidth]{Level105_midway_goal.png}
   \caption{Aside from the midway and goal point, also depicted is that
-    the midway entrance is separate from the midway point. While the
-    midway point consists purely of tiles, the moving goal point tape
-    is actually a sprite.}
+    the midway entrance (represented by Mario) is separate from the
+    midway point. While the midway point consists purely of tiles, the
+    moving goal point tape is actually a sprite.}
   \label{fig:midway-goal}
 \end{figure}
 
@@ -193,8 +193,8 @@ look at how everything works together on a lower level: \\
 Levels are made up of \emph{screens}; matrices of the same size. Each
 screen is made up of two subscreens; in horizontal levels, subscreens
 are stacked vertically and the whole, combined screens are
-concatenated horizontally while in vertical levels, subscreen are
-stacked horizontally and screens concatenated vertically. While
+concatenated horizontally while in vertical levels, subscreens are
+concatenated horizontally and screens stacked vertically. While
 subscreens are important in data preparation, we will not focus on
 them in this work and instead always refer only to whole screens. A
 screen is a 2-dimensional slice of the level consisting of a number of
@@ -202,7 +202,7 @@ columns and rows. Screens in horizontal and vertical levels have
 different sizes (even if horizontal screens are transposed), but
 otherwise, screen sizes are constant over different levels. While
 Lunar Magic supports non-vanilla behavior in that screens can have
-other sizes (although still a constant size per level). Like with all
+other sizes (although still a constant size per level), like with all
 non-vanilla modifications that have a direct impact on data, we are
 going to ignore that feature. For simplicity, we are also only going
 to train on horizontal levels. While support for vertical levels in

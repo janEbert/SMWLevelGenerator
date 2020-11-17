@@ -6,9 +6,9 @@ our sequence prediction models. In the following explanations, we will
 assume the level is read column per column. The only difference when
 reading per tile is the input size. While each of our models may have
 different input preferences for a sequence (vector of vectors, matrix,
-\dots), we will focus our explanation on sequence elements as these
-all follow the same principles. Each sequence element is a vector
-consisting of
+\dots), we will focus our explanation on individual sequence elements
+as these all follow the same principles. Each sequence element is a
+vector consisting of
 \begin{itemize}
 \item a constant input part containing metadata,
 \item a bit that indicates whether the level has not ended yet (so it
@@ -70,18 +70,19 @@ to the way batching works for these models (fixing this was out of the
 scope of this work): We obtain a complete level matrix, a singular
 input, by concatenating the preprocessed columns in the second
 dimension; we then concatenate multiple of these matrices in the third
-dimension to get a batch of inputs. As neither Julia nor cuSPARSE
-provides support for sparse arrays in the third dimension, we are not
-able to obtain perfect performance for the transformer models (as we
-mentioned, cuSPARSE could not be used as of yet so this and the
-following only affects data on the CPU at the moment). \\
+dimension to get a batch of inputs. As neither Julia nor
+\mbox{cuSPARSE} provides support for sparse arrays in the third
+dimension, we are not able to obtain perfect performance for the
+transformer models (as we mentioned, \mbox{cuSPARSE} could not be used
+as of yet so this and the following only affects data on the CPU at
+the moment). \\
 This batching issue also has a large effect on memory usage as the
 non-sparse data takes up a lot of space in high dimensions. For
 3-dimensional data, a batch of 32~matrices of maximum length
 (512~columns) would take
 $58438 \cdot 32 \cdot 512 \cdot 2\text{ bytes} \approx 2 \cdot 10^{9} = 2\text{ GB}$ of data
-(the first summand is the size of each sequence element) (we need
-2~bytes per value due to the constant metadata inputs containing
+(the first factor is the size of each columnar sequence element) (we
+need 2~bytes per value due to the constant metadata inputs containing
 16-bit values). Mapping this amount of data to a GPU that already
 contains a large model is only possible in rare cases, so reducing
 batch size, thereby decreasing efficiency, is the only option. In the
