@@ -15,7 +15,7 @@
 #+description:
 #+keywords:
 #+subtitle: Generating Super Mario World Levels Using \newline Deep Neural Networks
-#+date: January 13, 2020
+#+date: November 17, 2020
 #+options: H:3
 #+startup: beamer
 #+latex_class: beamer
