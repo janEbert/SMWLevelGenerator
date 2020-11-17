@@ -261,8 +261,9 @@ For these kinds of tasks: usually use one-hot-encoding to predict the
 by column for speed and more local correlation.
 
 Number of classes when reading...
-- ... column by column: @@beamer:$\approx 17\,600$ \uncover<2->{\alert{digit} number}@@
-- ... tile by tile: 662
+- ... column by column: @@beamer:$\approx 17\,600$
+  \uncover<2->{\alert{digit} number}@@
+- ... tile by tile: 662@@beamer: \uncover<2->{\alert{digit} number}@@
 \pause No way I could train a model on that many classes even if
 memory problems were solved.
 *** Dimensionalities
@@ -270,7 +271,7 @@ Different complexities reflected on the highest level via
 dimensionality:
 - 1D: Level is seen as single row of one type of tile.
 - 2D: Level is seen as matrix of one type of tile.
-- 3D: Level is seen as cube with chosen tile layers.
+- 3D: Level is seen as cuboid with chosen tile layers.
 The default type of tile for 1D and 2D is the ground tile of the
 level.
 *** Simplifications
@@ -360,7 +361,7 @@ manually chosen stride, padding and dilation so output size matches
 first screen size.
 
 Discriminators: Inputs are first screen tensors (vector in 1D, matrix
-in 2D, cube in 3D), outputs are scalars whether input is real.
+in 2D, cuboid in 3D), outputs are scalars whether input is real.
 \newline Generators: Inputs are noise vectors, outputs are first
 screen tensors.
 *** Image Processing Models
@@ -368,7 +369,8 @@ screen tensors.
 - Dense (MLP)
 
 Inputs are first screen tensors, outputs are the constant metadata
-vectors also supplied to the sequence predictor.
+vectors and “level has not ended”-bit also supplied to the sequence
+predictor.
 *** Training Loops
 - Checkpointing and resuming training
 - Handling experiments (storing all parameters, logging, ...)
